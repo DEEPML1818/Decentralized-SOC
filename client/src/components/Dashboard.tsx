@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useCurrentAccount } from "@iota/dapp-kit";
-import { mockTickets, mockAnalytics, mockUsers, mockRecentActivity } from "../../../shared/mockData";
+import { useQuery } from "@tanstack/react-query";
 import {
   TrendingUp,
   TrendingDown,
@@ -31,34 +31,49 @@ export default function Dashboard({ userRole }: DashboardProps) {
   const account = useCurrentAccount();
   const [dashboardData, setDashboardData] = useState<any>(null);
 
+  // Fetch real incident reports from database
+  const { data: incidentReports, isLoading } = useQuery({
+    queryKey: ["/api/incident-reports"],
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+  });
+
   useEffect(() => {
-    if (account && userRole) {
+    if (account && userRole && incidentReports) {
       generateRoleSpecificData();
     }
-  }, [account, userRole]);
+  }, [account, userRole, incidentReports]);
 
   const generateRoleSpecificData = () => {
-    const userTickets = mockTickets.filter(ticket => 
-      userRole === "client" ? ticket.client_address === account?.address :
-      userRole === "analyst" ? (ticket.status === 0 || ticket.analyst_address === account?.address) :
-      userRole === "certifier" ? ticket.status >= 2 : true
+    if (!incidentReports) return;
+
+    // Filter reports based on user role
+    const userReports = incidentReports.filter((report: any) => 
+      userRole === "client" ? report.client_wallet === account?.address :
+      userRole === "analyst" ? report.status === "pending" || report.assigned_analyst === account?.address :
+      userRole === "certifier" ? report.status === "analyzed" || report.assigned_certifier === account?.address : true
     );
 
-    const userData = mockUsers.find(user => user.wallet_address === account?.address) || mockUsers[0];
+    const allPendingReports = incidentReports.filter((report: any) => report.status === "pending");
+    const analyzedReports = incidentReports.filter((report: any) => report.status === "analyzed");
+    const resolvedReports = incidentReports.filter((report: any) => report.status === "resolved");
 
     switch (userRole) {
       case "client":
+        const userSubmissions = incidentReports.filter((report: any) => report.client_wallet === account?.address);
+        const userResolved = userSubmissions.filter((report: any) => report.status === "resolved");
+        const userPending = userSubmissions.filter((report: any) => report.status === "pending");
+        
         setDashboardData({
           stats: {
-            totalSubmitted: userData.total_submitted || 23,
-            resolvedTickets: userData.resolved_tickets || 18,
-            pendingTickets: 5,
-            totalRewards: userData.total_rewards_earned || 186000,
-            avgResolutionTime: userData.avg_resolution_time || "14h",
-            successRate: Math.round((userData.resolved_tickets / userData.total_submitted) * 100) || 78
+            totalSubmitted: userSubmissions.length || 23,
+            resolvedTickets: userResolved.length || 18,
+            pendingTickets: userPending.length || 5,
+            totalRewards: 186000,
+            avgResolutionTime: "14h",
+            successRate: userSubmissions.length > 0 ? Math.round((userResolved.length / userSubmissions.length) * 100) : 78
           },
-          recentSubmissions: userTickets.slice(0, 5),
-          categories: userData.preferred_categories || ["Cross-Chain Bridge", "Flash Loan Attack"],
+          recentSubmissions: userSubmissions.slice(0, 5),
+          categories: ["Cross-Chain Bridge", "Flash Loan Attack"],
           monthlyActivity: [
             { month: "Oct", submitted: 3, resolved: 2 },
             { month: "Nov", submitted: 4, resolved: 4 },
@@ -71,15 +86,15 @@ export default function Dashboard({ userRole }: DashboardProps) {
       case "analyst":
         setDashboardData({
           stats: {
-            totalAnalyzed: userData.total_analyzed || 45,
-            approvedReports: userData.approved_reports || 41,
-            pendingAnalysis: 7,
-            totalRewards: userData.total_rewards_earned || 485000,
-            avgAnalysisTime: userData.avg_analysis_time || "12h",
-            successRate: userData.success_rate || 91
+            totalAnalyzed: analyzedReports.length,
+            approvedReports: resolvedReports.length,
+            pendingAnalysis: allPendingReports.length,
+            totalRewards: 485000,
+            avgAnalysisTime: "12h",
+            successRate: analyzedReports.length > 0 ? Math.round((resolvedReports.length / analyzedReports.length) * 100) : 91
           },
-          availableTickets: userTickets.filter(t => t.status === 0).slice(0, 8),
-          specializations: userData.specializations || ["DeFi Protocol Security"],
+          availableTickets: allPendingReports.slice(0, 8),
+          specializations: ["DeFi Protocol Security"],
           performanceMetrics: [
             { metric: "Flash Loan Attacks", analyzed: 15, accuracy: 94 },
             { metric: "Bridge Exploits", analyzed: 12, accuracy: 89 },
@@ -92,15 +107,15 @@ export default function Dashboard({ userRole }: DashboardProps) {
       case "certifier":
         setDashboardData({
           stats: {
-            totalCertified: userData.total_certified || 67,
-            approvedCertifications: userData.approved_certifications || 64,
-            pendingCertification: 12,
-            totalRewards: userData.total_rewards_earned || 890000,
-            avgCertificationTime: userData.avg_certification_time || "3h",
-            accuracy: userData.certification_accuracy || 97
+            totalCertified: resolvedReports.length,
+            approvedCertifications: resolvedReports.length,
+            pendingCertification: analyzedReports.length,
+            totalRewards: 890000,
+            avgCertificationTime: "3h",
+            accuracy: 97
           },
-          pendingCertifications: userTickets.filter(t => t.status === 2).slice(0, 6),
-          expertiseAreas: userData.expertise_areas || ["Critical Incident Assessment"],
+          pendingCertifications: analyzedReports.slice(0, 6),
+          expertiseAreas: ["Critical Incident Assessment"],
           riskAssessments: [
             { protocol: "Cross-Chain Bridges", riskLevel: "Critical", lastAssessed: "2024-01-20" },
             { protocol: "Lending Protocols", riskLevel: "High", lastAssessed: "2024-01-19" },
@@ -111,16 +126,22 @@ export default function Dashboard({ userRole }: DashboardProps) {
 
       default:
         setDashboardData({
-          stats: mockAnalytics,
-          globalActivity: mockRecentActivity
+          stats: {
+            totalReports: incidentReports.length,
+            pendingReports: allPendingReports.length,
+            analyzedReports: analyzedReports.length,
+            resolvedReports: resolvedReports.length
+          },
+          globalActivity: incidentReports.slice(0, 10)
         });
     }
   };
 
-  if (!dashboardData) {
+  if (isLoading || !dashboardData) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+        <span className="ml-3 text-gray-400">Loading dashboard data...</span>
       </div>
     );
   }
@@ -439,35 +460,36 @@ export default function Dashboard({ userRole }: DashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {dashboardData.availableTickets.map((ticket: any) => (
-              <div key={ticket.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-gray-600/20 hover:border-cyan-500/30 transition-colors">
+            {dashboardData.availableTickets.map((report: any) => (
+              <div key={report.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-gray-600/20 hover:border-cyan-500/30 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-medium text-white">{ticket.title}</p>
-                    {ticket.severity === 'Critical' && (
+                    <p className="font-medium text-white">{report.title}</p>
+                    {report.severity === 'critical' && (
                       <Badge className="bg-red-500/20 text-red-300 border-red-500/30 animate-pulse text-xs">
                         URGENT
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-400">{ticket.category} • {ticket.blockchain}</p>
+                  <p className="text-sm text-gray-400">{report.affected_systems || "Security Incident"} • dSOC Platform</p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                    <span>Submitted: {new Date(ticket.created_at).toLocaleDateString()}</span>
+                    <span>Submitted: {new Date(report.created_at).toLocaleDateString()}</span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / (1000 * 60 * 60))}h ago
+                      {Math.floor((Date.now() - new Date(report.created_at).getTime()) / (1000 * 60 * 60))}h ago
                     </span>
                   </div>
                 </div>
                 <div className="text-right">
                   <Badge className={`${
-                    ticket.severity === 'Critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
-                    ticket.severity === 'High' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
-                    'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
+                    report.severity === 'critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                    report.severity === 'high' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
+                    report.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' :
+                    'bg-blue-500/20 text-blue-300 border-blue-500/30'
                   }`}>
-                    {ticket.severity}
+                    {report.severity.toUpperCase()}
                   </Badge>
-                  <p className="text-sm text-gray-500 mt-1">{ticket.stake_amount.toLocaleString()} CLT</p>
+                  <p className="text-sm text-gray-500 mt-1">CLT Rewards</p>
                   <Button size="sm" className="mt-1 bg-cyan-600 hover:bg-cyan-700">
                     <Eye className="h-3 w-3 mr-1" />
                     Analyze

@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { insertIncidentReportSchema } from "@shared/schema";
 
 const API_KEY = process.env.GOOGLE_API_KEY;
 
@@ -196,6 +197,148 @@ Format as structured markdown for a security analyst.`;
       console.error("Vulnerability analysis error:", error);
       res.status(500).json({ 
         error: "Failed to analyze vulnerability",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Incident Report endpoints for real-time dashboard updates
+  app.post("/api/incident-reports", async (req, res) => {
+    try {
+      const validatedData = insertIncidentReportSchema.parse(req.body);
+      const report = await storage.createIncidentReport(validatedData);
+      
+      console.log(`New incident report created: ${report.title} (ID: ${report.id})`);
+      res.json(report);
+    } catch (error) {
+      console.error("Failed to create incident report:", error);
+      res.status(400).json({ 
+        error: "Failed to create incident report",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/incident-reports", async (req, res) => {
+    try {
+      const reports = await storage.getIncidentReports();
+      res.json(reports);
+    } catch (error) {
+      console.error("Failed to fetch incident reports:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch incident reports",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/incident-reports/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const report = await storage.getIncidentReportById(id);
+      
+      if (!report) {
+        return res.status(404).json({ error: "Incident report not found" });
+      }
+      
+      res.json(report);
+    } catch (error) {
+      console.error("Failed to fetch incident report:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch incident report",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.patch("/api/incident-reports/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const updatedReport = await storage.updateIncidentReport(id, updates);
+      
+      console.log(`Incident report updated: ${updatedReport.title} (ID: ${id})`);
+      res.json(updatedReport);
+    } catch (error) {
+      console.error("Failed to update incident report:", error);
+      res.status(500).json({ 
+        error: "Failed to update incident report",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // AI Incident Analysis endpoint
+  app.post("/api/ai/analyze-incident", async (req, res) => {
+    try {
+      const { description } = req.body;
+      
+      if (!API_KEY) {
+        return res.status(500).json({ 
+          error: "AI service is not configured. Please add GOOGLE_API_KEY to environment variables." 
+        });
+      }
+
+      const genAI = new GoogleGenerativeAI(API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+      const prompt = `You are a cybersecurity expert analyzing a security incident report. Based on this description, extract and structure the following information:
+
+User description: "${description}"
+
+Please provide a JSON response with the following structure:
+{
+  "title": "Brief descriptive title of the incident",
+  "severity": "critical|high|medium|low",
+  "affected_systems": "List of affected systems/platforms",
+  "attack_vectors": "Identified attack methods or vectors",
+  "analysis": "Detailed analysis of the incident including potential impact, root cause, and recommended immediate actions"
+}
+
+Focus on:
+- Blockchain/crypto security if relevant
+- Web application security
+- Social engineering indicators
+- Financial fraud patterns
+- Technical vulnerabilities
+
+Ensure the JSON is valid and parseable.`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      try {
+        // Try to parse as JSON, fallback to text if it fails
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const analysisData = JSON.parse(jsonMatch[0]);
+          res.json(analysisData);
+        } else {
+          // Fallback: return structured text analysis
+          res.json({
+            title: "Security Incident Analysis",
+            severity: "medium",
+            affected_systems: "To be determined",
+            attack_vectors: "Under investigation",
+            analysis: text
+          });
+        }
+      } catch (parseError) {
+        // If JSON parsing fails, return the raw analysis
+        res.json({
+          title: "Security Incident Analysis",
+          severity: "medium", 
+          affected_systems: "To be determined",
+          attack_vectors: "Under investigation",
+          analysis: text
+        });
+      }
+    } catch (error) {
+      console.error("AI incident analysis error:", error);
+      res.status(500).json({ 
+        error: "Failed to analyze incident",
         details: error instanceof Error ? error.message : "Unknown error"
       });
     }

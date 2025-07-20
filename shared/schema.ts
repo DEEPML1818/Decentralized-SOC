@@ -57,6 +57,26 @@ export const clt_tokens = pgTable("clt_tokens", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Incident Reports table for real-time dashboard updates
+export const incident_reports = pgTable("incident_reports", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  affected_systems: text("affected_systems"),
+  attack_vectors: text("attack_vectors"),
+  severity: varchar("severity", { length: 20 }).notNull().default("medium"),
+  client_name: varchar("client_name", { length: 255 }).notNull(),
+  contact_info: varchar("contact_info", { length: 255 }).notNull(),
+  evidence_urls: text("evidence_urls"),
+  ai_analysis: text("ai_analysis"),
+  assigned_analyst: varchar("assigned_analyst", { length: 255 }),
+  assigned_certifier: varchar("assigned_certifier", { length: 255 }),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  client_wallet: varchar("client_wallet", { length: 255 }),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertTicketSchema = createInsertSchema(tickets).omit({
   id: true,
@@ -85,6 +105,12 @@ export const insertCLTTokenSchema = createInsertSchema(clt_tokens).omit({
   created_at: true,
 });
 
+export const insertIncidentReportSchema = createInsertSchema(incident_reports).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
 // Types
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type Ticket = typeof tickets.$inferSelect;
@@ -100,3 +126,6 @@ export type StakeToken = typeof stake_tokens.$inferSelect;
 
 export type InsertCLTToken = z.infer<typeof insertCLTTokenSchema>;
 export type CLTToken = typeof clt_tokens.$inferSelect;
+
+export type InsertIncidentReport = z.infer<typeof insertIncidentReportSchema>;
+export type IncidentReport = typeof incident_reports.$inferSelect;
