@@ -197,10 +197,16 @@ Provide detailed technical analysis suitable for security analysts and certifier
   };
 
   const handleSubmitTicket = async () => {
-    if (!incidentData.title || !incidentData.description || !incidentData.contactInfo) {
+    // Validate required fields
+    const missingFields = [];
+    if (!incidentData.title.trim()) missingFields.push("Title");
+    if (!incidentData.description.trim()) missingFields.push("Description");
+    if (!incidentData.contactInfo.trim()) missingFields.push("Contact Information");
+    
+    if (missingFields.length > 0) {
       toast({
-        title: "Error",
-        description: "Please fill in title, description, and contact information",
+        title: "Missing Required Fields",
+        description: `Please fill in: ${missingFields.join(", ")}`,
         variant: "destructive",
       });
       return;
@@ -449,7 +455,7 @@ Provide detailed technical analysis suitable for security analysts and certifier
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Contact Information</label>
+              <label className="text-sm font-medium text-gray-300">Contact Information *</label>
               <Input
                 value={incidentData.contactInfo}
                 onChange={(e) => setIncidentData(prev => ({ ...prev, contactInfo: e.target.value }))}

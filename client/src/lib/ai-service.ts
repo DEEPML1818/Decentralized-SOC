@@ -1,4 +1,9 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 console.log("AI service initialized");
+
+// Get API key from environment variable
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 /**
  * Get AI response for security-related queries
