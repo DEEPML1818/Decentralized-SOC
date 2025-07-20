@@ -32,6 +32,10 @@ interface IncidentData {
 }
 
 export default function IncidentReport({ onClose }: { onClose: () => void }) {
+  const [reportMode, setReportMode] = useState<"manual" | "ai-assisted">("manual");
+  const [userDescription, setUserDescription] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  
   const [incidentData, setIncidentData] = useState<IncidentData>({
     title: "",
     description: "",
@@ -48,6 +52,81 @@ export default function IncidentReport({ onClose }: { onClose: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   // const { submitTicket } = useContract();
+
+  const handleAIGeneration = async () => {
+    if (!userDescription.trim()) {
+      toast({
+        title: "Error",
+        description: "Please describe your security situation first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const generationPrompt = `
+Based on the following user description of a security incident, please generate a structured incident report with the following fields:
+
+User Description: "${userDescription}"
+
+Please analyze this and provide a JSON response with these fields:
+- title: A clear, concise title for the incident
+- description: A detailed technical description of what happened
+- severity: Choose from "low", "medium", "high", or "critical" based on the impact
+- affectedSystems: What systems, contracts, or platforms were affected
+- attackVector: The method or vulnerability used in the attack
+- estimatedLoss: If any financial loss is mentioned, estimate it
+- evidenceUrls: Any URLs, transaction hashes, or addresses mentioned
+
+Respond ONLY with valid JSON, no other text.
+      `;
+
+      const response = await aiAssistant.chat(generationPrompt);
+      
+      try {
+        // Try to parse the JSON response
+        const parsedData = JSON.parse(response);
+        
+        setIncidentData({
+          title: parsedData.title || "",
+          description: parsedData.description || "",
+          severity: parsedData.severity || "medium",
+          affectedSystems: parsedData.affectedSystems || "",
+          estimatedLoss: parsedData.estimatedLoss || "",
+          attackVector: parsedData.attackVector || "",
+          evidenceUrls: parsedData.evidenceUrls || "",
+          contactInfo: incidentData.contactInfo // Keep existing contact info
+        });
+        
+        toast({
+          title: "Report Generated",
+          description: "AI has generated your incident report. Please review and submit.",
+        });
+      } catch (parseError) {
+        // If JSON parsing fails, use the response as description
+        setIncidentData(prev => ({
+          ...prev,
+          title: "AI-Generated Incident Report",
+          description: response
+        }));
+        
+        toast({
+          title: "Report Generated",
+          description: "AI has analyzed your situation. Please review the details.",
+        });
+      }
+    } catch (error: any) {
+      console.error("AI generation error:", error);
+      toast({
+        title: "Generation Failed",
+        description: `Failed to generate report: ${error.message || "Unknown error"}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleAIAnalysis = async () => {
     if (!incidentData.description.trim()) {
@@ -172,7 +251,8 @@ ${aiAnalysis ? `\nAI SECURITY ANALYSIS:\n${aiAnalysis}` : ''}
   };
 
   return (
-    <div className="space-y-6 p-6 max-h-[70vh] overflow-y-auto">
+    <div className="h-full overflow-y-auto">
+      <div className="space-y-6 p-6">
       {/* Header */}
       <div className="text-center">
         <div className="flex items-center justify-center gap-3 mb-4">
@@ -188,7 +268,101 @@ ${aiAnalysis ? `\nAI SECURITY ANALYSIS:\n${aiAnalysis}` : ''}
         </p>
       </div>
 
-      {/* Incident Form */}
+      {/* Report Mode Selection */}
+      <Card className="bg-slate-800/50 border-blue-500/30">
+        <CardHeader>
+          <CardTitle className="text-blue-400 flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Report Mode
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Choose how you want to create your incident report
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Button
+              variant={reportMode === "manual" ? "default" : "outline"}
+              onClick={() => setReportMode("manual")}
+              className={`h-auto p-4 flex flex-col items-start space-y-2 ${
+                reportMode === "manual" 
+                  ? "bg-blue-600 hover:bg-blue-700 border-blue-500" 
+                  : "border-gray-600 hover:border-blue-500"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                <span className="font-medium">Manual Input</span>
+              </div>
+              <p className="text-sm text-left opacity-80">
+                Fill out the incident details manually using structured forms
+              </p>
+            </Button>
+            
+            <Button
+              variant={reportMode === "ai-assisted" ? "default" : "outline"}
+              onClick={() => setReportMode("ai-assisted")}
+              className={`h-auto p-4 flex flex-col items-start space-y-2 ${
+                reportMode === "ai-assisted" 
+                  ? "bg-purple-600 hover:bg-purple-700 border-purple-500" 
+                  : "border-gray-600 hover:border-purple-500"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                <span className="font-medium">AI-Assisted</span>
+              </div>
+              <p className="text-sm text-left opacity-80">
+                Describe your situation and let AI generate the structured report
+              </p>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI-Assisted Mode */}
+      {reportMode === "ai-assisted" && (
+        <Card className="bg-slate-800/50 border-purple-500/30">
+          <CardHeader>
+            <CardTitle className="text-purple-400 flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              Describe Your Situation
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              Tell us what happened in your own words - AI will structure the report for you
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Textarea
+              value={userDescription}
+              onChange={(e) => setUserDescription(e.target.value)}
+              placeholder="Describe what happened... For example: 'My wallet was drained after clicking a suspicious link. I lost about $5000 worth of tokens. The transaction happened on Ethereum mainnet around 2 hours ago. I have the transaction hash and can provide screenshots...'"
+              className="bg-slate-700/50 border-gray-600 text-white min-h-[150px]"
+            />
+            
+            <Button
+              onClick={handleAIGeneration}
+              disabled={isGenerating || !userDescription.trim()}
+              className="bg-purple-600 hover:bg-purple-700 w-full"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                  Generating Report...
+                </>
+              ) : (
+                <>
+                  <Brain className="h-4 w-4 mr-2" />
+                  Generate Incident Report
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Incident Form - Show when manual mode OR when AI has generated data */}
+      {(reportMode === "manual" || (reportMode === "ai-assisted" && incidentData.title)) && (
       <Card className="bg-slate-800/50 border-red-500/30">
         <CardHeader>
           <CardTitle className="text-red-400 flex items-center gap-2">
@@ -301,9 +475,12 @@ ${aiAnalysis ? `\nAI SECURITY ANALYSIS:\n${aiAnalysis}` : ''}
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* AI Analysis Section */}
-      <Card className="bg-slate-800/50 border-purple-500/30">
+      {(reportMode === "manual" || (reportMode === "ai-assisted" && incidentData.title)) && (
+        <>
+        <Card className="bg-slate-800/50 border-purple-500/30">
         <CardHeader>
           <CardTitle className="text-purple-400 flex items-center gap-2">
             <Brain className="h-5 w-5" />
@@ -393,6 +570,9 @@ ${aiAnalysis ? `\nAI SECURITY ANALYSIS:\n${aiAnalysis}` : ''}
           </div>
         </CardContent>
       </Card>
+        </>
+      )}
+    </div>
     </div>
   );
 }
