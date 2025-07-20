@@ -98,7 +98,7 @@ Please analyze this and provide a JSON response with these fields:
 Respond ONLY with valid JSON, no other text.
       `;
 
-      const response = await aiAssistant.chat(generationPrompt);
+      const response = await aiAssistant.getChatResponse(generationPrompt);
       
       try {
         // Try to parse the JSON response
