@@ -129,7 +129,7 @@ export default function Dashboard({ userRole }: DashboardProps) {
     <div className="space-y-6">
       {/* Client Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-500/30">
+        <Card className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-500/30 cursor-pointer hover:scale-105 transition-transform">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-blue-300">Total Submitted</CardTitle>
@@ -139,6 +139,9 @@ export default function Dashboard({ userRole }: DashboardProps) {
           <CardContent>
             <div className="text-2xl font-bold text-white">{dashboardData.stats.totalSubmitted}</div>
             <p className="text-xs text-blue-300 mt-1">+3 this month</p>
+            <Button size="sm" variant="ghost" className="mt-2 text-blue-400 hover:text-blue-300">
+              View Details
+            </Button>
           </CardContent>
         </Card>
 
@@ -182,33 +185,81 @@ export default function Dashboard({ userRole }: DashboardProps) {
         </Card>
       </div>
 
-      {/* Recent Submissions */}
+      {/* Recent Submissions with Full Details */}
       <Card className="bg-slate-800/50 border-gray-600/30">
         <CardHeader>
           <CardTitle className="text-purple-400 flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            Recent Submissions
+            Recent Incident Reports - Full Case Details
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {dashboardData.recentSubmissions.map((ticket: any) => (
-              <div key={ticket.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-gray-600/20">
-                <div>
-                  <p className="font-medium text-white">{ticket.title}</p>
-                  <p className="text-sm text-gray-400">{ticket.category} • {ticket.blockchain}</p>
-                </div>
-                <div className="text-right">
-                  <Badge className={`${
-                    ticket.severity === 'Critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
-                    ticket.severity === 'High' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
-                    'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
-                  }`}>
-                    {ticket.severity}
-                  </Badge>
-                  <p className="text-sm text-gray-500 mt-1">{ticket.loss_amount}</p>
-                </div>
-              </div>
+              <Card key={ticket.id} className="bg-slate-700/30 border border-gray-600/20 hover:border-purple-500/40 transition-colors">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <h4 className="font-semibold text-white">{ticket.title}</h4>
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <span>{ticket.category}</span>
+                        <span>•</span>
+                        <span>{ticket.blockchain}</span>
+                        <span>•</span>
+                        <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <Badge className={`${
+                      ticket.severity === 'Critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                      ticket.severity === 'High' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
+                      'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
+                    }`}>
+                      {ticket.severity}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-300 line-clamp-2">{ticket.description}</p>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Loss Amount:</span>
+                        <span className="text-red-400 font-semibold ml-2">{ticket.loss_amount}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Protocols:</span>
+                        <span className="text-blue-400 ml-2">{ticket.affected_protocols?.join(', ')}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Attack Vector:</span>
+                        <span className="text-orange-400 ml-2">{ticket.attack_vector}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Status:</span>
+                        <Badge className="ml-2 text-xs bg-green-500/20 text-green-400 border-green-500/30">
+                          {ticket.status === 3 ? 'Resolved' : 'In Progress'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Report
+                      </Button>
+                      <Button size="sm" variant="outline" className="border-gray-600">
+                        <FileText className="h-4 w-4 mr-1" />
+                        Evidence
+                      </Button>
+                      {ticket.report_hash && (
+                        <Button size="sm" variant="outline" className="border-green-600 text-green-400">
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Analysis
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </CardContent>
@@ -229,6 +280,72 @@ export default function Dashboard({ userRole }: DashboardProps) {
                 {category}
               </Badge>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Security Assistant */}
+      <Card className="bg-gradient-to-r from-blue-800/30 to-purple-800/30 border-blue-500/30">
+        <CardHeader>
+          <CardTitle className="text-blue-400 flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            AI Security Assistant
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-medium">Google AI Integration</p>
+                <p className="text-sm text-gray-400">
+                  {import.meta.env.VITE_GEMINI_API_KEY ? 'Active - AI analysis available' : 'Configure API key in Replit Secrets'}
+                </p>
+              </div>
+              <Badge className={`${
+                import.meta.env.VITE_GEMINI_API_KEY 
+                  ? 'bg-green-500/20 text-green-300 border-green-500/30' 
+                  : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
+              }`}>
+                {import.meta.env.VITE_GEMINI_API_KEY ? 'Connected' : 'Setup Required'}
+              </Badge>
+            </div>
+            
+            {import.meta.env.VITE_GEMINI_API_KEY && (
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <h4 className="text-blue-300 font-medium mb-2">Quick AI Insights</h4>
+                <div className="space-y-2 text-sm">
+                  <p className="text-blue-200">• Ask about threat analysis patterns</p>
+                  <p className="text-blue-200">• Get incident classification guidance</p>
+                  <p className="text-blue-200">• Security best practices recommendations</p>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Button 
+                    size="sm" 
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => window.dispatchEvent(new CustomEvent('openAIAssistant'))}
+                  >
+                    <Brain className="h-4 w-4 mr-1" />
+                    AI Chat
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={() => window.dispatchEvent(new CustomEvent('openAuditTool'))}
+                  >
+                    <Shield className="h-4 w-4 mr-1" />
+                    Contract Audit
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {!import.meta.env.VITE_GEMINI_API_KEY && (
+              <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-400 text-sm">
+                  <strong>Setup Instructions:</strong> Add VITE_GEMINI_API_KEY to your Replit Secrets with your Google AI API key
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -292,21 +409,61 @@ export default function Dashboard({ userRole }: DashboardProps) {
         </Card>
       </div>
 
+      {/* Urgent Pending Work Alert */}
+      {dashboardData.stats.pendingAnalysis > 0 && (
+        <Card className="bg-gradient-to-r from-red-800/30 to-orange-800/30 border-red-500/50 animate-pulse">
+          <CardHeader>
+            <CardTitle className="text-red-400 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Urgent: Pending Analysis Required
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-bold text-lg">{dashboardData.stats.pendingAnalysis} Critical Tickets</p>
+                <p className="text-red-300 text-sm">
+                  Waiting for security analysis - Average response time: {dashboardData.stats.avgAnalysisTime}
+                </p>
+              </div>
+              <Button className="bg-red-600 hover:bg-red-700 pulse-glow">
+                <Zap className="h-4 w-4 mr-1" />
+                Review Now
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Available Tickets */}
       <Card className="bg-slate-800/50 border-gray-600/30">
         <CardHeader>
           <CardTitle className="text-cyan-400 flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            High Priority Tickets
+            High Priority Tickets ({dashboardData.availableTickets.length} Available)
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {dashboardData.availableTickets.map((ticket: any) => (
               <div key={ticket.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-gray-600/20 hover:border-cyan-500/30 transition-colors">
-                <div>
-                  <p className="font-medium text-white">{ticket.title}</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-white">{ticket.title}</p>
+                    {ticket.severity === 'Critical' && (
+                      <Badge className="bg-red-500/20 text-red-300 border-red-500/30 animate-pulse text-xs">
+                        URGENT
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-400">{ticket.category} • {ticket.blockchain}</p>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                    <span>Submitted: {new Date(ticket.created_at).toLocaleDateString()}</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / (1000 * 60 * 60))}h ago
+                    </span>
+                  </div>
                 </div>
                 <div className="text-right">
                   <Badge className={`${
@@ -317,6 +474,10 @@ export default function Dashboard({ userRole }: DashboardProps) {
                     {ticket.severity}
                   </Badge>
                   <p className="text-sm text-gray-500 mt-1">{ticket.stake_amount.toLocaleString()} CLT</p>
+                  <Button size="sm" className="mt-1 bg-cyan-600 hover:bg-cyan-700">
+                    <Eye className="h-3 w-3 mr-1" />
+                    Analyze
+                  </Button>
                 </div>
               </div>
             ))}
@@ -416,21 +577,74 @@ export default function Dashboard({ userRole }: DashboardProps) {
         </Card>
       </div>
 
+      {/* Urgent Certification Alert */}
+      {dashboardData.stats.pendingCertification > 0 && (
+        <Card className="bg-gradient-to-r from-red-800/30 to-orange-800/30 border-red-500/50 animate-pulse">
+          <CardHeader>
+            <CardTitle className="text-red-400 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              URGENT: Certifications Overdue
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-bold text-lg">{dashboardData.stats.pendingCertification} Reports Pending</p>
+                <p className="text-red-300 text-sm">
+                  Critical incidents awaiting final certification - Target time: {dashboardData.stats.avgCertificationTime}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs">
+                    {Math.floor(dashboardData.stats.pendingCertification * 0.6)} Critical
+                  </Badge>
+                  <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30 text-xs">
+                    {Math.floor(dashboardData.stats.pendingCertification * 0.4)} High Priority
+                  </Badge>
+                </div>
+              </div>
+              <Button className="bg-red-600 hover:bg-red-700 pulse-glow">
+                <Shield className="h-4 w-4 mr-1" />
+                Certify Now
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pending Certifications */}
       <Card className="bg-slate-800/50 border-gray-600/30">
         <CardHeader>
           <CardTitle className="text-emerald-400 flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Critical Certifications Needed
+            Critical Certifications Needed ({dashboardData.pendingCertifications.length} Active)
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {dashboardData.pendingCertifications.map((ticket: any) => (
               <div key={ticket.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-gray-600/20 hover:border-emerald-500/30 transition-colors">
-                <div>
-                  <p className="font-medium text-white">{ticket.title}</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-white">{ticket.title}</p>
+                    {ticket.severity === 'Critical' && (
+                      <Badge className="bg-red-500/20 text-red-300 border-red-500/30 animate-pulse text-xs">
+                        OVERDUE
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-400">{ticket.category} • {ticket.blockchain}</p>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                    <span>Submitted: {new Date(ticket.created_at).toLocaleDateString()}</span>
+                    <span className="flex items-center gap-1 text-orange-400">
+                      <Clock className="h-3 w-3" />
+                      Pending {Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / (1000 * 60 * 60))}h
+                    </span>
+                  </div>
+                  {ticket.analyst_address && (
+                    <p className="text-xs text-blue-400 mt-1">
+                      Analyzed by: {ticket.analyst_address.slice(0, 8)}...{ticket.analyst_address.slice(-6)}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <Badge className={`${
@@ -441,6 +655,10 @@ export default function Dashboard({ userRole }: DashboardProps) {
                     {ticket.severity}
                   </Badge>
                   <p className="text-sm text-gray-500 mt-1">{ticket.loss_amount}</p>
+                  <Button size="sm" className="mt-1 bg-emerald-600 hover:bg-emerald-700">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Certify
+                  </Button>
                 </div>
               </div>
             ))}

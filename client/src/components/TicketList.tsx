@@ -472,35 +472,111 @@ export default function TicketList({ userRole }: TicketListProps) {
 
             {selectedTicket?.id === ticket.id && (
               <CardContent className="border-t border-gray-700/50 pt-6">
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
-                    <h4 className="font-medium text-gray-300 mb-2">
-                      Description
+                    <h4 className="font-medium text-gray-300 mb-2 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Incident Description
                     </h4>
-                    <p className="text-gray-400 text-sm">
+                    <p className="text-gray-300 text-sm leading-relaxed bg-slate-700/30 p-3 rounded-lg">
                       {ticket.description}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium text-gray-300 mb-1">
-                        Evidence Hash
+                  {/* Attack Details */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-300 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-orange-400" />
+                        Attack Vector
                       </h4>
-                      <p className="text-xs text-gray-500 font-mono break-all">
-                        {ticket.evidence_hash}
-                      </p>
-                    </div>
-                    {ticket.report_hash && (
-                      <div>
-                        <h4 className="font-medium text-gray-300 mb-1">
-                          Report Hash
-                        </h4>
-                        <p className="text-xs text-gray-500 font-mono break-all">
-                          {ticket.report_hash}
-                        </p>
+                      <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30">
+                        {ticket.attack_vector || "Multi-vector Attack"}
+                      </Badge>
+                      
+                      <h4 className="font-medium text-gray-300 mt-4 flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-blue-400" />
+                        Affected Protocols
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {(ticket.affected_protocols || [ticket.category]).map((protocol: string, idx: number) => (
+                          <Badge key={idx} className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">
+                            {protocol}
+                          </Badge>
+                        ))}
                       </div>
-                    )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-300 flex items-center gap-2">
+                        <Coins className="h-4 w-4 text-red-400" />
+                        Financial Impact
+                      </h4>
+                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                        <p className="text-red-400 font-bold text-lg">{ticket.loss_amount}</p>
+                        <p className="text-red-300 text-sm">Total losses reported</p>
+                      </div>
+                      
+                      <h4 className="font-medium text-gray-300 mt-4">Timeline</h4>
+                      <p className="text-gray-400 text-sm">
+                        Reported: {new Date(ticket.created_at).toLocaleString()}
+                      </p>
+                      {ticket.updated_at !== ticket.created_at && (
+                        <p className="text-gray-400 text-sm">
+                          Updated: {new Date(ticket.updated_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Technical Details */}
+                  <div className="bg-slate-700/30 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-300 mb-3 flex items-center gap-2">
+                      <Hash className="h-4 w-4" />
+                      Technical Evidence
+                    </h4>
+                    <div className="grid md:grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <p className="text-gray-400 mb-1">Evidence Hash:</p>
+                        <code className="text-green-400 font-mono break-all bg-slate-800/50 p-2 rounded block">
+                          {ticket.evidence_hash}
+                        </code>
+                      </div>
+                      {ticket.report_hash && (
+                        <div>
+                          <p className="text-gray-400 mb-1">Analysis Report Hash:</p>
+                          <code className="text-purple-400 font-mono break-all bg-slate-800/50 p-2 rounded block">
+                            {ticket.report_hash}
+                          </code>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Investigation Status */}
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-300 mb-2 flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      Investigation Status
+                    </h4>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-200">
+                          Status: {TICKET_STATUS_LABELS[ticket.status]}
+                        </p>
+                        {ticket.analyst_address && (
+                          <p className="text-blue-300 text-sm">
+                            Analyst: {ticket.analyst_address.slice(0, 8)}...{ticket.analyst_address.slice(-6)}
+                          </p>
+                        )}
+                      </div>
+                      <Badge className={getStatusColor(ticket.status)}>
+                        <div className="flex items-center gap-1">
+                          {getStatusIcon(ticket.status)}
+                          Progress: {Math.min(((ticket.status + 1) / 4) * 100, 100)}%
+                        </div>
+                      </Badge>
+                    </div>
                   </div>
 
                   {/* Role-specific actions */}
