@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -22,7 +28,7 @@ import {
   Activity,
   Target,
   Eye,
-  Code
+  Code,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
@@ -32,7 +38,9 @@ export default function AIAssistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [securityNews, setSecurityNews] = useState("");
   const [selectedThreat, setSelectedThreat] = useState<string | null>(null);
-  const [conversationHistory, setConversationHistory] = useState<Array<{id: number, question: string, response: string, timestamp: Date}>>([]);
+  const [conversationHistory, setConversationHistory] = useState<
+    Array<{ id: number; question: string; response: string; timestamp: Date }>
+  >([]);
   const [auditCode, setAuditCode] = useState("");
   const [auditReport, setAuditReport] = useState("");
   const [isAuditing, setIsAuditing] = useState(false);
@@ -45,31 +53,34 @@ export default function AIAssistant() {
       id: "flash-loan",
       title: "Flash Loan Attacks Surge",
       severity: "Critical",
-      description: "200% increase in flash loan exploits targeting AMM protocols",
+      description:
+        "200% increase in flash loan exploits targeting AMM protocols",
       impact: "$127M lost in Q4 2023",
       mitigation: "Implement proper slippage protection and oracle validation",
       examples: ["Radiant Capital - $58M", "KyberSwap - $46M"],
-      color: "border-red-500/30 bg-red-500/10"
+      color: "border-red-500/30 bg-red-500/10",
     },
     {
-      id: "bridge-exploits", 
+      id: "bridge-exploits",
       title: "Cross-Chain Bridge Vulnerabilities",
       severity: "Critical",
       description: "Signature verification bypasses in multi-chain bridges",
       impact: "$600M+ lost in 2023",
       mitigation: "Multi-signature validation and timelocks required",
       examples: ["Multichain - $126M", "Orbit Chain - $82M"],
-      color: "border-orange-500/30 bg-orange-500/10"
+      color: "border-orange-500/30 bg-orange-500/10",
     },
     {
       id: "oracle-manipulation",
       title: "Oracle Price Manipulation",
-      severity: "High", 
-      description: "DEX-based oracles vulnerable to flash loan price manipulation",
+      severity: "High",
+      description:
+        "DEX-based oracles vulnerable to flash loan price manipulation",
       impact: "$45M lost in H2 2023",
-      mitigation: "Use time-weighted average prices (TWAP) and multiple oracle sources",
+      mitigation:
+        "Use time-weighted average prices (TWAP) and multiple oracle sources",
       examples: ["BonqDAO - $120M", "Various DeFi protocols"],
-      color: "border-yellow-500/30 bg-yellow-500/10"
+      color: "border-yellow-500/30 bg-yellow-500/10",
     },
     {
       id: "private-keys",
@@ -79,31 +90,34 @@ export default function AIAssistant() {
       impact: "$200M+ lost in custody breaches",
       mitigation: "Hardware security modules and multi-party computation",
       examples: ["Mixin Network - $200M", "HTX Exchange - $30M"],
-      color: "border-red-500/30 bg-red-500/10"
-    }
+      color: "border-red-500/30 bg-red-500/10",
+    },
   ];
 
   const analysisTemplates = [
     {
       title: "Smart Contract Audit",
       description: "Comprehensive security analysis of smart contract code",
-      prompt: "Analyze this smart contract for security vulnerabilities including reentrancy, overflow, access control issues:"
+      prompt:
+        "Analyze this smart contract for security vulnerabilities including reentrancy, overflow, access control issues:",
     },
     {
       title: "Incident Response",
       description: "Step-by-step incident response and containment strategy",
-      prompt: "Provide incident response steps for this security breach:"
+      prompt: "Provide incident response steps for this security breach:",
     },
     {
       title: "Threat Assessment",
       description: "Risk evaluation and threat modeling analysis",
-      prompt: "Assess the threat level and potential impact of this security issue:"
+      prompt:
+        "Assess the threat level and potential impact of this security issue:",
     },
     {
       title: "Vulnerability Research",
       description: "Deep dive into specific vulnerability classes",
-      prompt: "Explain this vulnerability type, attack vectors, and prevention methods:"
-    }
+      prompt:
+        "Explain this vulnerability type, attack vectors, and prevention methods:",
+    },
   ];
 
   useEffect(() => {
@@ -115,7 +129,7 @@ export default function AIAssistant() {
       const news = await aiAssistant.getSecurityNews();
       setSecurityNews(news);
     } catch (error) {
-      console.error('Error loading security news:', error);
+      console.error("Error loading security news:", error);
       toast({
         title: "Error",
         description: "Failed to load security news. Please try again.",
@@ -140,9 +154,9 @@ export default function AIAssistant() {
         id: Date.now(),
         question: question.trim(),
         response: aiResponse,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      setConversationHistory(prev => [newEntry, ...prev.slice(0, 9)]); // Keep last 10 conversations
+      setConversationHistory((prev) => [newEntry, ...prev.slice(0, 9)]); // Keep last 10 conversations
 
       toast({
         title: "Analysis Complete",
@@ -213,8 +227,8 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="h-full overflow-y-auto bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+      <div className="max-w-7xl mx-auto space-y-6 p-6">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -226,35 +240,51 @@ export default function AIAssistant() {
             </h1>
           </div>
           <p className="text-gray-400 text-lg max-w-3xl mx-auto">
-            Advanced AI-powered cybersecurity analysis and threat intelligence powered by Google Gemini
+            Advanced AI-powered cybersecurity analysis and threat intelligence
+            powered by Google Gemini
           </p>
         </div>
 
         <Tabs defaultValue="assistant" className="space-y-6">
           <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 border border-purple-500/30">
-            <TabsTrigger value="assistant" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger
+              value="assistant"
+              className="data-[state=active]:bg-purple-600"
+            >
               <Bot className="h-4 w-4 mr-2" />
               AI Assistant
             </TabsTrigger>
-            <TabsTrigger value="threats" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger
+              value="threats"
+              className="data-[state=active]:bg-purple-600"
+            >
               <Shield className="h-4 w-4 mr-2" />
               Threat Intel
             </TabsTrigger>
-            <TabsTrigger value="news" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger
+              value="news"
+              className="data-[state=active]:bg-purple-600"
+            >
               <Activity className="h-4 w-4 mr-2" />
               Security News
             </TabsTrigger>
-            <TabsTrigger value="audit" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger
+              value="audit"
+              className="data-[state=active]:bg-purple-600"
+            >
               <Code className="h-4 w-4 mr-2" />
               Contract Audit
             </TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger
+              value="history"
+              className="data-[state=active]:bg-purple-600"
+            >
               <FileText className="h-4 w-4 mr-2" />
               History
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="assistant" className="space-y-6">
+          <TabsContent value="assistant" className="space-y-6 max-h-[70vh] overflow-y-auto">
             {/* Live Chat Interface */}
             <Card className="bg-slate-800/50 border-purple-500/30">
               <CardHeader>
@@ -263,17 +293,23 @@ export default function AIAssistant() {
                   Chat with AI Security Expert
                 </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Ask me anything about cybersecurity, vulnerabilities, or security analysis
+                  Ask me anything about cybersecurity, vulnerabilities, or
+                  security analysis
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Chat History Display */}
-                <div className="max-h-[600px] overflow-y-auto space-y-4 border border-gray-600/30 rounded-lg p-4 bg-slate-700/20">
+                <div className="h-[400px] overflow-y-auto space-y-4 border border-gray-600/30 rounded-lg p-4 bg-slate-700/20">
                   {conversationHistory.length === 0 ? (
                     <div className="text-center py-8">
                       <Bot className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                      <p className="text-gray-400 mb-2">Hi! I'm your AI Security Expert 👋</p>
-                      <p className="text-sm text-gray-500">Ask me anything about cybersecurity, and I'll provide detailed analysis!</p>
+                      <p className="text-gray-400 mb-2">
+                        Hi! I'm your AI Security Expert 👋
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Ask me anything about cybersecurity, and I'll provide
+                        detailed analysis!
+                      </p>
                     </div>
                   ) : (
                     [...conversationHistory].reverse().map((entry) => (
@@ -285,7 +321,9 @@ export default function AIAssistant() {
                           </div>
                           <div className="flex-1 bg-blue-600/20 rounded-lg p-3 border border-blue-500/30">
                             <p className="text-white">{entry.question}</p>
-                            <p className="text-xs text-blue-300 mt-1">{entry.timestamp.toLocaleTimeString()}</p>
+                            <p className="text-xs text-blue-300 mt-1">
+                              {entry.timestamp.toLocaleTimeString()}
+                            </p>
                           </div>
                         </div>
 
@@ -300,7 +338,9 @@ export default function AIAssistant() {
                                 {entry.response}
                               </div>
                             </div>
-                            <p className="text-xs text-purple-300 mt-2">{entry.timestamp.toLocaleTimeString()}</p>
+                            <p className="text-xs text-purple-300 mt-2">
+                              {entry.timestamp.toLocaleTimeString()}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -341,7 +381,7 @@ export default function AIAssistant() {
                     placeholder="Ask me anything about cybersecurity..."
                     className="bg-slate-700/50 border-gray-600 text-white focus:border-purple-400"
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
+                      if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
                         handleAskQuestion();
                       }
@@ -361,19 +401,20 @@ export default function AIAssistant() {
                       </div>
                     )}
                   </Button>
-
                 </div>
 
                 {/* Quick Questions */}
                 <div className="flex flex-wrap gap-2">
-                  <p className="text-sm text-gray-400 w-full mb-2">Quick questions:</p>
+                  <p className="text-sm text-gray-400 w-full mb-2">
+                    Quick questions:
+                  </p>
                   {[
                     "What is a SQL injection attack?",
                     "How do I secure my smart contract?",
                     "What are common web vulnerabilities?",
                     "Explain blockchain security best practices",
                     "What is a zero-day exploit?",
-                    "How to prevent DDoS attacks?"
+                    "How to prevent DDoS attacks?",
                   ].map((quickQuestion, index) => (
                     <Button
                       key={index}
@@ -400,15 +441,22 @@ export default function AIAssistant() {
               <CardContent>
                 <div className="grid md:grid-cols-2 gap-4">
                   {analysisTemplates.map((template, index) => (
-                    <Card 
-                      key={index} 
+                    <Card
+                      key={index}
                       className="bg-slate-700/30 border-gray-600/30 cursor-pointer hover:border-purple-500/50 transition-colors"
                       onClick={() => handleTemplateClick(template)}
                     >
                       <CardContent className="p-4">
-                        <h4 className="font-semibold text-white mb-2">{template.title}</h4>
-                        <p className="text-sm text-gray-400 mb-3">{template.description}</p>
-                        <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+                        <h4 className="font-semibold text-white mb-2">
+                          {template.title}
+                        </h4>
+                        <p className="text-sm text-gray-400 mb-3">
+                          {template.description}
+                        </p>
+                        <Button
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
                           Use Template
                           <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
@@ -420,13 +468,17 @@ export default function AIAssistant() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="threats" className="space-y-6">
+          <TabsContent value="threats" className="space-y-6 max-h-[70vh] overflow-y-auto">
             <div className="grid gap-6">
               {threatIntelligence.map((threat) => (
-                <Card 
-                  key={threat.id} 
+                <Card
+                  key={threat.id}
                   className={`${threat.color} border cursor-pointer transition-all hover:scale-[1.02]`}
-                  onClick={() => setSelectedThreat(selectedThreat === threat.id ? null : threat.id)}
+                  onClick={() =>
+                    setSelectedThreat(
+                      selectedThreat === threat.id ? null : threat.id,
+                    )
+                  }
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -439,10 +491,13 @@ export default function AIAssistant() {
                           {threat.description}
                         </CardDescription>
                       </div>
-                      <Badge className={`${
-                        threat.severity === 'Critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
-                        'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
-                      }`}>
+                      <Badge
+                        className={`${
+                          threat.severity === "Critical"
+                            ? "bg-red-500/20 text-red-300 border-red-500/30"
+                            : "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+                        }`}
+                      >
                         {threat.severity}
                       </Badge>
                     </div>
@@ -451,31 +506,51 @@ export default function AIAssistant() {
                     <CardContent className="border-t border-gray-600/30 pt-4">
                       <div className="space-y-4">
                         <div>
-                          <h4 className="font-semibold text-white mb-2">Financial Impact</h4>
-                          <p className="text-red-400 font-semibold">{threat.impact}</p>
+                          <h4 className="font-semibold text-white mb-2">
+                            Financial Impact
+                          </h4>
+                          <p className="text-red-400 font-semibold">
+                            {threat.impact}
+                          </p>
                         </div>
                         <div>
-                          <h4 className="font-semibold text-white mb-2">Recent Examples</h4>
+                          <h4 className="font-semibold text-white mb-2">
+                            Recent Examples
+                          </h4>
                           <ul className="space-y-1">
                             {threat.examples.map((example, index) => (
-                              <li key={index} className="text-gray-300 text-sm">• {example}</li>
+                              <li key={index} className="text-gray-300 text-sm">
+                                • {example}
+                              </li>
                             ))}
                           </ul>
                         </div>
                         <div>
-                          <h4 className="font-semibold text-white mb-2">Mitigation Strategy</h4>
-                          <p className="text-green-400 text-sm">{threat.mitigation}</p>
+                          <h4 className="font-semibold text-white mb-2">
+                            Mitigation Strategy
+                          </h4>
+                          <p className="text-green-400 text-sm">
+                            {threat.mitigation}
+                          </p>
                         </div>
                         <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            onClick={() => analyzeVulnerability(`Analyze ${threat.title}: ${threat.description}. Provide detailed technical analysis including attack vectors, code examples, and comprehensive mitigation strategies.`)}
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              analyzeVulnerability(
+                                `Analyze ${threat.title}: ${threat.description}. Provide detailed technical analysis including attack vectors, code examples, and comprehensive mitigation strategies.`,
+                              )
+                            }
                             className="bg-blue-600 hover:bg-blue-700"
                           >
                             <Brain className="h-4 w-4 mr-1" />
                             AI Analysis
                           </Button>
-                          <Button size="sm" variant="outline" className="border-gray-600 text-gray-300">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-gray-600 text-gray-300"
+                          >
                             <Eye className="h-4 w-4 mr-1" />
                             View Cases
                           </Button>
@@ -488,7 +563,7 @@ export default function AIAssistant() {
             </div>
           </TabsContent>
 
-          <TabsContent value="news" className="space-y-6">
+          <TabsContent value="news" className="space-y-6 max-h-[70vh] overflow-y-auto">
             <Card className="bg-slate-800/50 border-blue-500/30">
               <CardHeader>
                 <CardTitle className="text-blue-400 flex items-center gap-2">
@@ -509,12 +584,14 @@ export default function AIAssistant() {
                 ) : (
                   <div className="text-center py-8">
                     <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-400">Loading latest security intelligence...</p>
+                    <p className="text-gray-400">
+                      Loading latest security intelligence...
+                    </p>
                   </div>
                 )}
                 <div className="mt-6">
-                  <Button 
-                    onClick={loadSecurityNews} 
+                  <Button
+                    onClick={loadSecurityNews}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     <TrendingUp className="h-4 w-4 mr-2" />
@@ -525,7 +602,7 @@ export default function AIAssistant() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-6">
+          <TabsContent value="history" className="space-y-6 max-h-[70vh] overflow-y-auto">
             <Card className="bg-slate-800/50 border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-purple-400 flex items-center gap-2">
@@ -537,23 +614,32 @@ export default function AIAssistant() {
                 {conversationHistory.length > 0 ? (
                   <div className="space-y-4">
                     {conversationHistory.map((entry) => (
-                      <Card key={entry.id} className="bg-slate-700/30 border-gray-600/30">
+                      <Card
+                        key={entry.id}
+                        className="bg-slate-700/30 border-gray-600/30"
+                      >
                         <CardContent className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-start gap-3">
                               <User className="h-5 w-5 text-blue-400 mt-0.5" />
                               <div className="flex-1">
-                                <p className="text-white font-medium">{entry.question}</p>
-                                <p className="text-xs text-gray-500">{entry.timestamp.toLocaleString()}</p>
+                                <p className="text-white font-medium">
+                                  {entry.question}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {entry.timestamp.toLocaleString()}
+                                </p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
                               <Bot className="h-5 w-5 text-purple-400 mt-0.5" />
                               <div className="flex-1">
-                                <p className="text-gray-300 text-sm line-clamp-3">{entry.response}</p>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost" 
+                                <p className="text-gray-300 text-sm line-clamp-3">
+                                  {entry.response}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
                                   className="mt-2 text-purple-400 hover:text-purple-300"
                                   onClick={() => setResponse(entry.response)}
                                 >
@@ -570,14 +656,16 @@ export default function AIAssistant() {
                   <div className="text-center py-8">
                     <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-400">No analysis history yet</p>
-                    <p className="text-sm text-gray-500">Start asking questions to build your analysis history</p>
+                    <p className="text-sm text-gray-500">
+                      Start asking questions to build your analysis history
+                    </p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="audit" className="space-y-6">
+          <TabsContent value="audit" className="space-y-6 max-h-[70vh] overflow-y-auto">
             <Card className="bg-slate-800/50 border-red-500/30">
               <CardHeader>
                 <CardTitle className="text-red-400 flex items-center gap-2">
@@ -585,19 +673,23 @@ export default function AIAssistant() {
                   Smart Contract Security Audit
                 </CardTitle>
                 <CardDescription className="text-gray-400">
-                  AI-powered security analysis for Move smart contracts using Google Gemini
+                  AI-powered security analysis for Move smart contracts using
+                  Google Gemini
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Example Templates */}
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-300">Quick Start Examples:</p>
+                  <p className="text-sm font-medium text-gray-300">
+                    Quick Start Examples:
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       className="text-xs border-gray-600 text-gray-300 hover:border-red-500 hover:text-white"
-                      onClick={() => setAuditCode(`module dsoc::SOCService {
+                      onClick={() =>
+                        setAuditCode(`module dsoc::SOCService {
     use sui::object::{Self, UID};
     use sui::tx_context::{Self, TxContext, sender};
     use sui::transfer;
@@ -626,7 +718,8 @@ export default function AIAssistant() {
         service.stake_amount = service.stake_amount + amount;
         transfer::public_transfer(payment, sender(ctx));
     }
-}`)}
+}`)
+                      }
                     >
                       dSOC Service
                     </Button>
@@ -634,7 +727,8 @@ export default function AIAssistant() {
                       variant="outline"
                       size="sm"
                       className="text-xs border-gray-600 text-gray-300 hover:border-red-500 hover:text-white"
-                      onClick={() => setAuditCode(`module token::SimpleToken {
+                      onClick={() =>
+                        setAuditCode(`module token::SimpleToken {
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
@@ -664,7 +758,8 @@ export default function AIAssistant() {
     ) {
         coin::mint_and_transfer(treasury, amount, recipient, ctx);
     }
-}`)}
+}`)
+                      }
                     >
                       Simple Token
                     </Button>
@@ -681,7 +776,9 @@ export default function AIAssistant() {
 
                 {/* Code Input */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-300">Smart Contract Code (Move Language)</label>
+                  <label className="text-sm font-medium text-gray-300">
+                    Smart Contract Code (Move Language)
+                  </label>
                   <Textarea
                     value={auditCode}
                     onChange={(e) => setAuditCode(e.target.value)}
@@ -731,7 +828,10 @@ module dsoc::YourContract {
                       variant="outline"
                       onClick={() => {
                         navigator.clipboard.writeText(auditReport);
-                        toast({ title: "Copied!", description: "Audit report copied to clipboard" });
+                        toast({
+                          title: "Copied!",
+                          description: "Audit report copied to clipboard",
+                        });
                       }}
                       className="border-gray-600 text-gray-300 hover:border-red-500 hover:text-white"
                     >
@@ -746,7 +846,9 @@ module dsoc::YourContract {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-                      <h4 className="text-white font-semibold">Security Audit Report</h4>
+                      <h4 className="text-white font-semibold">
+                        Security Audit Report
+                      </h4>
                       <Badge className="bg-red-500/20 text-red-300 border-red-500/30">
                         AI-Powered Analysis
                       </Badge>
@@ -780,10 +882,22 @@ module dsoc::YourContract {
                     About Smart Contract Auditing
                   </h4>
                   <div className="space-y-1 text-sm text-blue-200">
-                    <p>• <strong>Move Language:</strong> Specialized for Sui blockchain with resource-based programming</p>
-                    <p>• <strong>Security Focus:</strong> Resource handling, capability patterns, and type safety</p>
-                    <p>• <strong>AI Analysis:</strong> Powered by Google Gemini for comprehensive vulnerability detection</p>
-                    <p>• <strong>Report Includes:</strong> Vulnerability scoring, detailed findings, and remediation steps</p>
+                    <p>
+                      • <strong>Move Language:</strong> Specialized for Sui
+                      blockchain with resource-based programming
+                    </p>
+                    <p>
+                      • <strong>Security Focus:</strong> Resource handling,
+                      capability patterns, and type safety
+                    </p>
+                    <p>
+                      • <strong>AI Analysis:</strong> Powered by Google Gemini
+                      for comprehensive vulnerability detection
+                    </p>
+                    <p>
+                      • <strong>Report Includes:</strong> Vulnerability scoring,
+                      detailed findings, and remediation steps
+                    </p>
                   </div>
                 </div>
               </CardContent>
