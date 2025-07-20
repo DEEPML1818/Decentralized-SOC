@@ -1,50 +1,28 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const API_KEY = "AIzaSyAVgd5WU8k-AxshgKnMLU8REEhNGT2GUZc";
-
-console.log("AI API Key status:", API_KEY ? "loaded" : "missing");
+console.log("AI service initialized");
 
 /**
  * Get AI response for security-related queries
  */
 export async function getAIResponse(prompt: string): Promise<string> {
-  if (!API_KEY) {
-    console.warn("Gemini API key is not configured, using demo mode");
-    return generateDemoResponse(prompt);
-  }
-
   try {
-    console.log("Getting AI response with Google Gemini");
+    console.log("Getting AI response via backend API");
 
-    // Initialize the Google Generative AI with API key
-    const genAI = new GoogleGenerativeAI(API_KEY);
+    const response = await fetch("/api/ai/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ question: prompt }),
+    });
 
-    // Get the generative model (Gemini Pro)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to get AI response");
+    }
 
-    // Create a detailed prompt for cybersecurity context
-    const securityPrompt = `
-      You are an expert cybersecurity analyst and consultant specializing in blockchain security, smart contract auditing, and general cybersecurity practices.
-
-      User Query: ${prompt}
-
-      Please provide a comprehensive, professional response that includes:
-      - Clear analysis of the security topic
-      - Specific recommendations and best practices
-      - Risk assessment where applicable
-      - Actionable steps for implementation
-
-      Keep your response informative, practical, and focused on security implications.
-      Format your response with clear sections and bullet points for readability.
-    `;
-
-    // Generate the content
-    const result = await model.generateContent(securityPrompt);
-    const response = await result.response;
-    const text = response.text();
-
+    const data = await response.json();
     console.log("AI response generated successfully");
-    return text;
+    return data.response;
   } catch (error) {
     console.error("Error getting AI response:", error);
 
@@ -129,51 +107,21 @@ Regarding your question: "${prompt}"
 
 class AIAssistantService {
   async getSecurityNews(): Promise<string> {
-    if (!API_KEY) {
-      return `# Security Intelligence Update
-
-## Current Security Landscape
-The cybersecurity threat landscape continues to evolve rapidly with new vulnerabilities and attack vectors emerging daily.
-
-## Key Areas of Focus
-• **Smart Contract Security**: Continuous monitoring for vulnerabilities in DeFi protocols
-• **Supply Chain Attacks**: Increased targeting of software dependencies
-• **Zero-Day Exploits**: Advanced persistent threats utilizing unknown vulnerabilities
-
-## dSOC Platform Benefits
-Our decentralized SOC approach provides:
-• **Distributed Analysis**: Multiple expert perspectives on security incidents
-• **Blockchain Transparency**: Immutable records of security assessments
-• **Incentivized Participation**: Stake-based rewards for quality security analysis
-
-*Note: Connect to Gemini AI for real-time security intelligence updates.*`;
-    }
-
     try {
-      const genAI = new GoogleGenerativeAI(API_KEY);
-      const prompt = `Provide the latest cybersecurity news and threat intelligence. Include:
+      const response = await fetch("/api/ai/security-news", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-1. **Current Threats & Vulnerabilities**
-   - Latest CVEs and zero-days
-   - Active ransomware campaigns
-   - Supply chain attacks
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to get security news");
+      }
 
-2. **Security Research & Trends**
-   - New attack techniques
-   - Defensive innovations
-   - Industry best practices
-
-3. **Blockchain & DeFi Security**
-   - Smart contract vulnerabilities
-   - DeFi protocol exploits
-   - Web3 security trends
-
-Format as markdown with clear sections and actionable insights.`;
-
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
+      const data = await response.json();
+      return data.response;
     } catch (error) {
       console.error("Error fetching security news:", error);
       return `# Security Intelligence Update (Offline Mode)
@@ -195,125 +143,35 @@ I'm currently unable to fetch real-time security intelligence due to a connectiv
 
 💡 **Pro Tip**: Regular security assessments and staying updated with threat intelligence are your best defenses against evolving cyber threats.
 
-I'll be back online soon with fresh intelligence! 🤖✨`;
+I'll be back online soon with fresh intelligence!`;
     }
   }
 
   async getChatResponse(question: string): Promise<string> {
-    if (!API_KEY) {
-      return `Hey there! 👋 I'd love to help you with that cybersecurity question, but I'm currently running in offline mode.
+    return getAIResponse(question);
+  }
 
-**What I can tell you while offline:**
-
-🔒 **Security Fundamentals:**
-• Always use multi-factor authentication
-• Keep systems and software updated
-• Implement the principle of least privilege
-• Regular security audits and assessments
-
-🚀 **About dSOC Platform:**
-• **Decentralized**: Multiple security experts review each security case
-• **Transparent**: All analyses are recorded on IOTA blockchain
-• **Rewarding**: Earn tokens for quality security contributions
-• **Comprehensive**: From smart contracts to web app security
-
-💡 **Quick Tips:**
-• Use tools like static analyzers for code security
-• Implement defense in depth strategies
-• Regular security audits are crucial
-• Stay updated with latest threat intelligence
-
-I'll be back to full power soon! In the meantime, feel free to explore the platform or ask another question. 🤖✨`;
-    }
-
-    try {
-      const systemPrompt = `You are a cybersecurity expert and AI assistant for the dSOC (Decentralized Security Operations Center) platform. You specialize in:
-
-- Blockchain and smart contract security
-- Threat analysis and incident response
-- Vulnerability assessment and penetration testing
-- Security architecture and best practices
-- Bug bounty hunting
-- DeFi security and Web3 vulnerabilities
-- General cybersecurity best practices
-- Security operations center management
-
-**About dSOC platform:**
-- Uses IOTA blockchain for decentralized ticket management
-- Move smart contracts for secure operations  
-- Stake-based incentives for security analysts
-- Multi-role validation (client, analyst, certifier)
-- Transparent, community-driven security analysis
-
-**Response style:**
-- Be conversational and helpful
-- Provide actionable, practical advice
-- Include examples when possible
-- Break down complex topics into digestible parts
-- Show enthusiasm for helping users learn cybersecurity
-
-User question: ${question}
-
-Respond in a friendly, conversational way while providing expert-level cybersecurity knowledge.`;
-
-      const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      const result = await model.generateContent(systemPrompt);
-      const response = await result.response;
-      return response.text();
-    } catch (error) {
-      console.error("Error getting AI response:", error);
-      return `Oops! 😅 I'm having some technical difficulties right now, but don't worry!
-
-**Here's what I can tell you while I get back online:**
-
-🔒 **Security Fundamentals:**
-• Always validate and sanitize inputs
-• Use strong authentication and authorization
-• Keep systems updated and patched
-• Monitor for suspicious activities
-
-🚀 **dSOC Platform Highlights:**
-• **Community-Driven**: Multiple expert review each security case
-• **Transparent**: All analyses are recorded on IOTA blockchain
-• **Rewarding**: Earn tokens for quality security contributions
-• **Comprehensive**: From smart contracts to web app security
-
-💡 **Quick Tips:**
-• Use tools like static analyzers for code security
-• Implement defense in depth strategies
-• Regular security audits are crucial
-• Stay updated with latest threat intelligence
-
-I'll be back to full power soon! In the meantime, feel free to explore the platform or ask another question. 🤖✨`;
-    }
+  async askQuestion(question: string): Promise<string> {
+    return getAIResponse(question);
   }
 
   async analyzeVulnerability(description: string): Promise<string> {
-    if (!API_KEY) {
-      return "Unable to analyze vulnerability. Please ensure AI service is properly configured.";
-    }
-
     try {
-      const prompt = `Analyze this potential security vulnerability and provide a detailed assessment:
+      const response = await fetch("/api/ai/analyze-vulnerability", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ description }),
+      });
 
-${description}
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to analyze vulnerability");
+      }
 
-Please provide:
-1. **Severity Assessment** (Critical/High/Medium/Low)
-2. **Attack Vectors** - How this could be exploited
-3. **Impact Analysis** - What damage could result
-4. **Mitigation Strategies** - How to fix or prevent
-5. **Detection Methods** - How to identify this vulnerability
-6. **Similar Cases** - Examples from the wild if any
-
-Format as structured markdown for a security analyst.`;
-
-      const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
+      const data = await response.json();
+      return data.response;
     } catch (error) {
       console.error("Error analyzing vulnerability:", error);
       return "Unable to analyze vulnerability. Please ensure AI service is properly configured.";
@@ -321,7 +179,26 @@ Format as structured markdown for a security analyst.`;
   }
 
   async runAudit(contractCode: string): Promise<string> {
-    return runAudit(contractCode);
+    try {
+      const response = await fetch("/api/ai/audit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ contractCode }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to complete audit");
+      }
+
+      const data = await response.json();
+      return data.response;
+    } catch (error) {
+      console.error("Error running audit:", error);
+      return "Unable to run audit. Please ensure AI service is properly configured.";
+    }
   }
 }
 
