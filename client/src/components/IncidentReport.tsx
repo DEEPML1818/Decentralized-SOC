@@ -6,6 +6,8 @@ import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { aiAssistant } from "@/lib/ai-service";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import {
   AlertTriangle,
   Shield,
@@ -51,7 +53,21 @@ export default function IncidentReport({ onClose }: { onClose: () => void }) {
   const [aiAnalysis, setAiAnalysis] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  // const { submitTicket } = useContract();
+  const queryClient = useQueryClient();
+
+  // Mutation for creating incident reports in the database
+  const createIncidentMutation = useMutation({
+    mutationFn: async (reportData: any) => {
+      return await apiRequest("/api/incident-reports", {
+        method: "POST",
+        body: JSON.stringify(reportData),
+        headers: { "Content-Type": "application/json" }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/incident-reports"] });
+    }
+  });
 
   const handleAIGeneration = async () => {
     if (!userDescription.trim()) {
@@ -181,10 +197,10 @@ Provide detailed technical analysis suitable for security analysts and certifier
   };
 
   const handleSubmitTicket = async () => {
-    if (!incidentData.title || !incidentData.description) {
+    if (!incidentData.title || !incidentData.description || !incidentData.contactInfo) {
       toast({
         title: "Error",
-        description: "Please fill in title and description",
+        description: "Please fill in title, description, and contact information",
         variant: "destructive",
       });
       return;
@@ -192,44 +208,32 @@ Provide detailed technical analysis suitable for security analysts and certifier
 
     setIsSubmitting(true);
     try {
-      // Create the ticket description with AI analysis
-      const ticketDescription = `
-SECURITY INCIDENT REPORT
-
-Title: ${incidentData.title}
-Severity: ${incidentData.severity.toUpperCase()}
-Affected Systems: ${incidentData.affectedSystems}
-Attack Vector: ${incidentData.attackVector}
-Estimated Loss: ${incidentData.estimatedLoss}
-Contact Info: ${incidentData.contactInfo}
-
-INCIDENT DESCRIPTION:
-${incidentData.description}
-
-EVIDENCE URLS:
-${incidentData.evidenceUrls}
-
-${aiAnalysis ? `\nAI SECURITY ANALYSIS:\n${aiAnalysis}` : ''}
-      `;
-
-      // Submit to dSOC network (simulate blockchain submission for now)
-      // In a real implementation, this would call the IOTA smart contract
-      console.log("Submitting incident to dSOC network:", {
+      // Create incident report data for the database
+      const reportData = {
         title: incidentData.title,
-        description: ticketDescription,
-        severity: incidentData.severity === "critical" ? 3 : 
-                 incidentData.severity === "high" ? 2 : 
-                 incidentData.severity === "medium" ? 1 : 0
-      });
+        description: incidentData.description,
+        affected_systems: incidentData.affectedSystems,
+        attack_vectors: incidentData.attackVector,
+        severity: incidentData.severity,
+        client_name: "Security Client", // In a real app, this would come from user auth
+        contact_info: incidentData.contactInfo,
+        evidence_urls: incidentData.evidenceUrls,
+        ai_analysis: aiAnalysis,
+        status: "pending",
+        client_wallet: "", // Would come from wallet connection
+      };
+
+      // Submit to database - this will now appear on analyst and certifier dashboards
+      await createIncidentMutation.mutateAsync(reportData);
 
       toast({
-        title: "Incident Reported",
-        description: "Security incident has been submitted to the dSOC network for analysis",
+        title: "Incident Reported Successfully",
+        description: "Your security incident has been submitted and is now visible to analysts and certifiers for review",
       });
 
       onClose();
     } catch (error: any) {
-      console.error("Ticket submission error:", error);
+      console.error("Incident submission error:", error);
       toast({
         title: "Submission Failed",
         description: `Failed to submit incident: ${error.message || "Unknown error"}`,
