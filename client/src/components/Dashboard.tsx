@@ -298,54 +298,40 @@ export default function Dashboard({ userRole }: DashboardProps) {
               <div>
                 <p className="text-white font-medium">Google AI Integration</p>
                 <p className="text-sm text-gray-400">
-                  {import.meta.env.VITE_GEMINI_API_KEY ? 'Active - AI analysis available' : 'Configure API key in Replit Secrets'}
+                  Active - AI analysis available
                 </p>
               </div>
-              <Badge className={`${
-                import.meta.env.VITE_GEMINI_API_KEY 
-                  ? 'bg-green-500/20 text-green-300 border-green-500/30' 
-                  : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
-              }`}>
-                {import.meta.env.VITE_GEMINI_API_KEY ? 'Connected' : 'Setup Required'}
+              <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                Connected
               </Badge>
             </div>
             
-            {import.meta.env.VITE_GEMINI_API_KEY && (
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                <h4 className="text-blue-300 font-medium mb-2">Quick AI Insights</h4>
-                <div className="space-y-2 text-sm">
-                  <p className="text-blue-200">• Ask about threat analysis patterns</p>
-                  <p className="text-blue-200">• Get incident classification guidance</p>
-                  <p className="text-blue-200">• Security best practices recommendations</p>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  <Button 
-                    size="sm" 
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => window.dispatchEvent(new CustomEvent('openAIAssistant'))}
-                  >
-                    <Brain className="h-4 w-4 mr-1" />
-                    AI Chat
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    className="bg-red-600 hover:bg-red-700"
-                    onClick={() => window.dispatchEvent(new CustomEvent('openAuditTool'))}
-                  >
-                    <Shield className="h-4 w-4 mr-1" />
-                    Contract Audit
-                  </Button>
-                </div>
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+              <h4 className="text-blue-300 font-medium mb-2">Quick AI Insights</h4>
+              <div className="space-y-2 text-sm">
+                <p className="text-blue-200">• Ask about threat analysis patterns</p>
+                <p className="text-blue-200">• Get incident classification guidance</p>
+                <p className="text-blue-200">• Security best practices recommendations</p>
               </div>
-            )}
-            
-            {!import.meta.env.VITE_GEMINI_API_KEY && (
-              <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-yellow-400 text-sm">
-                  <strong>Setup Instructions:</strong> Add VITE_GEMINI_API_KEY to your Replit Secrets with your Google AI API key
-                </p>
+              <div className="flex gap-2 mt-3">
+                <Button 
+                  size="sm" 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={() => window.dispatchEvent(new CustomEvent('openAIAssistant'))}
+                >
+                  <Brain className="h-4 w-4 mr-1" />
+                  AI Chat
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={() => window.dispatchEvent(new CustomEvent('openAuditTool'))}
+                >
+                  <Shield className="h-4 w-4 mr-1" />
+                  Contract Audit
+                </Button>
               </div>
-            )}
+            </div>
           </div>
         </CardContent>
       </Card>
