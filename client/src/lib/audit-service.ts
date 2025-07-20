@@ -1,8 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const API_KEY = "AIzaSyAVgd5WU8k-AxshgKnMLU8REEhNGT2GUZc";
-
-console.log('Audit AI API Key status:', API_KEY ? 'loaded' : 'missing');
+console.log('Audit service initialized');
 
 /**
  * Run an AI-powered audit on the provided smart contract code
@@ -11,97 +7,29 @@ console.log('Audit AI API Key status:', API_KEY ? 'loaded' : 'missing');
  * @returns A detailed audit report as a string
  */
 export async function runAudit(contractCode: string): Promise<string> {
-  if (!API_KEY) {
-    console.warn("Gemini API key is not configured, using demo mode");
-    return generateDemoAuditReport(contractCode);
-  }
-
   try {
-    console.log("Running AI audit with Google Gemini for Move smart contract");
+    console.log("Running AI audit via backend API");
 
-    // Initialize the Google Generative AI with API key
-    const genAI = new GoogleGenerativeAI(API_KEY);
+    const response = await fetch("/api/ai/audit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ contractCode }),
+    });
 
-    // Get the generative model (Gemini Pro)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to complete audit");
+    }
 
-    // Create a detailed prompt specifically for Move smart contract auditing
-    const prompt = `
-      You are an expert blockchain security auditor specializing in Move language (used in Sui blockchain).
-
-      Analyze the following Move smart contract code for vulnerabilities, security issues, and logical errors:
-
-      \`\`\`move
-      ${contractCode}
-      \`\`\`
-
-      Focus on Move-specific vulnerabilities including:
-      - Resource handling issues
-      - Ownership problems
-      - Capability misuse
-      - Type safety issues
-      - Module initialization flaws
-
-      Provide a detailed report with:
-        - Executive Summary (with vulnerability score from 0-10, where 0 is secure)
-        - Summary of Risks
-        - Detailed Findings
-        - Recommendations
-
-      Include the statement "Certified by AuditWarp" as a certification stamp in your report.
-      Format using markdown with headers, bullet points, and code blocks for examples.
-    `;
-
-    // Generate the content
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
+    const data = await response.json();
     console.log("AI audit completed successfully");
-    return text;
+    return data.response;
 
   } catch (error) {
     console.error("Error running AI audit:", error);
-
-    // Return a helpful error message with demo content
-    return `# Smart Contract Audit Report
-
-## ⚠️ Service Status Notice
-I'm currently experiencing technical difficulties with the AI audit service. Below is a sample audit structure to help you understand the analysis format.
-
-## Executive Summary
-**Vulnerability Score:** Unable to determine (Service unavailable)
-
-## Analysis Framework
-When the service is available, I analyze:
-
-### 🔍 **Security Checks**
-• **Resource Management:** Proper handling of Move resources
-• **Access Control:** Capability and permission validation
-• **Type Safety:** Move's type system utilization
-• **Logic Flaws:** Business logic vulnerabilities
-• **Gas Optimization:** Efficient resource usage
-
-### 🛡️ **Move-Specific Vulnerabilities**
-• Resource duplication or loss
-• Improper capability management
-• Module initialization issues
-• Struct field access patterns
-• Transaction context misuse
-
-## Recommendations
-• Implement comprehensive unit tests
-• Follow Move language best practices
-• Use formal verification where possible
-• Regular security audits
-• Code review processes
-
----
-**Error Details:** ${error instanceof Error ? error.message : 'Unknown error occurred'}
-
-**Next Steps:** Please try again in a moment, or contact support if the issue persists.
-
-*Certified by AuditWarp - Service Temporarily Unavailable*`;
+    return generateDemoAuditReport(contractCode);
   }
 }
 
