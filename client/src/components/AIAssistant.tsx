@@ -268,7 +268,7 @@ export default function AIAssistant() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Chat History Display */}
-                <div className="max-h-96 overflow-y-auto space-y-4 border border-gray-600/30 rounded-lg p-4 bg-slate-700/20">
+                <div className="max-h-[600px] overflow-y-auto space-y-4 border border-gray-600/30 rounded-lg p-4 bg-slate-700/20">
                   {conversationHistory.length === 0 ? (
                     <div className="text-center py-8">
                       <Bot className="h-12 w-12 text-purple-400 mx-auto mb-4" />
@@ -295,7 +295,7 @@ export default function AIAssistant() {
                             <Bot className="h-4 w-4 text-white" />
                           </div>
                           <div className="flex-1 bg-purple-600/20 rounded-lg p-3 border border-purple-500/30">
-                            <div className="prose prose-invert prose-sm max-w-none">
+                            <div className="prose prose-invert prose-sm max-w-none max-h-80 overflow-y-auto">
                               <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
                                 {entry.response}
                               </div>
@@ -501,7 +501,7 @@ export default function AIAssistant() {
               </CardHeader>
               <CardContent>
                 {securityNews ? (
-                  <div className="prose prose-invert max-w-none">
+                  <div className="prose prose-invert max-w-none max-h-96 overflow-y-auto border border-gray-600/30 rounded-lg p-4 bg-slate-700/20">
                     <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
                       {securityNews}
                     </div>
