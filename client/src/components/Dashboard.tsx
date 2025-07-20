@@ -313,7 +313,7 @@ export default function Dashboard({ userRole }: DashboardProps) {
                 <p className="text-blue-200">• Get incident classification guidance</p>
                 <p className="text-blue-200">• Security best practices recommendations</p>
               </div>
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-3 flex-wrap">
                 <Button 
                   size="sm" 
                   className="bg-blue-600 hover:bg-blue-700"
@@ -329,6 +329,14 @@ export default function Dashboard({ userRole }: DashboardProps) {
                 >
                   <Shield className="h-4 w-4 mr-1" />
                   Contract Audit
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="bg-orange-600 hover:bg-orange-700"
+                  onClick={() => window.dispatchEvent(new CustomEvent('openIncidentReport'))}
+                >
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Report Incident
                 </Button>
               </div>
             </div>
