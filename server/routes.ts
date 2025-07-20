@@ -18,7 +18,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const systemPrompt = `You are a cybersecurity expert and AI assistant for the dSOC (Decentralized Security Operations Center) platform. You specialize in:
 
@@ -74,31 +74,31 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
       }
 
       const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const prompt = `
-      You are an expert blockchain security auditor specializing in Move language (used in IOTA blockchain).
-
+      You are an expert blockchain security auditor specializing in Move language (used in Sui blockchain).
+      
       Analyze the following Move smart contract code for vulnerabilities, security issues, and logical errors:
-
+      
       \`\`\`move
       ${contractCode}
       \`\`\`
-
+      
       Focus on Move-specific vulnerabilities including:
       - Resource handling issues
       - Ownership problems
       - Capability misuse
       - Type safety issues
       - Module initialization flaws
-
+      
       Provide a detailed report with:
         - Executive Summary (with vulnerability score from 0-10, where 0 is secure)
         - Summary of Risks
         - Detailed Findings
         - Recommendations
-
-      Include the statement "Certified by dSOC Platform" as a certification stamp in your report.
+        
+      Include the statement "Certified by AuditWarp" as a certification stamp in your report.
       Format using markdown with headers, bullet points, and code blocks for examples.
       `;
 
@@ -125,7 +125,7 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
       }
 
       const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const prompt = `Provide the latest cybersecurity news and threat intelligence. Include:
 
@@ -171,7 +171,7 @@ Format as markdown with clear sections and actionable insights.`;
       }
 
       const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const prompt = `Analyze this potential security vulnerability and provide a detailed assessment:
 
