@@ -1,0 +1,54 @@
+Warning: React does not recognize the &#x60;connectedText&#x60; prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase &#x60;connectedtext&#x60; instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+    at button
+    at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=fd6023a5:12778:6
+    at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-W762HMDF.js?v=fd6023a5:79:13
+    at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-W762HMDF.js?v=fd6023a5:56:13
+    at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=fd6023a5:12731:52
+    at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-W762HMDF.js?v=fd6023a5:79:13
+    at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-W762HMDF.js?v=fd6023a5:56:13
+    at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-VSHUKEGI.js?v=fd6023a5:42:13
+    at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-6ESHWUIG.js?v=fd6023a5:79:13
+    at Provider (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EGMDPOFI.js?v=fd6023a5:48:15)
+    at Dialog (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-6ESHWUIG.js?v=fd6023a5:44:5)
+    at ConnectModal (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=fd6023a5:12955:25)
+    at ConnectButton (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=fd6023a5:13240:3)
+    at div
+    at div
+    at div
+    at header
+    at Header (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/src/components/Header.tsx:24:34)
+    at div
+    at IndexContent (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/src/pages/Index.tsx:62:19)
+    at WalletProvider (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/src/components/WalletProvider.tsx:22:34)
+    at Index
+    at Route (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fd6023a5:191:16)
+    at Switch (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fd6023a5:247:17)
+    at div
+    at Router (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fd6023a5:159:17)
+    at ThemeProvider (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/src/components/ThemeProvider.tsx:25:3)
+    at App (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/src/App.tsx?v=9VkHmXkQ5ttM_jiTe4pQ_:30:49)
+    at WalletConnectionManager (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=fd6023a5:13841:3)
+    at WalletProvider (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=fd6023a5:13810:3)
+    at IotaClientProvider (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=fd6023a5:13264:11)
+    at QueryClientProvider (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4FXSW5XJ.js?v=fd6023a5:2934:3)
+Failed to connect EVM wallet: 
+Error {}
+
+at t.value (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to connect EVM wallet: 
+Error {}
+
+at t.value (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to connect EVM wallet: 
+Error {}
+message: "MetaMask is not installed"
+stack: "Error: MetaMask is not installed↵ at EVMContractService.connectWallet (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/src/lib/evm-contract.ts:267:13)↵ at connectEVMWallet (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/src/components/WalletProvider.tsx:32:48)↵ at handleEVMConnect (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/src/components/Header.tsx:58:13)↵ at HTMLUnknownElement.callCallback2 (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-NFC5BX5N.js?v=fd6023a5:3674:22)↵ at Object.invokeGuardedCallbackDev (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-NFC5BX5N.js?v=fd6023a5:3699:24)↵ at invokeGuardedCallback (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-NFC5BX5N.js?v=fd6023a5:3733:39)↵ at invokeGuardedCallbackAndCatchFirstError (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-NFC5BX5N.js?v=fd6023a5:3736:33)↵ at executeDispatch (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-NFC5BX5N.js?v=fd6023a5:7014:11)↵ at processDispatchQueueItemsInOrder (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-NFC5BX5N.js?v=fd6023a5:7034:15)↵ at processDispatchQueue (https://c0c93ede-61df-4113-add3-6ee282ba66f9-00-2o1nwq6iqssd.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-NFC5BX5N.js?v=fd6023a5:7043:13)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
