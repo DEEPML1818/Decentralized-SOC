@@ -1,13 +1,13 @@
-
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useCurrentAccount, useCurrentWallet, useIotaClient, ConnectButton } from "@iota/dapp-kit";
+import { useCurrentAccount } from "@iota/dapp-kit";
 import Header from "@/components/Header";
-import RoleSelectionModal from "@/components/RoleSelectionModal";
 import Dashboard from "@/components/Dashboard";
+import RoleSelectionModal from "@/components/RoleSelectionModal";
+import { WalletProvider } from "@/components/WalletProvider";
 import { 
   Shield, 
   Network, 
@@ -32,12 +32,18 @@ import {
 import { createContractService } from "@/lib/contract";
 
 export default function Index() {
+  return (
+    <WalletProvider>
+      <IndexContent />
+    </WalletProvider>
+  );
+}
+
+function IndexContent() {
   const account = useCurrentAccount();
-  const { connectionStatus } = useCurrentWallet();
-  const client = useIotaClient();
-  const { toast } = useToast();
-  const [showRoleModal, setShowRoleModal] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("problem");
 
@@ -61,11 +67,10 @@ export default function Index() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <Header 
-          walletAddress={account.address}
-          userRole={userRole}
-          onConnect={() => {}}
+          onRoleChange={setUserRole}
+          currentRole={userRole}
         />
-        <Dashboard userRole={userRole} />
+        <Dashboard />
       </div>
     );
   }
@@ -82,9 +87,8 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Header 
-        walletAddress={account?.address}
-        userRole={userRole}
-        onConnect={() => {}}
+        onRoleChange={setUserRole}
+        currentRole={userRole}
       />
 
       {/* Navigation Pills */}
@@ -144,7 +148,7 @@ export default function Index() {
 
       {/* Content Sections */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        
+
         {/* Problem Statement */}
         {activeSection === "problem" && (
           <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
@@ -644,7 +648,7 @@ export default function Index() {
             <div className="grid md:grid-cols-2 gap-8">
               <Card className="bg-slate-800/50 border-green-500/30 backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle className="text-green-400 text-xl flex items-center gap-2">
+                  <CardTitle classNameName="text-green-400 text-xl flex items-center gap-2">
                     <Clock className="h-6 w-6" />
                     Immediate Roadmap (Q1 2024)
                   </CardTitle>
@@ -729,7 +733,7 @@ export default function Index() {
                     <p className="text-sm text-gray-300">De facto platform for decentralized cybersecurity</p>
                   </div>
                 </div>
-                
+
                 <div className="mt-8 text-center">
                   <h4 className="text-lg font-semibold text-white mb-4">Technical Improvements Needed</h4>
                   <div className="grid md:grid-cols-2 gap-4 text-left">
