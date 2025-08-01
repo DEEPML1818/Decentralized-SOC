@@ -280,8 +280,13 @@ class EVMContractService {
   } = {};
 
   async connectWallet(): Promise<string | null> {
+    if (typeof window === 'undefined') {
+      throw new Error('Window object not available');
+    }
+
     if (!window.ethereum) {
-      throw new Error('MetaMask is not installed');
+      // More specific error message with installation link
+      throw new Error('MetaMask is not installed. Please install MetaMask browser extension first.');
     }
 
     try {

@@ -42,8 +42,26 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
   const handleEVMConnect = async () => {
     if (isEVMConnected) {
       disconnectEVMWallet();
+      toast({
+        title: "EVM Wallet Disconnected",
+        description: "MetaMask wallet has been disconnected",
+      });
     } else {
-      await connectEVMWallet();
+      try {
+        const address = await connectEVMWallet();
+        if (address) {
+          toast({
+            title: "EVM Wallet Connected",
+            description: `Connected to ${address.slice(0, 6)}...${address.slice(-4)}`,
+          });
+        }
+      } catch (error: any) {
+        toast({
+          title: "Connection Failed",
+          description: error.message || "Failed to connect EVM wallet",
+          variant: "destructive",
+        });
+      }
     }
   };
 

@@ -38,9 +38,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const address = await evmContractService.connectWallet();
       setEvmAddress(address);
       return address;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to connect EVM wallet:', error);
-      return null;
+      // Re-throw the error so the UI can handle it properly
+      throw error;
     }
   };
 

@@ -58,15 +58,20 @@ export default function EVMStakingRewards() {
       setIsLoading(true);
 
       // Get CLT balance
-      const cltBalance = await evmContractService.getCLTBalance(evmAddress);
+      const cltBalanceBN = await evmContractService.getCLTBalance(evmAddress);
+      const cltBalance = parseFloat(evmContractService.formatCLT(cltBalanceBN));
 
       // Get staking info
-      const stakeInfo = await evmContractService.getStakeInfo(evmAddress);
+      const stakedAmountBN = await evmContractService.getStakedAmount(evmAddress);
+      const rewardsBN = await evmContractService.getRewards(evmAddress);
+      
+      const stakedAmount = parseFloat(evmContractService.formatCLT(stakedAmountBN));
+      const rewardDebt = parseFloat(evmContractService.formatCLT(rewardsBN));
 
       setStakingData({
-        stakedAmount: stakeInfo?.amount || 0,
-        rewardDebt: stakeInfo?.rewardDebt || 0,
-        cltBalance: cltBalance,
+        stakedAmount,
+        rewardDebt,
+        cltBalance,
         rewardRate: 5.5 // This could be fetched from contract
       });
     } catch (error) {
@@ -93,7 +98,9 @@ export default function EVMStakingRewards() {
 
     try {
       setIsStaking(true);
-      const txHash = await evmContractService.stakeCLT(Number(stakeAmount));
+      const amount = evmContractService.parseCLT(stakeAmount);
+      const tx = await evmContractService.stake(amount);
+      const txHash = tx.hash;
 
       if (txHash) {
         toast({
@@ -139,7 +146,9 @@ export default function EVMStakingRewards() {
 
     try {
       setIsWithdrawing(true);
-      const txHash = await evmContractService.withdrawStake(Number(withdrawAmount));
+      const amount = evmContractService.parseCLT(withdrawAmount);
+      const tx = await evmContractService.unstake(amount);
+      const txHash = tx.hash;
 
       if (txHash) {
         toast({
@@ -176,7 +185,8 @@ export default function EVMStakingRewards() {
   const handleClaimRewards = async () => {
     try {
       setIsClaiming(true);
-      const txHash = await evmContractService.claimRewards();
+      const tx = await evmContractService.claimRewards();
+      const txHash = tx.hash;
 
       if (txHash) {
         toast({
