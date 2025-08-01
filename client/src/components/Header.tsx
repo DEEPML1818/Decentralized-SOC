@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "./ui/badge";
 import { Shield, Wallet, ChevronDown, Link } from "lucide-react";
 import { useWallet } from './WalletProvider';
+import { toast } from "@/hooks/use-toast";
 
 interface HeaderProps {
   onRoleChange: (role: string) => void;
