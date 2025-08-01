@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useCurrentAccount } from "@iota/dapp-kit";
+import { useCurrentAccount, ConnectButton } from "@iota/dapp-kit";
 import Header from "@/components/Header";
 import Dashboard from "@/components/Dashboard";
 import RoleSelectionModal from "@/components/RoleSelectionModal";
