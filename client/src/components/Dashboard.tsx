@@ -21,7 +21,8 @@ import {
   Code,
   TrendingUp,
   Activity,
-  Link
+  Link,
+  Lock
 } from "lucide-react";
 
 interface DashboardProps {
@@ -226,7 +227,56 @@ return (
             </Card>
 
             {/* Render appropriate staking component */}
-            {walletType === 'iota' ? <StakingRewards /> : <EVMStakingRewards />}
+            <div className="space-y-8">
+          {currentRole === "client" && (
+            <>
+              <IncidentReport />
+              <TicketList />
+            </>
+          )}
+
+          {currentRole === "analyst" && (
+            <>
+              <SmartContractAudit />
+              <AIAssistant />
+            </>
+          )}
+
+          {currentRole === "certifier" && (
+            <>
+              {/* <TicketStoreManager /> */}
+
+              {/* Show both staking options simultaneously */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-blue-400 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    IOTA Native Staking
+                  </h3>
+                  {isIOTAConnected ? <StakingRewards /> : (
+                    <Card className="bg-slate-800/50 border-blue-500/30 backdrop-blur-sm">
+                      <CardContent className="p-8 text-center">
+                        <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Lock className="h-8 w-8 text-blue-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-blue-400 mb-2">IOTA Wallet Required</h3>
+                        <p className="text-gray-400">Connect your IOTA wallet above to access native staking</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-green-400 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    EVM Cross-Chain Staking
+                  </h3>
+                  <EVMStakingRewards />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-6">

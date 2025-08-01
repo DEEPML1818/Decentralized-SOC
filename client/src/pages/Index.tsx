@@ -40,9 +40,34 @@ export default function Index() {
 }
 
 function IndexContent() {
-  const account = useCurrentAccount();
-  const [userRole, setUserRole] = useState<string>("");
+  const [currentRole, setCurrentRole] = useState("client");
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const account = useCurrentAccount();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+      <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
+      <IndexPageContent 
+        currentRole={currentRole} 
+        setCurrentRole={setCurrentRole}
+        showRoleModal={showRoleModal}
+        setShowRoleModal={setShowRoleModal}
+        account={account}
+      />
+    </div>
+  );
+}
+
+interface IndexPageContentProps {
+  currentRole: string;
+  setCurrentRole: (role: string) => void;
+  showRoleModal: boolean;
+  setShowRoleModal: (show: boolean) => void;
+  account: any;
+}
+
+function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowRoleModal, account }: IndexPageContentProps) {
+  const [userRole, setUserRole] = useState<string>("");
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("problem");
@@ -86,10 +111,7 @@ function IndexContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header 
-        onRoleChange={setUserRole}
-        currentRole={userRole}
-      />
+      
 
       {/* Navigation Pills */}
       <div className="sticky top-16 z-40 bg-slate-900/90 backdrop-blur-sm border-b border-purple-500/20">
@@ -627,7 +649,7 @@ function IndexContent() {
                       <li>🎯 Ransomware campaigns and APT activities</li>
                       <li>🎯 Real-world incident case studies</li>
                       <li>🎯 Arkham Intelligence-style threat tracking</li>
-                    </ul>
+                                        </ul>
                   </div>
                 </div>
               </CardContent>

@@ -14,8 +14,6 @@ interface HeaderProps {
 export default function Header({ onRoleChange, currentRole }: HeaderProps) {
   const iotaAccount = useCurrentAccount();
   const { 
-    walletType, 
-    setWalletType, 
     evmAddress, 
     iotaAddress, 
     connectEVMWallet, 
@@ -33,12 +31,7 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
     }
   };
 
-  const currentAddress = walletType === 'iota' ? iotaAddress : evmAddress;
-  const isConnected = walletType === 'iota' ? isIOTAConnected : isEVMConnected;
-
-  const handleWalletTypeChange = (type: string) => {
-    setWalletType(type as 'iota' | 'evm');
-  };
+  
 
   const handleEVMConnect = async () => {
     if (isEVMConnected) {
@@ -83,93 +76,68 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* Wallet Type Selector */}
-            <Select value={walletType} onValueChange={handleWalletTypeChange}>
-              <SelectTrigger className="w-32 bg-slate-800 border-slate-700 text-white">
+            {/* Role Selector - always visible */}
+            <Select value={currentRole} onValueChange={onRoleChange}>
+              <SelectTrigger className="w-40 bg-slate-800 border-slate-700 text-white">
                 <div className="flex items-center space-x-2">
-                  <Link className="h-4 w-4" />
-                  <span className="text-sm uppercase">{walletType}</span>
+                  <Badge className={getRoleBadgeColor(currentRole)}>
+                    {currentRole}
+                  </Badge>
                 </div>
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
-                <SelectItem value="iota" className="text-white hover:bg-slate-700">
+                <SelectItem value="client" className="text-white hover:bg-slate-700">
                   <div className="flex items-center space-x-2">
-                    <span>IOTA</span>
-                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                      Native
+                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                      Client
                     </Badge>
                   </div>
                 </SelectItem>
-                <SelectItem value="evm" className="text-white hover:bg-slate-700">
+                <SelectItem value="analyst" className="text-white hover:bg-slate-700">
                   <div className="flex items-center space-x-2">
-                    <span>EVM</span>
-                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                      Scroll
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                      Analyst
+                    </Badge>
+                  </div>
+                </SelectItem>
+                <SelectItem value="certifier" className="text-white hover:bg-slate-700">
+                  <div className="flex items-center space-x-2">
+                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                      Certifier
                     </Badge>
                   </div>
                 </SelectItem>
               </SelectContent>
             </Select>
 
-            {isConnected && (
-              <div className="flex items-center space-x-3">
-                <Select value={currentRole} onValueChange={onRoleChange}>
-                  <SelectTrigger className="w-40 bg-slate-800 border-slate-700 text-white">
-                    <div className="flex items-center space-x-2">
-                      <Badge className={getRoleBadgeColor(currentRole)}>
-                        {currentRole}
-                      </Badge>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="client" className="text-white hover:bg-slate-700">
-                      <div className="flex items-center space-x-2">
-                        <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                          Client
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="analyst" className="text-white hover:bg-slate-700">
-                      <div className="flex items-center space-x-2">
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                          Analyst
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="certifier" className="text-white hover:bg-slate-700">
-                      <div className="flex items-center space-x-2">
-                        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                          Certifier
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <div className="text-right">
-                  <p className="text-sm text-gray-400">Connected to {walletType.toUpperCase()}</p>
-                  <p className="text-xs text-white font-mono">
-                    {currentAddress?.slice(0, 6)}...{currentAddress?.slice(-4)}
-                  </p>
-                </div>
-              </div>
-            )}
+            {/* Connection Status Display */}
+            <div className="flex items-center space-x-2">
+              {isIOTAConnected && (
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                  IOTA: {iotaAddress?.slice(0, 6)}...{iotaAddress?.slice(-4)}
+                </Badge>
+              )}
+              {isEVMConnected && (
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  EVM: {evmAddress?.slice(0, 6)}...{evmAddress?.slice(-4)}
+                </Badge>
+              )}
+            </div>
 
             {/* Wallet Connection Buttons */}
-            {walletType === 'iota' ? (
+            <div className="flex items-center space-x-2">
               <ConnectButton
                 connectText="Connect IOTA"
-                connectedText="Connected"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm"
               />
-            ) : (
               <Button
                 onClick={handleEVMConnect}
-                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200"
+                size="sm"
+                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"
               >
                 {isEVMConnected ? 'Disconnect EVM' : 'Connect MetaMask'}
               </Button>
-            )}
+            </div>
           </div>
         </div>
       </div>
