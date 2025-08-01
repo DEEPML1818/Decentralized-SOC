@@ -1,23 +1,26 @@
+import { ethers } from 'ethers';
 
-import { ethers } from "ethers";
-
-// Scroll Testnet configuration
+// Scroll Sepolia Testnet configuration
 export const SCROLL_TESTNET_CONFIG = {
-  chainId: 534351,
-  name: "Scroll Sepolia Testnet",
-  currency: "ETH",
-  explorerUrl: "https://sepolia.scrollscan.com",
-  rpcUrl: "https://sepolia-rpc.scroll.io"
+  chainId: '0x8274F', // 534351 in hex
+  chainName: 'Scroll Sepolia Testnet',
+  nativeCurrency: {
+    name: 'ETH',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+  rpcUrls: ['https://sepolia-rpc.scroll.io/'],
+  blockExplorerUrls: ['https://sepolia.scrollscan.dev/'],
 };
 
 // Contract addresses
-export const EVM_CONTRACT_ADDRESSES = {
-  CLT_REWARD: "0xBb647745eFfFD6a950d08cE6Dddc6D6c308D1403",
-  CLT_STAKING_POOL: "0xB480FA23e8d586Af034aae3CA9a0D111E071a01e",
-  SOC_SERVICE: "0x284B4cE9027b8f81211efd19A3a5D40D8b232D60"
+export const CONTRACT_ADDRESSES = {
+  CLT_REWARD: '0xBb647745eFfFD6a950d08cE6Dddc6D6c308D1403',
+  CLT_STAKING_POOL: '0xB480FA23e8d586Af034aae3CA9a0D111E071a01e',
+  SOC_SERVICE: '0x284B4cE9027b8f81211efd19A3a5D40D8b232D60',
 };
 
-// Contract ABIs
+// ABIs based on the uploaded files
 export const CLT_REWARD_ABI = [
   {
     "inputs": [
@@ -31,260 +34,10 @@ export const CLT_REWARD_ABI = [
     "type": "constructor"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "allowance",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "needed",
-        "type": "uint256"
-      }
-    ],
-    "name": "ERC20InsufficientAllowance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "balance",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "needed",
-        "type": "uint256"
-      }
-    ],
-    "name": "ERC20InsufficientBalance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "approver",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidApprover",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidReceiver",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidSender",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidSpender",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableInvalidOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableUnauthorizedAccount",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Approval",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Transfer",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      }
-    ],
-    "name": "allowance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "approve",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "balanceOf",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [],
-    "name": "decimals",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
+    "name": "claim",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -306,54 +59,14 @@ export const CLT_REWARD_ABI = [
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "name",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "account",
         "type": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "totalSupply",
+    "name": "balanceOf",
     "outputs": [
       {
         "internalType": "uint256",
@@ -362,84 +75,11 @@ export const CLT_REWARD_ABI = [
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transfer",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transferFrom",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   }
 ];
 
 export const CLT_STAKING_POOL_ABI = [
-  {
-    "inputs": [],
-    "name": "claim",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
   {
     "inputs": [
       {
@@ -459,67 +99,6 @@ export const CLT_STAKING_POOL_ABI = [
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableInvalidOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableUnauthorizedAccount",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_rate",
-        "type": "uint256"
-      }
-    ],
-    "name": "setRewardRate",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -533,12 +112,12 @@ export const CLT_STAKING_POOL_ABI = [
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
-    "name": "transferOwnership",
+    "name": "unstake",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -546,58 +125,12 @@ export const CLT_STAKING_POOL_ABI = [
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "withdraw",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "clt",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "lastUpdateBlock",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
         "internalType": "address",
-        "name": "",
+        "name": "user",
         "type": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "rewardRate",
+    "name": "getStakedAmount",
     "outputs": [
       {
         "internalType": "uint256",
@@ -612,20 +145,15 @@ export const CLT_STAKING_POOL_ABI = [
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "user",
         "type": "address"
       }
     ],
-    "name": "stakes",
+    "name": "getRewards",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "rewardDebt",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -656,62 +184,16 @@ export const SOC_SERVICE_ABI = [
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_rewardToken",
-        "type": "address"
+        "internalType": "string",
+        "name": "description",
+        "type": "string"
       },
       {
-        "internalType": "address",
-        "name": "initialOwner",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableInvalidOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableUnauthorizedAccount",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
         "internalType": "uint256",
-        "name": "ticketId",
+        "name": "severity",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "analyst",
-        "type": "address"
       }
     ],
-    "name": "AnalystAssigned",
-    "type": "event"
-  },
-  {
-    "inputs": [],
     "name": "createTicket",
     "outputs": [
       {
@@ -724,51 +206,6 @@ export const SOC_SERVICE_ABI = [
     "type": "function"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "reportLink",
-        "type": "string"
-      }
-    ],
-    "name": "ReportSubmitted",
-    "type": "event"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -777,68 +214,11 @@ export const SOC_SERVICE_ABI = [
       },
       {
         "internalType": "string",
-        "name": "reportLink",
+        "name": "resolution",
         "type": "string"
       }
     ],
-    "name": "submitReport",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "reporter",
-        "type": "address"
-      }
-    ],
-    "name": "TicketCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "certifier",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "reward",
-        "type": "uint256"
-      }
-    ],
-    "name": "TicketValidated",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
+    "name": "resolveTicket",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -849,75 +229,13 @@ export const SOC_SERVICE_ABI = [
         "internalType": "uint256",
         "name": "ticketId",
         "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "certifier",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "rewardAmount",
-        "type": "uint256"
       }
     ],
-    "name": "validateTicket",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "nextTicketId",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
+    "name": "getTicket",
     "outputs": [
       {
         "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "rewardToken",
-    "outputs": [
-      {
-        "internalType": "contract CLTReward",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "tickets",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "reporter",
+        "name": "client",
         "type": "address"
       },
       {
@@ -926,14 +244,19 @@ export const SOC_SERVICE_ABI = [
         "type": "address"
       },
       {
-        "internalType": "bool",
-        "name": "validated",
-        "type": "bool"
+        "internalType": "string",
+        "name": "description",
+        "type": "string"
       },
       {
-        "internalType": "bool",
-        "name": "rewardClaimed",
-        "type": "bool"
+        "internalType": "uint256",
+        "name": "severity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "status",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -941,325 +264,170 @@ export const SOC_SERVICE_ABI = [
   }
 ];
 
-export interface EVMTicket {
-  id: number;
-  reporter: string;
-  analyst: string;
-  validated: boolean;
-  rewardClaimed: boolean;
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
 }
 
-export class EVMContractService {
-  private provider: ethers.BrowserProvider | null = null;
+class EVMContractService {
+  private provider: ethers.providers.Web3Provider | null = null;
   private signer: ethers.Signer | null = null;
-
-  constructor() {
-    this.initializeProvider();
-  }
-
-  private async initializeProvider() {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      this.provider = new ethers.BrowserProvider(window.ethereum);
-    }
-  }
+  private contracts: {
+    cltReward?: ethers.Contract;
+    stakingPool?: ethers.Contract;
+    socService?: ethers.Contract;
+  } = {};
 
   async connectWallet(): Promise<string | null> {
-    if (!this.provider) {
-      throw new Error('MetaMask not detected');
+    if (!window.ethereum) {
+      throw new Error('MetaMask is not installed');
     }
 
     try {
       // Request account access
-      await this.provider.send("eth_requestAccounts", []);
-      
-      // Switch to Scroll testnet if needed
-      await this.switchToScrollTestnet();
-      
-      this.signer = await this.provider.getSigner();
-      return await this.signer.getAddress();
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      return null;
-    }
-  }
-
-  async switchToScrollTestnet() {
-    if (!this.provider) return;
-
-    try {
-      await this.provider.send("wallet_switchEthereumChain", [
-        { chainId: "0x8274f" } // 534351 in hex
-      ]);
-    } catch (error: any) {
-      // If the chain hasn't been added to MetaMask, add it
-      if (error.code === 4902) {
-        try {
-          await this.provider.send("wallet_addEthereumChain", [
-            {
-              chainId: "0x8274f",
-              chainName: "Scroll Sepolia Testnet",
-              nativeCurrency: {
-                name: "ETH",
-                symbol: "ETH",
-                decimals: 18,
-              },
-              rpcUrls: ["https://sepolia-rpc.scroll.io"],
-              blockExplorerUrls: ["https://sepolia.scrollscan.com"],
-            },
-          ]);
-        } catch (addError) {
-          console.error('Failed to add Scroll testnet:', addError);
-        }
-      }
-    }
-  }
-
-  // CLT Reward Contract methods
-  async getCLTBalance(address: string): Promise<number> {
-    if (!this.provider) return 0;
-
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.CLT_REWARD,
-        CLT_REWARD_ABI,
-        this.provider
-      );
-      
-      const balance = await contract.balanceOf(address);
-      return parseInt(ethers.formatEther(balance));
-    } catch (error) {
-      console.error('Failed to get CLT balance:', error);
-      return 0;
-    }
-  }
-
-  // Staking Pool methods
-  async stakeCLT(amount: number): Promise<string | null> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.CLT_STAKING_POOL,
-        CLT_STAKING_POOL_ABI,
-        this.signer
-      );
-
-      const tx = await contract.stake(ethers.parseEther(amount.toString()));
-      return tx.hash;
-    } catch (error) {
-      console.error('Failed to stake CLT:', error);
-      return null;
-    }
-  }
-
-  async withdrawStake(amount: number): Promise<string | null> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.CLT_STAKING_POOL,
-        CLT_STAKING_POOL_ABI,
-        this.signer
-      );
-
-      const tx = await contract.withdraw(ethers.parseEther(amount.toString()));
-      return tx.hash;
-    } catch (error) {
-      console.error('Failed to withdraw stake:', error);
-      return null;
-    }
-  }
-
-  async claimRewards(): Promise<string | null> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.CLT_STAKING_POOL,
-        CLT_STAKING_POOL_ABI,
-        this.signer
-      );
-
-      const tx = await contract.claim();
-      return tx.hash;
-    } catch (error) {
-      console.error('Failed to claim rewards:', error);
-      return null;
-    }
-  }
-
-  async getStakeInfo(address: string) {
-    if (!this.provider) return null;
-
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.CLT_STAKING_POOL,
-        CLT_STAKING_POOL_ABI,
-        this.provider
-      );
-
-      const stakeInfo = await contract.stakes(address);
-      return {
-        amount: parseInt(ethers.formatEther(stakeInfo[0])),
-        rewardDebt: parseInt(ethers.formatEther(stakeInfo[1]))
-      };
-    } catch (error) {
-      console.error('Failed to get stake info:', error);
-      return null;
-    }
-  }
-
-  // SOC Service methods
-  async createTicket(): Promise<{ ticketId: number; txHash: string } | null> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.SOC_SERVICE,
-        SOC_SERVICE_ABI,
-        this.signer
-      );
-
-      const tx = await contract.createTicket();
-      const receipt = await tx.wait();
-      
-      // Parse the TicketCreated event to get the ticket ID
-      const event = receipt.logs.find((log: any) => {
-        try {
-          const parsed = contract.interface.parseLog(log);
-          return parsed?.name === 'TicketCreated';
-        } catch {
-          return false;
-        }
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts',
       });
 
-      let ticketId = 0;
-      if (event) {
-        const parsed = contract.interface.parseLog(event);
-        ticketId = parseInt(parsed?.args.ticketId.toString());
+      if (accounts.length === 0) {
+        throw new Error('No accounts found');
       }
 
-      return { ticketId, txHash: tx.hash };
+      // Switch to Scroll testnet
+      await this.switchToScrollTestnet();
+
+      // Initialize provider and signer
+      this.provider = new ethers.providers.Web3Provider(window.ethereum);
+      this.signer = this.provider.getSigner();
+
+      // Initialize contracts
+      this.initializeContracts();
+
+      return accounts[0];
     } catch (error) {
-      console.error('Failed to create ticket:', error);
-      return null;
+      console.error('Failed to connect wallet:', error);
+      throw error;
     }
   }
 
-  async assignAnalyst(ticketId: number, analystAddress: string): Promise<string | null> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
+  private async switchToScrollTestnet() {
     try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.SOC_SERVICE,
-        SOC_SERVICE_ABI,
-        this.signer
-      );
-
-      const tx = await contract.assignAnalyst(ticketId, analystAddress);
-      return tx.hash;
-    } catch (error) {
-      console.error('Failed to assign analyst:', error);
-      return null;
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: SCROLL_TESTNET_CONFIG.chainId }],
+      });
+    } catch (switchError: any) {
+      // This error code indicates that the chain has not been added to MetaMask
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [SCROLL_TESTNET_CONFIG],
+          });
+        } catch (addError) {
+          throw addError;
+        }
+      } else {
+        throw switchError;
+      }
     }
   }
 
-  async submitReport(ticketId: number, reportLink: string): Promise<string | null> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
+  private initializeContracts() {
+    if (!this.signer) return;
 
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.SOC_SERVICE,
-        SOC_SERVICE_ABI,
-        this.signer
-      );
+    this.contracts.cltReward = new ethers.Contract(
+      CONTRACT_ADDRESSES.CLT_REWARD,
+      CLT_REWARD_ABI,
+      this.signer
+    );
 
-      const tx = await contract.submitReport(ticketId, reportLink);
-      return tx.hash;
-    } catch (error) {
-      console.error('Failed to submit report:', error);
-      return null;
-    }
+    this.contracts.stakingPool = new ethers.Contract(
+      CONTRACT_ADDRESSES.CLT_STAKING_POOL,
+      CLT_STAKING_POOL_ABI,
+      this.signer
+    );
+
+    this.contracts.socService = new ethers.Contract(
+      CONTRACT_ADDRESSES.SOC_SERVICE,
+      SOC_SERVICE_ABI,
+      this.signer
+    );
   }
 
-  async validateTicket(ticketId: number, certifierAddress: string, rewardAmount: number): Promise<string | null> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.SOC_SERVICE,
-        SOC_SERVICE_ABI,
-        this.signer
-      );
-
-      const tx = await contract.validateTicket(
-        ticketId,
-        certifierAddress,
-        ethers.parseEther(rewardAmount.toString())
-      );
-      return tx.hash;
-    } catch (error) {
-      console.error('Failed to validate ticket:', error);
-      return null;
-    }
+  // CLT Reward functions
+  async claimRewards(): Promise<ethers.ContractTransaction> {
+    if (!this.contracts.cltReward) throw new Error('Contract not initialized');
+    return await this.contracts.cltReward.claim();
   }
 
-  async getTicket(ticketId: number): Promise<EVMTicket | null> {
+  async getCLTBalance(address: string): Promise<ethers.BigNumber> {
+    if (!this.contracts.cltReward) throw new Error('Contract not initialized');
+    return await this.contracts.cltReward.balanceOf(address);
+  }
+
+  // Staking functions
+  async stake(amount: ethers.BigNumber): Promise<ethers.ContractTransaction> {
+    if (!this.contracts.stakingPool) throw new Error('Contract not initialized');
+    return await this.contracts.stakingPool.stake(amount);
+  }
+
+  async unstake(amount: ethers.BigNumber): Promise<ethers.ContractTransaction> {
+    if (!this.contracts.stakingPool) throw new Error('Contract not initialized');
+    return await this.contracts.stakingPool.unstake(amount);
+  }
+
+  async getStakedAmount(address: string): Promise<ethers.BigNumber> {
+    if (!this.contracts.stakingPool) throw new Error('Contract not initialized');
+    return await this.contracts.stakingPool.getStakedAmount(address);
+  }
+
+  async getRewards(address: string): Promise<ethers.BigNumber> {
+    if (!this.contracts.stakingPool) throw new Error('Contract not initialized');
+    return await this.contracts.stakingPool.getRewards(address);
+  }
+
+  // SOC Service functions
+  async createTicket(description: string, severity: number): Promise<ethers.ContractTransaction> {
+    if (!this.contracts.socService) throw new Error('Contract not initialized');
+    return await this.contracts.socService.createTicket(description, severity);
+  }
+
+  async assignAnalyst(ticketId: number, analyst: string): Promise<ethers.ContractTransaction> {
+    if (!this.contracts.socService) throw new Error('Contract not initialized');
+    return await this.contracts.socService.assignAnalyst(ticketId, analyst);
+  }
+
+  async resolveTicket(ticketId: number, resolution: string): Promise<ethers.ContractTransaction> {
+    if (!this.contracts.socService) throw new Error('Contract not initialized');
+    return await this.contracts.socService.resolveTicket(ticketId, resolution);
+  }
+
+  async getTicket(ticketId: number) {
+    if (!this.contracts.socService) throw new Error('Contract not initialized');
+    return await this.contracts.socService.getTicket(ticketId);
+  }
+
+  // Utility functions
+  async getCurrentAccount(): Promise<string | null> {
     if (!this.provider) return null;
-
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.SOC_SERVICE,
-        SOC_SERVICE_ABI,
-        this.provider
-      );
-
-      const ticket = await contract.tickets(ticketId);
-      return {
-        id: ticketId,
-        reporter: ticket[0],
-        analyst: ticket[1],
-        validated: ticket[2],
-        rewardClaimed: ticket[3]
-      };
-    } catch (error) {
-      console.error('Failed to get ticket:', error);
-      return null;
-    }
+    const accounts = await this.provider.listAccounts();
+    return accounts.length > 0 ? accounts[0] : null;
   }
 
-  async getNextTicketId(): Promise<number> {
-    if (!this.provider) return 0;
+  async getNetwork() {
+    if (!this.provider) return null;
+    return await this.provider.getNetwork();
+  }
 
-    try {
-      const contract = new ethers.Contract(
-        EVM_CONTRACT_ADDRESSES.SOC_SERVICE,
-        SOC_SERVICE_ABI,
-        this.provider
-      );
+  formatCLT(amount: ethers.BigNumber): string {
+    return ethers.utils.formatEther(amount);
+  }
 
-      const nextId = await contract.nextTicketId();
-      return parseInt(nextId.toString());
-    } catch (error) {
-      console.error('Failed to get next ticket ID:', error);
-      return 0;
-    }
+  parseCLT(amount: string): ethers.BigNumber {
+    return ethers.utils.parseEther(amount);
   }
 }
 
-// Singleton instance
 export const evmContractService = new EVMContractService();

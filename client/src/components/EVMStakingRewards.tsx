@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -35,7 +34,7 @@ export default function EVMStakingRewards() {
     cltBalance: 0,
     rewardRate: 0
   });
-  
+
   const [stakeAmount, setStakeAmount] = useState("100");
   const [withdrawAmount, setWithdrawAmount] = useState("50");
   const [isLoading, setIsLoading] = useState(true);
@@ -57,13 +56,13 @@ export default function EVMStakingRewards() {
 
     try {
       setIsLoading(true);
-      
+
       // Get CLT balance
       const cltBalance = await evmContractService.getCLTBalance(evmAddress);
-      
+
       // Get staking info
       const stakeInfo = await evmContractService.getStakeInfo(evmAddress);
-      
+
       setStakingData({
         stakedAmount: stakeInfo?.amount || 0,
         rewardDebt: stakeInfo?.rewardDebt || 0,
@@ -95,7 +94,7 @@ export default function EVMStakingRewards() {
     try {
       setIsStaking(true);
       const txHash = await evmContractService.stakeCLT(Number(stakeAmount));
-      
+
       if (txHash) {
         toast({
           title: "Success!",
@@ -109,12 +108,12 @@ export default function EVMStakingRewards() {
             </div>
           ),
         });
-        
+
         // Reload data after successful stake
         setTimeout(() => {
           loadStakingData();
         }, 2000);
-        
+
         setStakeAmount("100");
       }
     } catch (error: any) {
@@ -141,7 +140,7 @@ export default function EVMStakingRewards() {
     try {
       setIsWithdrawing(true);
       const txHash = await evmContractService.withdrawStake(Number(withdrawAmount));
-      
+
       if (txHash) {
         toast({
           title: "Success!",
@@ -155,12 +154,12 @@ export default function EVMStakingRewards() {
             </div>
           ),
         });
-        
+
         // Reload data after successful withdrawal
         setTimeout(() => {
           loadStakingData();
         }, 2000);
-        
+
         setWithdrawAmount("50");
       }
     } catch (error: any) {
@@ -178,7 +177,7 @@ export default function EVMStakingRewards() {
     try {
       setIsClaiming(true);
       const txHash = await evmContractService.claimRewards();
-      
+
       if (txHash) {
         toast({
           title: "Success!",
@@ -192,7 +191,7 @@ export default function EVMStakingRewards() {
             </div>
           ),
         });
-        
+
         // Reload data after successful claim
         setTimeout(() => {
           loadStakingData();
@@ -371,7 +370,7 @@ export default function EVMStakingRewards() {
                 placeholder="Enter CLT amount"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3">
               <Button
                 onClick={handleWithdraw}
