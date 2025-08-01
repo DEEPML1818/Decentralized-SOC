@@ -1,739 +1,242 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { useCurrentAccount } from "@iota/dapp-kit";
-import { useQuery } from "@tanstack/react-query";
-import {
-  TrendingUp,
-  TrendingDown,
-  Shield,
-  AlertTriangle,
-  Clock,
-  CheckCircle,
-  Award,
-  DollarSign,
-  Activity,
-  BarChart3,
-  FileText,
-  Users,
+import TicketList from "./TicketList";
+import TicketForm from "./TicketForm";
+import IncidentReport from "./IncidentReport";
+import StakingRewards from "./StakingRewards";
+import EVMStakingRewards from "./EVMStakingRewards";
+import SmartContractAudit from "./SmartContractAudit";
+import AIAssistant from "./AIAssistant";
+import { useWallet } from './WalletProvider';
+import { 
+  Shield, 
+  FileText, 
+  Users, 
+  Award, 
   Target,
-  Zap,
-  Eye,
-  Brain
+  Coins,
+  Bot,
+  Code,
+  TrendingUp,
+  Activity,
+  Link
 } from "lucide-react";
 
 interface DashboardProps {
-  userRole: string;
+  currentRole: string;
 }
 
-export default function Dashboard({ userRole }: DashboardProps) {
-  const account = useCurrentAccount();
-  const [dashboardData, setDashboardData] = useState<any>(null);
+export default function Dashboard({ currentRole }: DashboardProps) {
+  const [activeTab, setActiveTab] = useState("overview");
+  const { walletType, isEVMConnected, isIOTAConnected } = useWallet();
 
-  // Fetch real incident reports from database
-  const { data: incidentReports, isLoading } = useQuery({
-    queryKey: ["/api/incident-reports"],
-    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
-  });
-
-  useEffect(() => {
-    if (account && userRole && incidentReports) {
-      generateRoleSpecificData();
-    }
-  }, [account, userRole, incidentReports]);
-
-  const generateRoleSpecificData = () => {
-    if (!incidentReports) return;
-
-    // Filter reports based on user role
-    const userReports = incidentReports.filter((report: any) => 
-      userRole === "client" ? report.client_wallet === account?.address :
-      userRole === "analyst" ? report.status === "pending" || report.assigned_analyst === account?.address :
-      userRole === "certifier" ? report.status === "analyzed" || report.assigned_certifier === account?.address : true
-    );
-
-    const allPendingReports = incidentReports.filter((report: any) => report.status === "pending");
-    const analyzedReports = incidentReports.filter((report: any) => report.status === "analyzed");
-    const resolvedReports = incidentReports.filter((report: any) => report.status === "resolved");
-
-    switch (userRole) {
-      case "client":
-        const userSubmissions = incidentReports.filter((report: any) => report.client_wallet === account?.address);
-        const userResolved = userSubmissions.filter((report: any) => report.status === "resolved");
-        const userPending = userSubmissions.filter((report: any) => report.status === "pending");
-        
-        setDashboardData({
-          stats: {
-            totalSubmitted: userSubmissions.length || 23,
-            resolvedTickets: userResolved.length || 18,
-            pendingTickets: userPending.length || 5,
-            totalRewards: 186000,
-            avgResolutionTime: "14h",
-            successRate: userSubmissions.length > 0 ? Math.round((userResolved.length / userSubmissions.length) * 100) : 78
-          },
-          recentSubmissions: userSubmissions.slice(0, 5),
-          categories: ["Cross-Chain Bridge", "Flash Loan Attack"],
-          monthlyActivity: [
-            { month: "Oct", submitted: 3, resolved: 2 },
-            { month: "Nov", submitted: 4, resolved: 4 },
-            { month: "Dec", submitted: 6, resolved: 5 },
-            { month: "Jan", submitted: 8, resolved: 6 }
-          ]
-        });
-        break;
-
-      case "analyst":
-        setDashboardData({
-          stats: {
-            totalAnalyzed: analyzedReports.length,
-            approvedReports: resolvedReports.length,
-            pendingAnalysis: allPendingReports.length,
-            totalRewards: 485000,
-            avgAnalysisTime: "12h",
-            successRate: analyzedReports.length > 0 ? Math.round((resolvedReports.length / analyzedReports.length) * 100) : 91
-          },
-          availableTickets: allPendingReports.slice(0, 8),
-          specializations: ["DeFi Protocol Security"],
-          performanceMetrics: [
-            { metric: "Flash Loan Attacks", analyzed: 15, accuracy: 94 },
-            { metric: "Bridge Exploits", analyzed: 12, accuracy: 89 },
-            { metric: "Oracle Manipulation", analyzed: 8, accuracy: 96 },
-            { metric: "Smart Contract Bugs", analyzed: 6, accuracy: 92 }
-          ]
-        });
-        break;
-
-      case "certifier":
-        setDashboardData({
-          stats: {
-            totalCertified: resolvedReports.length,
-            approvedCertifications: resolvedReports.length,
-            pendingCertification: analyzedReports.length,
-            totalRewards: 890000,
-            avgCertificationTime: "3h",
-            accuracy: 97
-          },
-          pendingCertifications: analyzedReports.slice(0, 6),
-          expertiseAreas: ["Critical Incident Assessment"],
-          riskAssessments: [
-            { protocol: "Cross-Chain Bridges", riskLevel: "Critical", lastAssessed: "2024-01-20" },
-            { protocol: "Lending Protocols", riskLevel: "High", lastAssessed: "2024-01-19" },
-            { protocol: "DEX/AMM", riskLevel: "Medium", lastAssessed: "2024-01-18" }
-          ]
-        });
-        break;
-
+  const getRoleDescription = (role: string) => {
+    switch (role) {
+      case 'client':
+        return 'Submit security incidents and track their resolution progress';
+      case 'analyst':
+        return 'Analyze security incidents and provide detailed reports';
+      case 'certifier':
+        return 'Validate and certify security analysis reports';
       default:
-        setDashboardData({
-          stats: {
-            totalReports: incidentReports.length,
-            pendingReports: allPendingReports.length,
-            analyzedReports: analyzedReports.length,
-            resolvedReports: resolvedReports.length
-          },
-          globalActivity: incidentReports.slice(0, 10)
-        });
+        return 'Welcome to the decentralized security operations center';
     }
   };
 
-  if (isLoading || !dashboardData) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-        <span className="ml-3 text-gray-400">Loading dashboard data...</span>
-      </div>
-    );
-  }
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'client': return <FileText className="h-5 w-5" />;
+      case 'analyst': return <Shield className="h-5 w-5" />;
+      case 'certifier': return <Award className="h-5 w-5" />;
+      default: return <Users className="h-5 w-5" />;
+    }
+  };
 
-  const renderClientDashboard = () => (
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'client': return 'from-blue-500 to-cyan-500';
+      case 'analyst': return 'from-green-500 to-emerald-500';
+      case 'certifier': return 'from-purple-500 to-violet-500';
+      default: return 'from-gray-500 to-slate-500';
+    }
+  };
+
+  const isWalletConnected = walletType === 'iota' ? isIOTAConnected : isEVMConnected;
+
+return (
     <div className="space-y-6">
-      {/* Client Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-500/30 cursor-pointer hover:scale-105 transition-transform">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-blue-300">Total Submitted</CardTitle>
-              <FileText className="h-4 w-4 text-blue-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.totalSubmitted}</div>
-            <p className="text-xs text-blue-300 mt-1">+3 this month</p>
-            <Button size="sm" variant="ghost" className="mt-2 text-blue-400 hover:text-blue-300">
-              View Details
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-green-300">Resolved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.resolvedTickets}</div>
-            <p className="text-xs text-green-300 mt-1">{dashboardData.stats.successRate}% success rate</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-yellow-900/50 to-yellow-800/30 border-yellow-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-yellow-300">Pending</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.pendingTickets}</div>
-            <p className="text-xs text-yellow-300 mt-1">Avg: {dashboardData.stats.avgResolutionTime}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-purple-300">Total Rewards</CardTitle>
-              <Award className="h-4 w-4 text-purple-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.totalRewards.toLocaleString()} CLT</div>
-            <p className="text-xs text-purple-300 mt-1">+15,600 this week</p>
-          </CardContent>
-        </Card>
+      <div className="text-center space-y-4">
+        <h2 className="text-3xl font-bold text-white">Security Operations Center</h2>
+        <p className="text-gray-400 max-w-2xl mx-auto">
+          Decentralized security incident management powered by blockchain technology. 
+          Submit, analyze, and validate security incidents in a trustless environment.
+        </p>
       </div>
 
-      {/* Recent Submissions with Full Details */}
-      <Card className="bg-slate-800/50 border-gray-600/30">
-        <CardHeader>
-          <CardTitle className="text-purple-400 flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Recent Incident Reports - Full Case Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {dashboardData.recentSubmissions.map((ticket: any) => (
-              <Card key={ticket.id} className="bg-slate-700/30 border border-gray-600/20 hover:border-purple-500/40 transition-colors">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <h4 className="font-semibold text-white">{ticket.title}</h4>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <span>{ticket.category}</span>
-                        <span>•</span>
-                        <span>{ticket.blockchain}</span>
-                        <span>•</span>
-                        <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
+      {!isWalletConnected && (
+        <Card className="bg-amber-900/20 border-amber-500/30 backdrop-blur-sm">
+          <CardContent className="p-6 text-center">
+            <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Target className="h-8 w-8 text-amber-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-amber-400 mb-2">Connect Your Wallet</h3>
+            <p className="text-gray-400 mb-4">
+              Please connect your {walletType === 'iota' ? 'IOTA' : 'MetaMask'} wallet to access all features of the dSOC platform
+            </p>
+            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+              {walletType.toUpperCase()} Network Selected
+            </Badge>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-6 bg-slate-800/50">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="tickets" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Tickets</span>
+            </TabsTrigger>
+            <TabsTrigger value="report" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Reports</span>
+            </TabsTrigger>
+            <TabsTrigger value="staking" className="flex items-center gap-2">
+              <Coins className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {walletType === 'iota' ? 'IOTA Staking' : 'EVM Staking'}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="flex items-center gap-2">
+              <Code className="h-4 w-4" />
+              <span className="hidden sm:inline">Audit</span>
+            </TabsTrigger>
+            <TabsTrigger value="ai" className="flex items-center gap-2">
+              <Bot className="h-4 w-4" />
+              <span className="hidden sm:inline">AI</span>
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview" className="space-y-6">
+            {/* Wallet Connection Status */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className={`${walletType === 'iota' && isIOTAConnected ? 'bg-blue-900/20 border-blue-500/30' : 'bg-slate-800/50 border-gray-600/30'} backdrop-blur-sm`}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-500 rounded-lg">
+                        <Link className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-blue-400">IOTA Network</CardTitle>
+                        <CardDescription className="text-gray-400">
+                          Native blockchain integration
+                        </CardDescription>
                       </div>
                     </div>
-                    <Badge className={`${
-                      ticket.severity === 'Critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
-                      ticket.severity === 'High' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
-                      'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
-                    }`}>
-                      {ticket.severity}
+                    <Badge className={isIOTAConnected ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}>
+                      {isIOTAConnected ? 'Connected' : 'Disconnected'}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-300 line-clamp-2">{ticket.description}</p>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">Loss Amount:</span>
-                        <span className="text-red-400 font-semibold ml-2">{ticket.loss_amount}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Protocols:</span>
-                        <span className="text-blue-400 ml-2">{ticket.affected_protocols?.join(', ')}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Attack Vector:</span>
-                        <span className="text-orange-400 ml-2">{ticket.attack_vector}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Status:</span>
-                        <Badge className="ml-2 text-xs bg-green-500/20 text-green-400 border-green-500/30">
-                          {ticket.status === 3 ? 'Resolved' : 'In Progress'}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 pt-2">
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                        <Eye className="h-4 w-4 mr-1" />
-                        View Report
-                      </Button>
-                      <Button size="sm" variant="outline" className="border-gray-600">
-                        <FileText className="h-4 w-4 mr-1" />
-                        Evidence
-                      </Button>
-                      {ticket.report_hash && (
-                        <Button size="sm" variant="outline" className="border-green-600 text-green-400">
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Analysis
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
               </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Preferred Categories */}
-      <Card className="bg-slate-800/50 border-gray-600/30">
-        <CardHeader>
-          <CardTitle className="text-purple-400 flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Your Expertise Areas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {dashboardData.categories.map((category: string) => (
-              <Badge key={category} className="bg-blue-500/20 text-blue-300 border-blue-500/30">
-                {category}
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* AI Security Assistant */}
-      <Card className="bg-gradient-to-r from-blue-800/30 to-purple-800/30 border-blue-500/30">
-        <CardHeader>
-          <CardTitle className="text-blue-400 flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            AI Security Assistant
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-medium">Google AI Integration</p>
-                <p className="text-sm text-gray-400">
-                  Active - AI analysis available
-                </p>
-              </div>
-              <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-                Connected
-              </Badge>
-            </div>
-            
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-              <h4 className="text-blue-300 font-medium mb-2">Quick AI Insights</h4>
-              <div className="space-y-2 text-sm">
-                <p className="text-blue-200">• Ask about threat analysis patterns</p>
-                <p className="text-blue-200">• Get incident classification guidance</p>
-                <p className="text-blue-200">• Security best practices recommendations</p>
-              </div>
-              <div className="flex gap-2 mt-3 flex-wrap">
-                <Button 
-                  size="sm" 
-                  className="bg-blue-600 hover:bg-blue-700"
-                  onClick={() => window.dispatchEvent(new CustomEvent('openAIAssistant'))}
-                >
-                  <Brain className="h-4 w-4 mr-1" />
-                  AI Chat
-                </Button>
-                <Button 
-                  size="sm" 
-                  className="bg-red-600 hover:bg-red-700"
-                  onClick={() => window.dispatchEvent(new CustomEvent('openAuditTool'))}
-                >
-                  <Shield className="h-4 w-4 mr-1" />
-                  Contract Audit
-                </Button>
-                <Button 
-                  size="sm" 
-                  className="bg-orange-600 hover:bg-orange-700"
-                  onClick={() => window.dispatchEvent(new CustomEvent('openIncidentReport'))}
-                >
-                  <AlertTriangle className="h-4 w-4 mr-1" />
-                  Report Incident
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderAnalystDashboard = () => (
-    <div className="space-y-6">
-      {/* Analyst Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-cyan-900/50 to-cyan-800/30 border-cyan-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-cyan-300">Total Analyzed</CardTitle>
-              <Brain className="h-4 w-4 text-cyan-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.totalAnalyzed}</div>
-            <p className="text-xs text-cyan-300 mt-1">+7 this month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-green-300">Approved Reports</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.approvedReports}</div>
-            <p className="text-xs text-green-300 mt-1">{dashboardData.stats.successRate}% approval rate</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/30 border-orange-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-orange-300">Pending Analysis</CardTitle>
-              <Eye className="h-4 w-4 text-orange-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.pendingAnalysis}</div>
-            <p className="text-xs text-orange-300 mt-1">Avg: {dashboardData.stats.avgAnalysisTime}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-purple-300">Total Rewards</CardTitle>
-              <Award className="h-4 w-4 text-purple-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.totalRewards.toLocaleString()} CLT</div>
-            <p className="text-xs text-purple-300 mt-1">+28,500 this week</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Urgent Pending Work Alert */}
-      {dashboardData.stats.pendingAnalysis > 0 && (
-        <Card className="bg-gradient-to-r from-red-800/30 to-orange-800/30 border-red-500/50 animate-pulse">
-          <CardHeader>
-            <CardTitle className="text-red-400 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Urgent: Pending Analysis Required
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-bold text-lg">{dashboardData.stats.pendingAnalysis} Critical Tickets</p>
-                <p className="text-red-300 text-sm">
-                  Waiting for security analysis - Average response time: {dashboardData.stats.avgAnalysisTime}
-                </p>
-              </div>
-              <Button className="bg-red-600 hover:bg-red-700 pulse-glow">
-                <Zap className="h-4 w-4 mr-1" />
-                Review Now
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Available Tickets */}
-      <Card className="bg-slate-800/50 border-gray-600/30">
-        <CardHeader>
-          <CardTitle className="text-cyan-400 flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            High Priority Tickets ({dashboardData.availableTickets.length} Available)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {dashboardData.availableTickets.map((report: any) => (
-              <div key={report.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-gray-600/20 hover:border-cyan-500/30 transition-colors">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-white">{report.title}</p>
-                    {report.severity === 'critical' && (
-                      <Badge className="bg-red-500/20 text-red-300 border-red-500/30 animate-pulse text-xs">
-                        URGENT
-                      </Badge>
-                    )}
+              <Card className={`${walletType === 'evm' && isEVMConnected ? 'bg-green-900/20 border-green-500/30' : 'bg-slate-800/50 border-gray-600/30'} backdrop-blur-sm`}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-green-500 rounded-lg">
+                        <Link className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-green-400">Scroll Testnet</CardTitle>
+                        <CardDescription className="text-gray-400">
+                          EVM-compatible L2 network
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge className={isEVMConnected ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}>
+                      {isEVMConnected ? 'Connected' : 'Disconnected'}
+                    </Badge>
                   </div>
-                  <p className="text-sm text-gray-400">{report.affected_systems || "Security Incident"} • dSOC Platform</p>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                    <span>Submitted: {new Date(report.created_at).toLocaleDateString()}</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {Math.floor((Date.now() - new Date(report.created_at).getTime()) / (1000 * 60 * 60))}h ago
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <Badge className={`${
-                    report.severity === 'critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
-                    report.severity === 'high' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
-                    report.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' :
-                    'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                  }`}>
-                    {report.severity.toUpperCase()}
-                  </Badge>
-                  <p className="text-sm text-gray-500 mt-1">CLT Rewards</p>
-                  <Button size="sm" className="mt-1 bg-cyan-600 hover:bg-cyan-700">
-                    <Eye className="h-3 w-3 mr-1" />
-                    Analyze
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                </CardHeader>
+              </Card>
+            </div>
 
-      {/* Performance Metrics */}
-      <Card className="bg-slate-800/50 border-gray-600/30">
-        <CardHeader>
-          <CardTitle className="text-cyan-400 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Analysis Performance
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {dashboardData.performanceMetrics.map((metric: any) => (
-              <div key={metric.metric} className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-white">{metric.metric}</p>
-                  <p className="text-sm text-gray-400">{metric.analyzed} analyzed</p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-medium text-green-400">{metric.accuracy}%</div>
-                    <div className="w-16 h-2 bg-gray-700 rounded-full">
-                      <div 
-                        className="h-full bg-green-400 rounded-full" 
-                        style={{ width: `${metric.accuracy}%` }}
-                      ></div>
+            {/* Role Overview */}
+            <Card className={`bg-gradient-to-r ${getRoleColor(currentRole)} bg-opacity-10 border-opacity-30`}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className={`p-2 bg-gradient-to-r ${getRoleColor(currentRole)} rounded-lg text-white`}>
+                      {getRoleIcon(currentRole)}
+                    </div>
+                    <div>
+                      <CardTitle className="text-white capitalize">{currentRole} Dashboard</CardTitle>
+                      <CardDescription className="text-gray-300">
+                        {getRoleDescription(currentRole)} • Active on {walletType.toUpperCase()} network
+                      </CardDescription>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderCertifierDashboard = () => (
-    <div className="space-y-6">
-      {/* Certifier Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 border-emerald-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-emerald-300">Total Certified</CardTitle>
-              <Shield className="h-4 w-4 text-emerald-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.totalCertified}</div>
-            <p className="text-xs text-emerald-300 mt-1">+12 this month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-green-300">Approved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.approvedCertifications}</div>
-            <p className="text-xs text-green-300 mt-1">{dashboardData.stats.accuracy}% accuracy</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-900/50 to-amber-800/30 border-amber-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-amber-300">Pending Review</CardTitle>
-              <Clock className="h-4 w-4 text-amber-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.pendingCertification}</div>
-            <p className="text-xs text-amber-300 mt-1">Avg: {dashboardData.stats.avgCertificationTime}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-500/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-purple-300">Total Rewards</CardTitle>
-              <Award className="h-4 w-4 text-purple-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{dashboardData.stats.totalRewards.toLocaleString()} CLT</div>
-            <p className="text-xs text-purple-300 mt-1">+45,200 this week</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Urgent Certification Alert */}
-      {dashboardData.stats.pendingCertification > 0 && (
-        <Card className="bg-gradient-to-r from-red-800/30 to-orange-800/30 border-red-500/50 animate-pulse">
-          <CardHeader>
-            <CardTitle className="text-red-400 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              URGENT: Certifications Overdue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-bold text-lg">{dashboardData.stats.pendingCertification} Reports Pending</p>
-                <p className="text-red-300 text-sm">
-                  Critical incidents awaiting final certification - Target time: {dashboardData.stats.avgCertificationTime}
-                </p>
-                <div className="mt-2 flex gap-2">
-                  <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs">
-                    {Math.floor(dashboardData.stats.pendingCertification * 0.6)} Critical
-                  </Badge>
-                  <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30 text-xs">
-                    {Math.floor(dashboardData.stats.pendingCertification * 0.4)} High Priority
+                  <Badge className="bg-white/10 text-white border-white/20">
+                    {walletType.toUpperCase()}
                   </Badge>
                 </div>
-              </div>
-              <Button className="bg-red-600 hover:bg-red-700 pulse-glow">
-                <Shield className="h-4 w-4 mr-1" />
-                Certify Now
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </CardHeader>
+            </Card>
+          </TabsContent>
 
-      {/* Pending Certifications */}
-      <Card className="bg-slate-800/50 border-gray-600/30">
-        <CardHeader>
-          <CardTitle className="text-emerald-400 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Critical Certifications Needed ({dashboardData.pendingCertifications.length} Active)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {dashboardData.pendingCertifications.map((ticket: any) => (
-              <div key={ticket.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-gray-600/20 hover:border-emerald-500/30 transition-colors">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-white">{ticket.title}</p>
-                    {ticket.severity === 'Critical' && (
-                      <Badge className="bg-red-500/20 text-red-300 border-red-500/30 animate-pulse text-xs">
-                        OVERDUE
-                      </Badge>
-                    )}
+          <TabsContent value="tickets" className="space-y-6">
+            <TicketList />
+          </TabsContent>
+
+          <TabsContent value="report" className="space-y-6">
+            <IncidentReport />
+          </TabsContent>
+
+          <TabsContent value="staking" className="space-y-6">
+            {/* Network Info Header */}
+            <Card className={`bg-gradient-to-r ${walletType === 'iota' ? 'from-blue-900/20 to-purple-900/20 border-blue-500/30' : 'from-green-900/20 to-blue-900/20 border-green-500/30'} backdrop-blur-sm`}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Link className="h-6 w-6 text-blue-400" />
+                    <div>
+                      <CardTitle className={walletType === 'iota' ? 'text-blue-400' : 'text-green-400'}>
+                        {walletType === 'iota' ? 'IOTA Network' : 'Scroll Sepolia Testnet'}
+                      </CardTitle>
+                      <CardDescription className="text-gray-400">
+                        {walletType === 'iota' 
+                          ? 'Native IOTA blockchain staking and rewards'
+                          : 'EVM-compatible staking on Scroll L2 network'
+                        }
+                      </CardDescription>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-400">{ticket.category} • {ticket.blockchain}</p>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                    <span>Submitted: {new Date(ticket.created_at).toLocaleDateString()}</span>
-                    <span className="flex items-center gap-1 text-orange-400">
-                      <Clock className="h-3 w-3" />
-                      Pending {Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / (1000 * 60 * 60))}h
-                    </span>
-                  </div>
-                  {ticket.analyst_address && (
-                    <p className="text-xs text-blue-400 mt-1">
-                      Analyzed by: {ticket.analyst_address.slice(0, 8)}...{ticket.analyst_address.slice(-6)}
-                    </p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <Badge className={`${
-                    ticket.severity === 'Critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
-                    ticket.severity === 'High' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
-                    'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
-                  }`}>
-                    {ticket.severity}
+                  <Badge className={`${walletType === 'iota' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'}`}>
+                    {walletType.toUpperCase()}
                   </Badge>
-                  <p className="text-sm text-gray-500 mt-1">{ticket.loss_amount}</p>
-                  <Button size="sm" className="mt-1 bg-emerald-600 hover:bg-emerald-700">
-                    <Shield className="h-3 w-3 mr-1" />
-                    Certify
-                  </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              </CardHeader>
+            </Card>
 
-      {/* Risk Assessments */}
-      <Card className="bg-slate-800/50 border-gray-600/30">
-        <CardHeader>
-          <CardTitle className="text-emerald-400 flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Protocol Risk Assessments
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {dashboardData.riskAssessments.map((assessment: any) => (
-              <div key={assessment.protocol} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
-                <div>
-                  <p className="font-medium text-white">{assessment.protocol}</p>
-                  <p className="text-sm text-gray-400">Last assessed: {assessment.lastAssessed}</p>
-                </div>
-                <Badge className={`${
-                  assessment.riskLevel === 'Critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
-                  assessment.riskLevel === 'High' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
-                  'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
-                }`}>
-                  {assessment.riskLevel} Risk
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+            {/* Render appropriate staking component */}
+            {walletType === 'iota' ? <StakingRewards /> : <EVMStakingRewards />}
+          </TabsContent>
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            {userRole === "client" ? "Client Dashboard" :
-             userRole === "analyst" ? "Security Analyst Dashboard" :
-             userRole === "certifier" ? "Incident Certifier Dashboard" : "Dashboard"}
-          </h1>
-          <p className="text-gray-400 text-lg">
-            {userRole === "client" ? "Track your security incident reports and rewards" :
-             userRole === "analyst" ? "Analyze incidents and provide security insights" :
-             userRole === "certifier" ? "Validate and certify security incident reports" : "Welcome back"}
-          </p>
-        </div>
+          <TabsContent value="audit" className="space-y-6">
+            <SmartContractAudit />
+          </TabsContent>
 
-        {/* Role-specific dashboard content */}
-        {userRole === "client" && renderClientDashboard()}
-        {userRole === "analyst" && renderAnalystDashboard()}
-        {userRole === "certifier" && renderCertifierDashboard()}
+          <TabsContent value="ai" className="space-y-6">
+            <AIAssistant />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
