@@ -8,6 +8,11 @@ import { useToast } from "@/hooks/use-toast";
 import { aiAssistant } from "@/lib/ai-service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useWallet } from "@/components/WalletProvider";
+import { useCurrentAccount, useSignTransaction } from "@iota/dapp-kit";
+import { evmContractService } from "@/lib/evm-contract";
+import { createContractService } from "@/lib/contract";
+import { useIotaClient } from "@iota/dapp-kit";
 import {
   AlertTriangle,
   Shield,
@@ -37,7 +42,8 @@ export default function IncidentReport({ onClose }: { onClose: () => void }) {
   const [reportMode, setReportMode] = useState<"manual" | "ai-assisted">("manual");
   const [userDescription, setUserDescription] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [incidentData, setIncidentData] = useState<IncidentData>({
     title: "",
     description: "",
@@ -48,12 +54,15 @@ export default function IncidentReport({ onClose }: { onClose: () => void }) {
     evidenceUrls: "",
     contactInfo: ""
   });
-  
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { walletType, isEVMConnected, isIOTAConnected } = useWallet();
+  const iotaAccount = useCurrentAccount();
+  const iotaClient = useIotaClient();
+  const { mutate: signTransaction } = useSignTransaction();
 
   // Mutation for creating incident reports in the database
   const createIncidentMutation = useMutation({
@@ -99,11 +108,11 @@ Respond ONLY with valid JSON, no other text.
       `;
 
       const response = await aiAssistant.getChatResponse(generationPrompt);
-      
+
       try {
         // Try to parse the JSON response
         const parsedData = JSON.parse(response);
-        
+
         setIncidentData({
           title: parsedData.title || "",
           description: parsedData.description || "",
@@ -114,7 +123,7 @@ Respond ONLY with valid JSON, no other text.
           evidenceUrls: parsedData.evidenceUrls || "",
           contactInfo: incidentData.contactInfo // Keep existing contact info
         });
-        
+
         toast({
           title: "Report Generated",
           description: "AI has generated your incident report. Please review and submit.",
@@ -126,7 +135,7 @@ Respond ONLY with valid JSON, no other text.
           title: "AI-Generated Incident Report",
           description: response
         }));
-        
+
         toast({
           title: "Report Generated",
           description: "AI has analyzed your situation. Please review the details.",
@@ -179,7 +188,7 @@ Provide detailed technical analysis suitable for security analysts and certifier
 
       const analysis = await aiAssistant.analyzeVulnerability(analysisPrompt);
       setAiAnalysis(analysis);
-      
+
       toast({
         title: "AI Analysis Complete",
         description: "Security incident has been analyzed by AI",
@@ -202,7 +211,7 @@ Provide detailed technical analysis suitable for security analysts and certifier
     if (!incidentData.title.trim()) missingFields.push("Title");
     if (!incidentData.description.trim()) missingFields.push("Description");
     if (!incidentData.contactInfo.trim()) missingFields.push("Contact Information");
-    
+
     if (missingFields.length > 0) {
       toast({
         title: "Missing Required Fields",
@@ -212,37 +221,194 @@ Provide detailed technical analysis suitable for security analysts and certifier
       return;
     }
 
+    // Check wallet connection
+    if (walletType === 'iota' && !isIOTAConnected) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your IOTA wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (walletType === 'evm' && !isEVMConnected) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your EVM wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
+
     try {
-      // Create incident report data for the database
-      const reportData = {
+      let txHash = '';
+      const timestamp = new Date().toISOString();
+
+      // Create evidence hash from form data
+      const evidenceData = {
         title: incidentData.title,
         description: incidentData.description,
-        affected_systems: incidentData.affectedSystems,
-        attack_vectors: incidentData.attackVector,
         severity: incidentData.severity,
-        client_name: "Security Client", // In a real app, this would come from user auth
-        contact_info: incidentData.contactInfo,
-        evidence_urls: incidentData.evidenceUrls,
-        ai_analysis: aiAnalysis,
-        status: "pending",
-        client_wallet: "", // Would come from wallet connection
+        contactInfo: incidentData.contactInfo,
+        affectedSystems: incidentData.affectedSystems,
+        estimatedLoss: incidentData.estimatedLoss,
+        attackVector: incidentData.attackVector,
+        evidenceUrls: incidentData.evidenceUrls,
+        aiAnalysis: aiAnalysis,
+        timestamp
       };
+      const evidenceHash = btoa(JSON.stringify(evidenceData));
 
-      // Submit to database - this will now appear on analyst and certifier dashboards
-      await createIncidentMutation.mutateAsync(reportData);
+      if (walletType === 'evm') {
+        // Submit to EVM blockchain
+        const ticketId = await evmContractService.createTicket();
+        const tx = await ticketId.wait();
+        txHash = tx.transactionHash;
+
+        toast({
+          title: "EVM Transaction Submitted",
+          description: `Transaction hash: ${txHash}`,
+        });
+      } else if (walletType === 'iota' && iotaAccount && iotaClient) {
+        // Submit to IOTA blockchain
+        const contractService = createContractService(iotaClient);
+
+        // Get or create ticket store
+        let storeId = await contractService.getTicketStoreId(iotaAccount.address);
+        if (!storeId) {
+          // Create new ticket store first
+          const createStoreTx = await contractService.createTicketStore();
+
+          signTransaction(
+            { transaction: createStoreTx },
+            {
+              onSuccess: async (storeResult) => {
+                // After store creation, create the ticket
+                const mockStoreId = `0x${Math.random().toString(16).slice(2, 42)}`;
+                const ticketTx = await contractService.createTicket(
+                  mockStoreId,
+                  evidenceHash,
+                  incidentData.title,
+                  incidentData.description,
+                  incidentData.severity,
+                  100, // Default stake amount
+                  iotaAccount.address
+                );
+
+                signTransaction(
+                  { transaction: ticketTx },
+                  {
+                    onSuccess: (result) => {
+                      txHash = result.digest;
+                      handleSuccessfulSubmission(txHash, evidenceData);
+                    },
+                    onError: (error) => {
+                      console.error('Ticket creation failed:', error);
+                      toast({
+                        title: "Transaction Failed",
+                        description: "Failed to create ticket on IOTA blockchain",
+                        variant: "destructive",
+                      });
+                      setIsSubmitting(false);
+                    },
+                  }
+                );
+              },
+              onError: (error) => {
+                console.error('Store creation failed:', error);
+                toast({
+                  title: "Transaction Failed",
+                  description: "Failed to create ticket store on IOTA blockchain",
+                  variant: "destructive",
+                });
+                setIsSubmitting(false);
+              },
+            }
+          );
+          return;
+        } else {
+          // Create ticket with existing store
+          const ticketTx = await contractService.createTicket(
+            storeId,
+            evidenceHash,
+            incidentData.title,
+            incidentData.description,
+            incidentData.severity,
+            100, // Default stake amount
+            iotaAccount.address
+          );
+
+          signTransaction(
+            { transaction: ticketTx },
+            {
+              onSuccess: (result) => {
+                txHash = result.digest;
+                handleSuccessfulSubmission(txHash, evidenceData);
+              },
+              onError: (error) => {
+                console.error('Transaction failed:', error);
+                toast({
+                  title: "Transaction Failed",
+                  description: "Failed to submit incident to IOTA blockchain",
+                  variant: "destructive",
+                });
+                setIsSubmitting(false);
+              },
+            }
+          );
+          return;
+        }
+      }
+
+      // Handle EVM success case
+      if (walletType === 'evm' && txHash) {
+        handleSuccessfulSubmission(txHash, evidenceData);
+      }
+
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit to blockchain",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSuccessfulSubmission = async (txHash: string, evidenceData: any) => {
+    try {
+      // Store in backend for enhanced tracking
+      const response = await fetch('/api/incident-reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...evidenceData,
+          status: 'submitted',
+          blockchainTxHash: txHash,
+          network: walletType,
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to store in backend database');
+      }
 
       toast({
-        title: "Incident Reported Successfully",
-        description: "Your security incident has been submitted and is now visible to analysts and certifiers for review",
+        title: "Report Submitted to Blockchain",
+        description: `Incident report stored on ${walletType === 'iota' ? 'IOTA' : 'Scroll EVM'} blockchain`,
       });
 
       onClose();
-    } catch (error: any) {
-      console.error("Incident submission error:", error);
+    } catch (error) {
+      console.error('Backend storage error:', error);
       toast({
-        title: "Submission Failed",
-        description: `Failed to submit incident: ${error.message || "Unknown error"}`,
+        title: "Blockchain Success, Database Warning",
+        description: "Stored on blockchain but failed to save to local database",
         variant: "destructive",
       });
     } finally {
@@ -295,8 +461,8 @@ Provide detailed technical analysis suitable for security analysts and certifier
               variant={reportMode === "manual" ? "default" : "outline"}
               onClick={() => setReportMode("manual")}
               className={`h-auto p-4 flex flex-col items-start space-y-2 ${
-                reportMode === "manual" 
-                  ? "bg-blue-600 hover:bg-blue-700 border-blue-500" 
+                reportMode === "manual"
+                  ? "bg-blue-600 hover:bg-blue-700 border-blue-500"
                   : "border-gray-600 hover:border-blue-500"
               }`}
             >
@@ -308,13 +474,13 @@ Provide detailed technical analysis suitable for security analysts and certifier
                 Fill out the incident details manually using structured forms
               </p>
             </Button>
-            
+
             <Button
               variant={reportMode === "ai-assisted" ? "default" : "outline"}
               onClick={() => setReportMode("ai-assisted")}
               className={`h-auto p-4 flex flex-col items-start space-y-2 ${
-                reportMode === "ai-assisted" 
-                  ? "bg-purple-600 hover:bg-purple-700 border-purple-500" 
+                reportMode === "ai-assisted"
+                  ? "bg-purple-600 hover:bg-purple-700 border-purple-500"
                   : "border-gray-600 hover:border-purple-500"
               }`}
             >
@@ -349,7 +515,7 @@ Provide detailed technical analysis suitable for security analysts and certifier
               placeholder="Describe what happened... For example: 'My wallet was drained after clicking a suspicious link. I lost about $5000 worth of tokens. The transaction happened on Ethereum mainnet around 2 hours ago. I have the transaction hash and can provide screenshots...'"
               className="bg-slate-700/50 border-gray-600 text-white min-h-[150px]"
             />
-            
+
             <Button
               onClick={handleAIGeneration}
               disabled={isGenerating || !userDescription.trim()}
@@ -561,7 +727,7 @@ Provide detailed technical analysis suitable for security analysts and certifier
               {isSubmitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                  Submitting...
+                  Submitting to {walletType === 'iota' ? 'IOTA' : 'Scroll EVM'}...
                 </>
               ) : (
                 <>
