@@ -2,9 +2,11 @@ import { ConnectButton, useCurrentAccount } from "@iota/dapp-kit";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
-import { Shield, Wallet, ChevronDown, Link } from "lucide-react";
+import { Shield, Wallet, ChevronDown, Link, Coins, Network } from "lucide-react";
 import { useWallet } from './WalletProvider';
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import BlockchainSelector from "./BlockchainSelector";
 
 interface HeaderProps {
   onRoleChange: (role: string) => void;
@@ -14,6 +16,8 @@ interface HeaderProps {
 export default function Header({ onRoleChange, currentRole }: HeaderProps) {
   const iotaAccount = useCurrentAccount();
   const { 
+    walletType,
+    setWalletType,
     evmAddress, 
     iotaAddress, 
     connectEVMWallet, 
@@ -21,6 +25,8 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
     isEVMConnected,
     isIOTAConnected 
   } = useWallet();
+  const { toast } = useToast();
+  const [showBlockchainSelector, setShowBlockchainSelector] = useState(false);
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -110,6 +116,27 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
               </SelectContent>
             </Select>
 
+            {/* Blockchain Selector */}
+            <Button
+              variant="outline"
+              onClick={() => setShowBlockchainSelector(true)}
+              className="border-purple-500/30 text-gray-300 hover:bg-purple-500/10"
+            >
+              <Network className="h-4 w-4 mr-2" />
+              {walletType === 'iota' ? 'IOTA' : 'Scroll EVM'}
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+
+            {/* Staking Pool Link */}
+            <Button
+              variant="ghost"
+              onClick={() => window.location.href = '/staking'}
+              className="text-gray-300 hover:bg-purple-500/20"
+            >
+              <Coins className="h-4 w-4 mr-2" />
+              Staking Pool
+            </Button>
+
             {/* Connection Status Display */}
             <div className="flex items-center space-x-2">
               {isIOTAConnected && (
@@ -141,6 +168,13 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
           </div>
         </div>
       </div>
+      
+      {/* Blockchain Selector Modal */}
+      <BlockchainSelector
+        isOpen={showBlockchainSelector}
+        onClose={() => setShowBlockchainSelector(false)}
+        onConnected={() => setShowBlockchainSelector(false)}
+      />
     </header>
   );
 }

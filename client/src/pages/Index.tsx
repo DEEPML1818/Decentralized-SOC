@@ -7,7 +7,8 @@ import { useCurrentAccount, ConnectButton } from "@iota/dapp-kit";
 import Header from "@/components/Header";
 import Dashboard from "@/components/Dashboard";
 import RoleSelectionModal from "@/components/RoleSelectionModal";
-import { WalletProvider } from "@/components/WalletProvider";
+import BlockchainSelector from "@/components/BlockchainSelector";
+import { WalletProvider, useWallet } from "@/components/WalletProvider";
 import { 
   Shield, 
   Network, 
@@ -43,6 +44,10 @@ function IndexContent() {
   const [currentRole, setCurrentRole] = useState("client");
   const [showRoleModal, setShowRoleModal] = useState(false);
   const account = useCurrentAccount();
+  const { walletType, isEVMConnected, isIOTAConnected } = useWallet();
+
+  // Determine if user is connected based on selected wallet type
+  const isConnected = walletType === 'iota' ? isIOTAConnected : isEVMConnected;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
@@ -53,6 +58,7 @@ function IndexContent() {
         showRoleModal={showRoleModal}
         setShowRoleModal={setShowRoleModal}
         account={account}
+        isConnected={isConnected}
       />
     </div>
   );
@@ -64,19 +70,22 @@ interface IndexPageContentProps {
   showRoleModal: boolean;
   setShowRoleModal: (show: boolean) => void;
   account: any;
+  isConnected: boolean;
 }
 
-function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowRoleModal, account }: IndexPageContentProps) {
+function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowRoleModal, account, isConnected }: IndexPageContentProps) {
   const [userRole, setUserRole] = useState<string>("");
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("problem");
+  const [showBlockchainSelector, setShowBlockchainSelector] = useState(false);
+  const { walletType } = useWallet();
 
   useEffect(() => {
-    if (account && !userRole) {
+    if (isConnected && !userRole) {
       setShowRoleModal(true);
     }
-  }, [account, userRole]);
+  }, [isConnected, userRole]);
 
   const handleRoleSelection = (role: string) => {
     setUserRole(role);
@@ -88,14 +97,14 @@ function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowR
   };
 
   // Show dashboard when wallet is connected and role is selected
-  if (account && userRole) {
+  if (isConnected && userRole) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <Header 
           onRoleChange={setUserRole}
           currentRole={userRole}
         />
-        <Dashboard />
+        <Dashboard currentRole={userRole} />
       </div>
     );
   }
@@ -670,7 +679,7 @@ function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowR
             <div className="grid md:grid-cols-2 gap-8">
               <Card className="bg-slate-800/50 border-green-500/30 backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle classNameName="text-green-400 text-xl flex items-center gap-2">
+                  <CardTitle className="text-green-400 text-xl flex items-center gap-2">
                     <Clock className="h-6 w-6" />
                     Immediate Roadmap (Q1 2024)
                   </CardTitle>
@@ -785,6 +794,19 @@ function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowR
           onRoleSelect={handleRoleSelection}
         />
       )}
+
+      {/* Blockchain Selector Modal */}
+      <BlockchainSelector
+        isOpen={showBlockchainSelector}
+        onClose={() => setShowBlockchainSelector(false)}
+        onConnected={() => {
+          setShowBlockchainSelector(false);
+          // After connecting blockchain, show role selection
+          if (!userRole) {
+            setShowRoleModal(true);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Router, Route, Switch } from "wouter";
 import { Toaster } from "sonner";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import StakingPoolPage from "./components/StakingPoolPage";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -79,6 +80,7 @@ function App() {
         <div className="min-h-screen bg-background text-foreground">
           <Switch>
             <Route path="/" component={Index} />
+            <Route path="/staking" component={StakingPoolPage} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />
