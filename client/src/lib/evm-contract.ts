@@ -795,13 +795,28 @@ export class EVMContractService {
 
       this.signer = await this.provider.getSigner();
       
-      // Initialize contracts
+      // Verify network connection
+      const network = await this.provider.getNetwork();
+      console.log('Connected to network:', network.name, 'ChainId:', network.chainId);
+      
+      if (network.chainId.toString() !== '534351') {
+        throw new Error('Please switch to Scroll Sepolia Testnet');
+      }
+      
+      // Initialize contracts with verification
       this.cltRewardContract = new Contract(CONTRACT_ADDRESSES.CLT_REWARD, CLT_REWARD_ABI, this.signer);
       this.stakingPoolContract = new Contract(CONTRACT_ADDRESSES.CLT_STAKING_POOL, CLT_STAKING_POOL_ABI, this.signer);
       this.socServiceContract = new Contract(CONTRACT_ADDRESSES.SOC_SERVICE, SOC_SERVICE_ABI, this.signer);
 
+      // Verify contract deployment
+      const socCode = await this.provider.getCode(CONTRACT_ADDRESSES.SOC_SERVICE);
+      if (socCode === '0x') {
+        throw new Error('SOC Service contract not deployed on this network');
+      }
+
       const address = await this.signer.getAddress();
-      console.log('Connected to EVM wallet:', address);
+      console.log('Successfully connected to EVM wallet:', address);
+      console.log('SOC Service contract verified at:', CONTRACT_ADDRESSES.SOC_SERVICE);
       return address;
     } catch (error: any) {
       console.error('Failed to connect wallet:', error);
@@ -870,15 +885,50 @@ export class EVMContractService {
     if (!this.socServiceContract) {
       await this.connectWallet();
     }
-    if (!this.socServiceContract) throw new Error('Contract not initialized');
+    if (!this.socServiceContract) throw new Error('SOC Service contract not initialized');
     
     try {
-      const tx = await this.socServiceContract.createTicket();
-      console.log('Ticket creation transaction:', tx);
+      // Check if wallet is properly connected
+      const signerAddress = await this.signer.getAddress();
+      console.log('Creating ticket from address:', signerAddress);
+
+      // Estimate gas for the transaction
+      const gasEstimate = await this.socServiceContract.createTicket.estimateGas();
+      console.log('Estimated gas:', gasEstimate.toString());
+
+      // Add 20% buffer to gas estimate
+      const gasLimit = (gasEstimate * BigInt(120)) / BigInt(100);
+
+      // Get current gas price
+      const gasPrice = await this.provider!.getFeeData();
+      
+      // Create the transaction with proper gas settings
+      const tx = await this.socServiceContract.createTicket({
+        gasLimit: gasLimit,
+        maxFeePerGas: gasPrice.maxFeePerGas,
+        maxPriorityFeePerGas: gasPrice.maxPriorityFeePerGas,
+      });
+      
+      console.log('Ticket creation transaction submitted:', {
+        hash: tx.hash,
+        gasLimit: gasLimit.toString(),
+        maxFeePerGas: gasPrice.maxFeePerGas?.toString(),
+      });
+      
       return tx;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating ticket:', error);
-      throw error;
+      
+      // Handle common error cases
+      if (error.code === 'INSUFFICIENT_FUNDS') {
+        throw new Error('Insufficient funds to pay for gas');
+      } else if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
+        throw new Error('Unable to estimate gas - contract may revert');
+      } else if (error.reason) {
+        throw new Error(`Contract error: ${error.reason}`);
+      } else {
+        throw new Error(`Transaction failed: ${error.message}`);
+      }
     }
   }
 

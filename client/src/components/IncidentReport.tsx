@@ -267,18 +267,45 @@ Provide detailed technical analysis suitable for security analysts and certifier
           await evmContractService.connectWallet();
         }
 
-        // Submit to EVM blockchain
-        const tx = await evmContractService.createTicket();
-        const receipt = await tx.wait();
-        txHash = receipt.transactionHash;
-
+        // Show transaction pending state
         toast({
-          title: "EVM Transaction Submitted",
-          description: `Transaction hash: ${txHash}`,
+          title: "Submitting to Blockchain",
+          description: "Please confirm the transaction in your wallet...",
         });
 
-        // Handle success immediately for EVM
-        await handleSuccessfulSubmission(txHash, evidenceData);
+        // Submit to EVM blockchain with proper error handling
+        try {
+          const tx = await evmContractService.createTicket();
+          
+          toast({
+            title: "Transaction Submitted",
+            description: `Transaction hash: ${tx.hash}. Waiting for confirmation...`,
+          });
+
+          // Wait for transaction confirmation
+          const receipt = await tx.wait();
+          txHash = receipt.transactionHash;
+
+          toast({
+            title: "Transaction Confirmed",
+            description: `Block: ${receipt.blockNumber}`,
+          });
+
+          // Handle success after confirmation
+          await handleSuccessfulSubmission(txHash, evidenceData);
+
+        } catch (contractError: any) {
+          console.error('Contract interaction error:', contractError);
+          
+          // Handle specific error types
+          if (contractError.code === 4001) {
+            throw new Error('Transaction was rejected by user');
+          } else if (contractError.code === -32603) {
+            throw new Error('Transaction failed: insufficient funds or gas');
+          } else {
+            throw new Error(`Contract error: ${contractError.message || 'Unknown blockchain error'}`);
+          }
+        }
 
       } else if (walletType === 'iota' && iotaAccount && iotaClient) {
         // Submit to IOTA blockchain
@@ -298,9 +325,20 @@ Provide detailed technical analysis suitable for security analysts and certifier
 
     } catch (error: any) {
       console.error('Submission error:', error);
+      
+      let errorMessage = "Failed to submit to blockchain";
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.code === 4001) {
+        errorMessage = "Transaction was rejected by user";
+      } else if (error.code === -32603) {
+        errorMessage = "Transaction failed - check your wallet balance";
+      }
+      
       toast({
         title: "Submission Failed",
-        description: error.message || "Failed to submit to blockchain",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsSubmitting(false);
