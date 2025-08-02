@@ -765,36 +765,48 @@ export class EVMContractService {
 
   async connectWallet(): Promise<string> {
     if (!this.provider) {
-      throw new Error('MetaMask not detected');
-    }
-
-    // Request account access
-    await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
-    
-    // Switch to Scroll Sepolia if not already connected
-    try {
-      await (window as any).ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: SCROLL_TESTNET_CONFIG.chainId }],
-      });
-    } catch (switchError: any) {
-      // Chain hasn't been added to MetaMask
-      if (switchError.code === 4902) {
-        await (window as any).ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [SCROLL_TESTNET_CONFIG],
-        });
+      await this.initializeProvider();
+      if (!this.provider) {
+        throw new Error('MetaMask not detected. Please install MetaMask.');
       }
     }
 
-    this.signer = await this.provider.getSigner();
-    
-    // Initialize contracts
-    this.cltRewardContract = new Contract(CONTRACT_ADDRESSES.CLT_REWARD, CLT_REWARD_ABI, this.signer);
-    this.stakingPoolContract = new Contract(CONTRACT_ADDRESSES.CLT_STAKING_POOL, CLT_STAKING_POOL_ABI, this.signer);
-    this.socServiceContract = new Contract(CONTRACT_ADDRESSES.SOC_SERVICE, SOC_SERVICE_ABI, this.signer);
+    try {
+      // Request account access
+      await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+      
+      // Switch to Scroll Sepolia if not already connected
+      try {
+        await (window as any).ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: SCROLL_TESTNET_CONFIG.chainId }],
+        });
+      } catch (switchError: any) {
+        // Chain hasn't been added to MetaMask
+        if (switchError.code === 4902) {
+          await (window as any).ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [SCROLL_TESTNET_CONFIG],
+          });
+        } else {
+          throw switchError;
+        }
+      }
 
-    return await this.signer.getAddress();
+      this.signer = await this.provider.getSigner();
+      
+      // Initialize contracts
+      this.cltRewardContract = new Contract(CONTRACT_ADDRESSES.CLT_REWARD, CLT_REWARD_ABI, this.signer);
+      this.stakingPoolContract = new Contract(CONTRACT_ADDRESSES.CLT_STAKING_POOL, CLT_STAKING_POOL_ABI, this.signer);
+      this.socServiceContract = new Contract(CONTRACT_ADDRESSES.SOC_SERVICE, SOC_SERVICE_ABI, this.signer);
+
+      const address = await this.signer.getAddress();
+      console.log('Connected to EVM wallet:', address);
+      return address;
+    } catch (error: any) {
+      console.error('Failed to connect wallet:', error);
+      throw new Error(`Failed to connect wallet: ${error.message}`);
+    }
   }
 
   // CLT Token functions
@@ -855,8 +867,19 @@ export class EVMContractService {
 
   // SOC Service functions
   async createTicket(): Promise<any> {
+    if (!this.socServiceContract) {
+      await this.connectWallet();
+    }
     if (!this.socServiceContract) throw new Error('Contract not initialized');
-    return await this.socServiceContract.createTicket();
+    
+    try {
+      const tx = await this.socServiceContract.createTicket();
+      console.log('Ticket creation transaction:', tx);
+      return tx;
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      throw error;
+    }
   }
 
   async getTicket(ticketId: number): Promise<EVMTicket> {

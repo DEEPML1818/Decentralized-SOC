@@ -41,23 +41,31 @@ export default function Index() {
 }
 
 function IndexContent() {
-  const [currentRole, setCurrentRole] = useState("client");
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const account = useCurrentAccount();
+  const [showBlockchainSelector, setShowBlockchainSelector] = useState(false);
+  const { toast } = useToast();
   const { walletType, isEVMConnected, isIOTAConnected } = useWallet();
+  const iotaAccount = useCurrentAccount();
+  const [stats, setStats] = useState({
+    totalTickets: 156,
+    activeAnalysts: 42,
+    resolvedIncidents: 89,
+    stakingRewards: 2.4
+  });
 
   // Determine if user is connected based on selected wallet type
   const isConnected = walletType === 'iota' ? isIOTAConnected : isEVMConnected;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
-      <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
+      <Header currentRole={selectedRole} onRoleChange={setSelectedRole} />
       <IndexPageContent 
-        currentRole={currentRole} 
-        setCurrentRole={setCurrentRole}
+        selectedRole={selectedRole} 
+        setSelectedRole={setSelectedRole}
         showRoleModal={showRoleModal}
         setShowRoleModal={setShowRoleModal}
-        account={account}
+        iotaAccount={iotaAccount}
         isConnected={isConnected}
       />
     </div>
@@ -65,15 +73,15 @@ function IndexContent() {
 }
 
 interface IndexPageContentProps {
-  currentRole: string;
-  setCurrentRole: (role: string) => void;
+  selectedRole: string | null;
+  setSelectedRole: (role: string | null) => void;
   showRoleModal: boolean;
   setShowRoleModal: (show: boolean) => void;
-  account: any;
+  iotaAccount: any;
   isConnected: boolean;
 }
 
-function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowRoleModal, account, isConnected }: IndexPageContentProps) {
+function IndexPageContent({ selectedRole, setSelectedRole, showRoleModal, setShowRoleModal, iotaAccount, isConnected }: IndexPageContentProps) {
   const [userRole, setUserRole] = useState<string>("");
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +92,7 @@ function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowR
     if (isConnected && !userRole) {
       setShowRoleModal(true);
     }
-  }, [isConnected, userRole]);
+  }, [isConnected, userRole, setShowRoleModal]);
 
   const handleRoleSelection = (role: string) => {
     setUserRole(role);
@@ -119,7 +127,7 @@ function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowR
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      
+
 
       {/* Navigation Pills */}
       <div className="sticky top-16 z-40 bg-slate-900/90 backdrop-blur-sm border-b border-purple-500/20">
