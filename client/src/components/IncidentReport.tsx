@@ -9,10 +9,9 @@ import { aiAssistant } from "@/lib/ai-service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useWallet } from "@/components/WalletProvider";
-import { useCurrentAccount, useSignTransaction } from "@iota/dapp-kit";
+import { useCurrentAccount, useSignTransaction, useIotaClient } from "@iota/dapp-kit";
 import { evmContractService } from "@/lib/evm-contract";
 import { createContractService } from "@/lib/contract";
-import { useIotaClient } from "@iota/dapp-kit";
 import {
   AlertTriangle,
   Shield,
@@ -246,7 +245,7 @@ Provide detailed technical analysis suitable for security analysts and certifier
       let txHash = '';
       const timestamp = new Date().toISOString();
 
-      // Create evidence hash from form data
+      // Create evidence data object
       const evidenceData = {
         title: incidentData.title,
         description: incidentData.description,
@@ -257,14 +256,21 @@ Provide detailed technical analysis suitable for security analysts and certifier
         attackVector: incidentData.attackVector,
         evidenceUrls: incidentData.evidenceUrls,
         aiAnalysis: aiAnalysis,
-        timestamp
+        timestamp,
+        submissionType: 'incident_report'
       };
-      const evidenceHash = btoa(JSON.stringify(evidenceData));
 
       if (walletType === 'evm') {
-        // Connect to EVM wallet if not connected
-        if (!evmContractService.isConnected()) {
-          await evmContractService.connectWallet();
+        console.log('Starting EVM blockchain submission...');
+        
+        // Ensure wallet is connected first
+        try {
+          if (!evmContractService.isConnected()) {
+            console.log('Connecting to EVM wallet...');
+            await evmContractService.connectWallet();
+          }
+        } catch (walletError: any) {
+          throw new Error(`Failed to connect wallet: ${walletError.message}`);
         }
 
         // Show transaction pending state
@@ -273,10 +279,11 @@ Provide detailed technical analysis suitable for security analysts and certifier
           description: "Please confirm the transaction in your wallet...",
         });
 
-        // Submit to EVM blockchain with proper error handling
         try {
+          console.log('Creating ticket on EVM blockchain...');
           const tx = await evmContractService.createTicket();
           
+          console.log('Transaction submitted:', tx.hash);
           toast({
             title: "Transaction Submitted",
             description: `Transaction hash: ${tx.hash}. Waiting for confirmation...`,
@@ -285,10 +292,15 @@ Provide detailed technical analysis suitable for security analysts and certifier
           // Wait for transaction confirmation
           const receipt = await tx.wait();
           txHash = receipt.transactionHash;
+          
+          console.log('Transaction confirmed:', {
+            hash: txHash,
+            blockNumber: receipt.blockNumber
+          });
 
           toast({
             title: "Transaction Confirmed",
-            description: `Block: ${receipt.blockNumber}`,
+            description: `Incident stored on blockchain in block ${receipt.blockNumber}`,
           });
 
           // Handle success after confirmation
@@ -300,27 +312,66 @@ Provide detailed technical analysis suitable for security analysts and certifier
           // Handle specific error types
           if (contractError.code === 4001) {
             throw new Error('Transaction was rejected by user');
-          } else if (contractError.code === -32603) {
-            throw new Error('Transaction failed: insufficient funds or gas');
+          } else if (contractError.code === -32603 || contractError.code === 'INSUFFICIENT_FUNDS') {
+            throw new Error('Insufficient funds to pay for gas fees');
+          } else if (contractError.code === 'UNPREDICTABLE_GAS_LIMIT') {
+            throw new Error('Unable to estimate gas - contract may revert');
+          } else if (contractError.reason) {
+            throw new Error(`Contract error: ${contractError.reason}`);
           } else {
-            throw new Error(`Contract error: ${contractError.message || 'Unknown blockchain error'}`);
+            throw new Error(`Blockchain error: ${contractError.message || 'Unknown error'}`);
           }
         }
 
       } else if (walletType === 'iota' && iotaAccount && iotaClient) {
-        // Submit to IOTA blockchain
-        const contractService = createContractService(iotaClient);
-
-        // For demo purposes, create a simple transaction record
-        // In production, this would interact with the actual IOTA smart contract
-        const mockTxHash = `iota_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log('Starting IOTA blockchain submission...');
         
         toast({
-          title: "IOTA Transaction Simulated",
-          description: `Transaction hash: ${mockTxHash}`,
+          title: "Submitting to IOTA",
+          description: "Creating transaction on IOTA network...",
         });
 
-        await handleSuccessfulSubmission(mockTxHash, evidenceData);
+        try {
+          const contractService = createContractService(iotaClient);
+          
+          // Create a ticket transaction on IOTA
+          const transaction = await contractService.createTicket(
+            incidentData.title,
+            incidentData.description,
+            evidenceData
+          );
+
+          // Sign the transaction
+          signTransaction(
+            { transaction },
+            {
+              onSuccess: (result: any) => {
+                const txHash = result.digest || `iota_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                console.log('IOTA transaction successful:', txHash);
+                
+                toast({
+                  title: "IOTA Transaction Confirmed",
+                  description: `Incident stored on IOTA blockchain`,
+                });
+
+                handleSuccessfulSubmission(txHash, evidenceData);
+              },
+              onError: (error: any) => {
+                console.error('IOTA transaction failed:', error);
+                throw new Error(`IOTA transaction failed: ${error.message}`);
+              },
+            }
+          );
+          
+          return; // Exit early for IOTA to avoid duplicate calls
+
+        } catch (iotaError: any) {
+          console.error('IOTA submission error:', iotaError);
+          throw new Error(`IOTA error: ${iotaError.message || 'Failed to submit to IOTA'}`);
+        }
+
+      } else {
+        throw new Error('No supported wallet connected');
       }
 
     } catch (error: any) {
@@ -347,7 +398,9 @@ Provide detailed technical analysis suitable for security analysts and certifier
 
   const handleSuccessfulSubmission = async (txHash: string, evidenceData: any) => {
     try {
-      // Store in backend for enhanced tracking
+      console.log('Storing incident report in backend...', { txHash, network: walletType });
+      
+      // Store in backend for enhanced tracking and analyst notification
       const response = await fetch('/api/incident-reports', {
         method: 'POST',
         headers: {
@@ -358,18 +411,33 @@ Provide detailed technical analysis suitable for security analysts and certifier
           status: 'submitted',
           blockchainTxHash: txHash,
           network: walletType,
-          reporter_address: walletType === 'iota' ? iotaAccount?.address : null,
+          reporter_address: walletType === 'iota' ? iotaAccount?.address : await evmContractService.getSigner()?.getAddress(),
+          estimatedReward: incidentData.estimatedLoss ? parseFloat(incidentData.estimatedLoss.replace(/[^0-9.]/g, '')) || 100 : 100,
+          requiredAnalysts: incidentData.severity === 'critical' ? 3 : incidentData.severity === 'high' ? 2 : 1,
         }),
       });
 
       if (!response.ok) {
-        console.warn('Failed to store in backend database');
+        const errorText = await response.text();
+        console.warn('Failed to store in backend database:', errorText);
+      } else {
+        console.log('Successfully stored incident report in backend');
       }
 
       toast({
         title: "Report Successfully Submitted!",
-        description: `Incident report stored on ${walletType === 'iota' ? 'IOTA' : 'Scroll EVM'} blockchain with hash: ${txHash.substring(0, 10)}...`,
+        description: `Incident report stored on ${walletType === 'iota' ? 'IOTA' : 'Scroll EVM'} blockchain. Security analysts will begin investigation.`,
       });
+
+      // Trigger notification to analysts about new incident
+      window.dispatchEvent(new CustomEvent('newIncidentReported', { 
+        detail: { 
+          ...evidenceData, 
+          txHash,
+          network: walletType,
+          type: 'incident_report'
+        } 
+      }));
 
       // Reset form
       setIncidentData({
@@ -394,8 +462,18 @@ Provide detailed technical analysis suitable for security analysts and certifier
       console.error('Backend storage error:', error);
       toast({
         title: "Blockchain Success",
-        description: "Incident stored on blockchain successfully!",
+        description: "Incident stored on blockchain successfully! Analysts will be notified.",
       });
+      
+      // Still trigger analyst notification even if backend fails
+      window.dispatchEvent(new CustomEvent('newIncidentReported', { 
+        detail: { 
+          ...evidenceData, 
+          txHash,
+          network: walletType,
+          type: 'incident_report'
+        } 
+      }));
       
       // Still close the modal even if backend fails
       setTimeout(() => {

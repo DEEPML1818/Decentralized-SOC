@@ -344,6 +344,42 @@ Ensure the JSON is valid and parseable.`;
     }
   });
 
+  // Store incident reports submitted via blockchain
+  app.post('/api/incident-reports', async (req, res) => {
+    try {
+      const incidentData = req.body;
+      
+      // Store in memory (in production, this would go to a database)
+      const incidentReport = {
+        id: Date.now().toString(),
+        ...incidentData,
+        submittedAt: new Date().toISOString(),
+        status: 'submitted',
+        analysisStatus: 'pending_assignment'
+      };
+      
+      console.log('Incident report stored:', {
+        id: incidentReport.id,
+        title: incidentReport.title,
+        network: incidentReport.network,
+        txHash: incidentReport.blockchainTxHash
+      });
+      
+      res.json({ 
+        success: true, 
+        incidentId: incidentReport.id,
+        message: 'Incident report stored successfully' 
+      });
+      
+    } catch (error) {
+      console.error('Error storing incident report:', error);
+      res.status(500).json({ 
+        error: 'Failed to store incident report',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // AI-powered case analysis endpoint for blockchain submission
   app.post('/api/ai/analyze-case', async (req, res) => {
     try {
