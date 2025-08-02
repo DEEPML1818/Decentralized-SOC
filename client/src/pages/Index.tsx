@@ -79,7 +79,6 @@ function IndexPageContent({ currentRole, setCurrentRole, showRoleModal, setShowR
   const [isLoading, setIsLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("problem");
   const [showBlockchainSelector, setShowBlockchainSelector] = useState(false);
-  const { walletType } = useWallet();
 
   useEffect(() => {
     if (isConnected && !userRole) {

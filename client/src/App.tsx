@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import StakingPoolPage from "./components/StakingPoolPage";
+import PoolsPage from "./pages/PoolsPage";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -81,6 +82,7 @@ function App() {
           <Switch>
             <Route path="/" component={Index} />
             <Route path="/staking" component={StakingPoolPage} />
+            <Route path="/pools" component={PoolsPage} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />

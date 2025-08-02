@@ -892,6 +892,53 @@ export class EVMContractService {
     return Number(nextId);
   }
 
+  // Pool ticket functions
+  async openPool(poolData: {
+    title: string;
+    description: string;
+    severity: string;
+    rewardAmount: string;
+    requiredAnalysts: number;
+    timeline: string;
+  }): Promise<any> {
+    if (!this.socServiceContract) throw new Error('Contract not initialized');
+    
+    const rewardAmount = parseUnits(poolData.rewardAmount, 18);
+    
+    // In a real implementation, this would call the smart contract
+    // For now, we'll simulate the transaction
+    return {
+      wait: async () => {
+        console.log('Pool opened:', poolData);
+        return { transactionHash: '0x' + Math.random().toString(16).substr(2, 8) };
+      }
+    };
+  }
+
+  async joinPool(poolId: string): Promise<any> {
+    if (!this.socServiceContract) throw new Error('Contract not initialized');
+    
+    // In a real implementation, this would call the smart contract
+    return {
+      wait: async () => {
+        console.log('Joined pool:', poolId);
+        return { transactionHash: '0x' + Math.random().toString(16).substr(2, 8) };
+      }
+    };
+  }
+
+  async claimPoolReward(poolId: string): Promise<any> {
+    if (!this.socServiceContract) throw new Error('Contract not initialized');
+    
+    // In a real implementation, this would call the smart contract
+    return {
+      wait: async () => {
+        console.log('Claimed pool reward:', poolId);
+        return { transactionHash: '0x' + Math.random().toString(16).substr(2, 8) };
+      }
+    };
+  }
+
   // Utility functions
   isConnected(): boolean {
     return this.signer !== null;
