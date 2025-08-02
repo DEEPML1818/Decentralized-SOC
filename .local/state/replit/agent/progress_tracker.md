@@ -6,4 +6,5 @@
 [x] 6. Integrate dual blockchain support (IOTA + EVM) for all functionality
 [x] 7. Add dedicated pools page with ticket submission and management
 [x] 8. Update navigation and user interface for ticket workflow
-[ ] 9. Complete final testing and mark import as completed
+[x] 9. Create AI-powered case submission system with blockchain integration
+[x] 10. Complete final testing and mark import as completed

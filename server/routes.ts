@@ -344,6 +344,147 @@ Ensure the JSON is valid and parseable.`;
     }
   });
 
+  // AI-powered case analysis endpoint for blockchain submission
+  app.post('/api/ai/analyze-case', async (req, res) => {
+    try {
+      const { userInput, caseType, requestType } = req.body;
+      
+      if (!userInput || !caseType) {
+        return res.status(400).json({ error: 'User input and case type are required' });
+      }
+
+      if (!API_KEY) {
+        return res.status(500).json({ 
+          error: "AI service is not configured. Please add GEMINI_API_KEY to environment variables." 
+        });
+      }
+
+      const genAI = new GoogleGenerativeAI(API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+      const prompt = `You are a cybersecurity expert analyzing a security incident for blockchain case submission. 
+      
+Case Type: ${caseType}
+User Description: ${userInput}
+
+Analyze this security incident and provide a structured response for security analysts. Include:
+1. A clear, professional title
+2. Severity level (low/medium/high/critical) 
+3. Category classification
+4. Detailed technical analysis
+5. Security recommendations
+6. Estimated CLT reward amount (50-1000 based on severity and complexity)
+7. Number of analysts needed (1-5 based on complexity)
+
+Respond in valid JSON format:
+{
+  "title": "Professional case title",
+  "severity": "low|medium|high|critical", 
+  "category": "vulnerability|breach|malware|phishing|ddos|insider_threat|compliance|other",
+  "description": "Clear, concise summary for analysts",
+  "technicalDetails": "Detailed technical analysis with evidence and indicators",
+  "recommendations": ["recommendation1", "recommendation2", "recommendation3"],
+  "estimatedReward": 100,
+  "requiredAnalysts": 2
+}`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const analysis = response.text();
+      
+      // Try to parse as JSON, fallback to structured parsing
+      let parsedResult;
+      try {
+        // Extract JSON from response
+        const jsonMatch = analysis.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsedResult = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('No JSON found');
+        }
+      } catch {
+        // Fallback structured response
+        const severityMap: Record<string, string> = {
+          'vulnerability': 'medium',
+          'breach': 'high', 
+          'malware': 'high',
+          'phishing': 'medium',
+          'ddos': 'high',
+          'insider_threat': 'critical',
+          'compliance': 'low',
+          'other': 'medium'
+        };
+        
+        const caseSeverity = severityMap[caseType] || 'medium';
+        
+        parsedResult = {
+          title: `${caseType.charAt(0).toUpperCase() + caseType.slice(1)} Security Case`,
+          severity: caseSeverity,
+          category: caseType,
+          description: userInput.substring(0, 200) + (userInput.length > 200 ? '...' : ''),
+          technicalDetails: analysis,
+          recommendations: [
+            'Immediate containment and isolation',
+            'Comprehensive forensic analysis', 
+            'Implementation of monitoring controls'
+          ],
+          estimatedReward: caseSeverity === 'critical' ? 500 : caseSeverity === 'high' ? 300 : 150,
+          requiredAnalysts: caseSeverity === 'critical' ? 3 : 2
+        };
+      }
+
+      res.json(parsedResult);
+    } catch (error: any) {
+      console.error('Case analysis error:', error.message);
+      res.status(500).json({ 
+        error: 'Failed to analyze security case',
+        details: error.message 
+      });
+    }
+  });
+
+  // AI Cases storage endpoint
+  app.post('/api/ai-cases', async (req, res) => {
+    try {
+      const caseData = {
+        id: Date.now().toString(),
+        ...req.body,
+        status: 'pending_analysis',
+        createdAt: new Date().toISOString()
+      };
+
+      // Store case in memory (in production, use database)
+      if (!(global as any).aiCases) {
+        (global as any).aiCases = [];
+      }
+      (global as any).aiCases.unshift(caseData);
+
+      console.log(`New AI case uploaded: ${caseData.title} (Network: ${caseData.network})`);
+      
+      res.json({ success: true, caseId: caseData.id });
+    } catch (error: any) {
+      console.error('AI case storage error:', error.message);
+      res.status(500).json({ 
+        error: 'Failed to store AI case',
+        details: error.message 
+      });
+    }
+  });
+
+  // Get AI cases endpoint
+  app.get('/api/ai-cases', async (req, res) => {
+    try {
+      const cases = (global as any).aiCases || [];
+      res.json(cases);
+    } catch (error: any) {
+      console.error('AI cases retrieval error:', error.message);
+      res.status(500).json({ 
+        error: 'Failed to retrieve AI cases',
+        details: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

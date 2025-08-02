@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import TicketList from "./TicketList";
 import TicketForm from "./TicketForm";
 import IncidentReport from "./IncidentReport";
@@ -9,6 +10,7 @@ import StakingRewards from "./StakingRewards";
 import EVMStakingRewards from "./EVMStakingRewards";
 import SmartContractAudit from "./SmartContractAudit";
 import AIAssistant from "./AIAssistant";
+import AISubmitCaseModal from "./AISubmitCaseModal";
 import { useWallet } from './WalletProvider';
 import { 
   Shield, 
@@ -193,11 +195,11 @@ return (
           </TabsContent>
 
           <TabsContent value="tickets" className="space-y-6">
-            <TicketList />
+            <TicketList userRole={currentRole} />
           </TabsContent>
 
           <TabsContent value="report" className="space-y-6">
-            <IncidentReport />
+            <IncidentReport onClose={() => {}} />
           </TabsContent>
 
           <TabsContent value="staking" className="space-y-6">
@@ -230,8 +232,29 @@ return (
             <div className="space-y-8">
           {currentRole === "client" && (
             <>
-              <IncidentReport />
-              <TicketList />
+              {/* AI Case Submission */}
+              <Card className="bg-slate-800/50 border-green-500/30 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-green-400 flex items-center gap-2">
+                    <Bot className="h-5 w-5" />
+                    AI-Powered Case Submission
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Describe your security incident and let AI analyze it for blockchain submission
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AISubmitCaseModal>
+                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                      <Bot className="h-4 w-4 mr-2" />
+                      Submit Security Case with AI
+                    </Button>
+                  </AISubmitCaseModal>
+                </CardContent>
+              </Card>
+              
+              <IncidentReport onClose={() => {}} />
+              <TicketList userRole={currentRole} />
             </>
           )}
 
