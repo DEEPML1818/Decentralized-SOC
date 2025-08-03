@@ -55,7 +55,7 @@ function IndexContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
-      <Header currentRole={selectedRole} onRoleChange={setSelectedRole} />
+      <Header currentRole={selectedRole || ''} onRoleChange={setSelectedRole} />
       <IndexPageContent 
         selectedRole={selectedRole} 
         setSelectedRole={setSelectedRole}
@@ -86,9 +86,14 @@ function IndexPageContent({ selectedRole, setSelectedRole, showRoleModal, setSho
 
   useEffect(() => {
     if (isConnected && !userRole) {
-      setShowRoleModal(true);
+      // Auto-assign client role for immediate access
+      setUserRole('client');
+      toast({
+        title: "Welcome to dSOC!",
+        description: "You can change your role anytime from the header menu",
+      });
     }
-  }, [isConnected, userRole, setShowRoleModal]);
+  }, [isConnected, userRole, toast]);
 
   const handleRoleSelection = (role: string) => {
     setUserRole(role);
@@ -101,15 +106,7 @@ function IndexPageContent({ selectedRole, setSelectedRole, showRoleModal, setSho
 
   // Show dashboard when wallet is connected and role is selected
   if (isConnected && userRole) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <Header 
-          onRoleChange={setUserRole}
-          currentRole={userRole}
-        />
-        <Dashboard currentRole={userRole} />
-      </div>
-    );
+    return <Dashboard currentRole={userRole} />;
   }
 
   const navigationSections = [

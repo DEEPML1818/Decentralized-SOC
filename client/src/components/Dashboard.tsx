@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import Header from "./Header";
 import TicketList from "./TicketList";
 import TicketForm from "./TicketForm";
 import IncidentReport from "./IncidentReport";
@@ -10,7 +11,6 @@ import StakingRewards from "./StakingRewards";
 import EVMStakingRewards from "./EVMStakingRewards";
 import SmartContractAudit from "./SmartContractAudit";
 import AIAssistant from "./AIAssistant";
-import AISubmitCaseModal from "./AISubmitCaseModal";
 import { useWallet } from './WalletProvider';
 import { 
   Shield, 
@@ -24,7 +24,10 @@ import {
   TrendingUp,
   Activity,
   Link,
-  Lock
+  Lock,
+  AlertCircle,
+  CheckCircle,
+  Clock
 } from "lucide-react";
 
 interface DashboardProps {
@@ -48,15 +51,6 @@ export default function Dashboard({ currentRole }: DashboardProps) {
     }
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'client': return <FileText className="h-5 w-5" />;
-      case 'analyst': return <Shield className="h-5 w-5" />;
-      case 'certifier': return <Award className="h-5 w-5" />;
-      default: return <Users className="h-5 w-5" />;
-    }
-  };
-
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'client': return 'from-blue-500 to-cyan-500';
@@ -68,34 +62,38 @@ export default function Dashboard({ currentRole }: DashboardProps) {
 
   const isWalletConnected = walletType === 'iota' ? isIOTAConnected : isEVMConnected;
 
-return (
-    <div className="space-y-6">
-      <div className="text-center space-y-4">
-        <h2 className="text-3xl font-bold text-white">Security Operations Center</h2>
-        <p className="text-gray-400 max-w-2xl mx-auto">
-          Decentralized security incident management powered by blockchain technology. 
-          Submit, analyze, and validate security incidents in a trustless environment.
-        </p>
-      </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+      <Header 
+        onRoleChange={(role: string) => {}} 
+        currentRole={currentRole}
+      />
+      <div className="container mx-auto px-4 py-8 space-y-6">
+        <div className="text-center space-y-4">
+          <h2 className="text-3xl font-bold text-white">Security Operations Center</h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Decentralized security incident management powered by blockchain technology. 
+            Submit, analyze, and validate security incidents in a trustless environment.
+          </p>
+        </div>
 
-      {!isWalletConnected && (
-        <Card className="bg-amber-900/20 border-amber-500/30 backdrop-blur-sm">
-          <CardContent className="p-6 text-center">
-            <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Target className="h-8 w-8 text-amber-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-amber-400 mb-2">Connect Your Wallet</h3>
-            <p className="text-gray-400 mb-4">
-              Please connect your {walletType === 'iota' ? 'IOTA' : 'MetaMask'} wallet to access all features of the dSOC platform
-            </p>
-            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-              {walletType.toUpperCase()} Network Selected
-            </Badge>
-          </CardContent>
-        </Card>
-      )}
+        {!isWalletConnected && (
+          <Card className="bg-amber-900/20 border-amber-500/30 backdrop-blur-sm">
+            <CardContent className="p-6 text-center">
+              <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Target className="h-8 w-8 text-amber-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-amber-400 mb-2">Connect Your Wallet</h3>
+              <p className="text-gray-400 mb-4">
+                Please connect your {walletType === 'iota' ? 'IOTA' : 'MetaMask'} wallet to access all features of the dSOC platform
+              </p>
+              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                {walletType.toUpperCase()} Network Selected
+              </Badge>
+            </CardContent>
+          </Card>
+        )}
 
-      <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-6 lg:grid-cols-6 bg-slate-800/50">
             <TabsTrigger value="overview" className="flex items-center gap-2">
@@ -104,7 +102,7 @@ return (
             </TabsTrigger>
             <TabsTrigger value="tickets" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Tickets</span>
+              <span className="hidden sm:inline">Cases</span>
             </TabsTrigger>
             <TabsTrigger value="report" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -112,9 +110,7 @@ return (
             </TabsTrigger>
             <TabsTrigger value="staking" className="flex items-center gap-2">
               <Coins className="h-4 w-4" />
-              <span className="hidden sm:inline">
-                {walletType === 'iota' ? 'IOTA Staking' : 'EVM Staking'}
-              </span>
+              <span className="hidden sm:inline">Staking</span>
             </TabsTrigger>
             <TabsTrigger value="audit" className="flex items-center gap-2">
               <Code className="h-4 w-4" />
@@ -125,170 +121,157 @@ return (
               <span className="hidden sm:inline">AI</span>
             </TabsTrigger>
           </TabsList>
+
           <TabsContent value="overview" className="space-y-6">
-            {/* Wallet Connection Status */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className={`${walletType === 'iota' && isIOTAConnected ? 'bg-blue-900/20 border-blue-500/30' : 'bg-slate-800/50 border-gray-600/30'} backdrop-blur-sm`}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-blue-500 rounded-lg">
-                        <Link className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-blue-400">IOTA Network</CardTitle>
-                        <CardDescription className="text-gray-400">
-                          Native blockchain integration
-                        </CardDescription>
-                      </div>
+            {/* Role Status Card */}
+            <Card className={`bg-gradient-to-r ${getRoleColor(currentRole)} p-1 rounded-lg`}>
+              <div className="bg-slate-900 rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-white/10 rounded-full">
+                      {currentRole === 'client' && <FileText className="h-6 w-6 text-white" />}
+                      {currentRole === 'analyst' && <Shield className="h-6 w-6 text-white" />}
+                      {currentRole === 'certifier' && <Award className="h-6 w-6 text-white" />}
                     </div>
-                    <Badge className={isIOTAConnected ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}>
-                      {isIOTAConnected ? 'Connected' : 'Disconnected'}
-                    </Badge>
+                    <div>
+                      <h3 className="text-xl font-bold text-white capitalize">{currentRole} Dashboard</h3>
+                      <p className="text-gray-300">{getRoleDescription(currentRole)}</p>
+                    </div>
                   </div>
-                </CardHeader>
+                  <Badge className="bg-white/20 text-white border-white/30">
+                    Active Role
+                  </Badge>
+                </div>
+              </div>
+            </Card>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="bg-slate-800/50 border-purple-500/30 hover:border-purple-500/50 transition-colors cursor-pointer"
+                    onClick={() => setActiveTab("report")}>
+                <CardContent className="p-6 text-center">
+                  <Shield className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">Submit Incident Report</h3>
+                  <p className="text-gray-400 text-sm">Report security incidents and get analysis</p>
+                </CardContent>
               </Card>
 
-              <Card className={`${walletType === 'evm' && isEVMConnected ? 'bg-green-900/20 border-green-500/30' : 'bg-slate-800/50 border-gray-600/30'} backdrop-blur-sm`}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-green-500 rounded-lg">
-                        <Link className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-green-400">Scroll Testnet</CardTitle>
-                        <CardDescription className="text-gray-400">
-                          EVM-compatible L2 network
-                        </CardDescription>
-                      </div>
-                    </div>
-                    <Badge className={isEVMConnected ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}>
-                      {isEVMConnected ? 'Connected' : 'Disconnected'}
-                    </Badge>
-                  </div>
-                </CardHeader>
+              <Card className="bg-slate-800/50 border-blue-500/30 hover:border-blue-500/50 transition-colors cursor-pointer"
+                    onClick={() => setActiveTab("tickets")}>
+                <CardContent className="p-6 text-center">
+                  <FileText className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">Manage Cases</h3>
+                  <p className="text-gray-400 text-sm">View and manage security cases</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-green-500/30 hover:border-green-500/50 transition-colors cursor-pointer"
+                    onClick={() => setActiveTab("staking")}>
+                <CardContent className="p-6 text-center">
+                  <Coins className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">Staking Rewards</h3>
+                  <p className="text-gray-400 text-sm">Stake tokens and earn rewards</p>
+                </CardContent>
               </Card>
             </div>
 
-            {/* Role Overview */}
-            <Card className={`bg-gradient-to-r ${getRoleColor(currentRole)} bg-opacity-10 border-opacity-30`}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 bg-gradient-to-r ${getRoleColor(currentRole)} rounded-lg text-white`}>
-                      {getRoleIcon(currentRole)}
-                    </div>
+            {/* Platform Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-white capitalize">{currentRole} Dashboard</CardTitle>
-                      <CardDescription className="text-gray-300">
-                        {getRoleDescription(currentRole)} • Active on {walletType.toUpperCase()} network
-                      </CardDescription>
+                      <p className="text-gray-400 text-sm">Total Cases</p>
+                      <p className="text-2xl font-bold text-white">156</p>
                     </div>
+                    <FileText className="h-8 w-8 text-blue-400" />
                   </div>
-                  <Badge className="bg-white/10 text-white border-white/20">
-                    {walletType.toUpperCase()}
-                  </Badge>
-                </div>
-              </CardHeader>
-            </Card>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-400 text-sm">Active Analysts</p>
+                      <p className="text-2xl font-bold text-white">42</p>
+                    </div>
+                    <Users className="h-8 w-8 text-green-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-400 text-sm">Resolved Cases</p>
+                      <p className="text-2xl font-bold text-white">89</p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-purple-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-400 text-sm">Total Staked</p>
+                      <p className="text-2xl font-bold text-white">2.4M CLT</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-orange-400" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="tickets" className="space-y-6">
-            <TicketList userRole={currentRole} />
-          </TabsContent>
-
-          <TabsContent value="report" className="space-y-6">
-            <IncidentReport onClose={() => {}} />
-          </TabsContent>
-
-          <TabsContent value="staking" className="space-y-6">
-            {/* Network Info Header */}
-            <Card className={`bg-gradient-to-r ${walletType === 'iota' ? 'from-blue-900/20 to-purple-900/20 border-blue-500/30' : 'from-green-900/20 to-blue-900/20 border-green-500/30'} backdrop-blur-sm`}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Link className="h-6 w-6 text-blue-400" />
-                    <div>
-                      <CardTitle className={walletType === 'iota' ? 'text-blue-400' : 'text-green-400'}>
-                        {walletType === 'iota' ? 'IOTA Network' : 'Scroll Sepolia Testnet'}
-                      </CardTitle>
-                      <CardDescription className="text-gray-400">
-                        {walletType === 'iota' 
-                          ? 'Native IOTA blockchain staking and rewards'
-                          : 'EVM-compatible staking on Scroll L2 network'
-                        }
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <Badge className={`${walletType === 'iota' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'}`}>
-                    {walletType.toUpperCase()}
-                  </Badge>
-                </div>
-              </CardHeader>
-            </Card>
-
-            {/* Render appropriate staking component */}
-            <div className="space-y-8">
-          {currentRole === "client" && (
-            <>
-              {/* AI Case Submission */}
-              <Card className="bg-slate-800/50 border-green-500/30 backdrop-blur-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-slate-800/50 border-purple-500/30">
                 <CardHeader>
-                  <CardTitle className="text-green-400 flex items-center gap-2">
-                    <Bot className="h-5 w-5" />
-                    AI-Powered Case Submission
-                  </CardTitle>
+                  <CardTitle className="text-white">Submit New Case</CardTitle>
                   <CardDescription className="text-gray-400">
-                    Describe your security incident and let AI analyze it for blockchain submission
+                    Create a new security incident case
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <AISubmitCaseModal>
-                    <Button className="w-full bg-green-600 hover:bg-green-700">
-                      <Bot className="h-4 w-4 mr-2" />
-                      Submit Security Case with AI
-                    </Button>
-                  </AISubmitCaseModal>
+                  <TicketForm />
                 </CardContent>
               </Card>
               
-              <IncidentReport onClose={() => {}} />
-              <TicketList userRole={currentRole} />
-            </>
-          )}
+              <Card className="bg-slate-800/50 border-purple-500/30">
+                <CardHeader>
+                  <CardTitle className="text-white">Case Management</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    View and manage existing cases
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TicketList />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-          {currentRole === "analyst" && (
-            <>
-              <SmartContractAudit />
-              <AIAssistant />
-            </>
-          )}
+          <TabsContent value="report" className="space-y-6">
+            <Card className="bg-slate-800/50 border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="text-white">Incident Reporting</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Submit detailed security incident reports for analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <IncidentReport onClose={() => {}} />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {currentRole === "certifier" && (
-            <>
-              {/* <TicketStoreManager /> */}
-
-              {/* Show both staking options simultaneously */}
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-blue-400 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    IOTA Native Staking
-                  </h3>
-                  {isIOTAConnected ? <StakingRewards /> : (
-                    <Card className="bg-slate-800/50 border-blue-500/30 backdrop-blur-sm">
-                      <CardContent className="p-8 text-center">
-                        <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Lock className="h-8 w-8 text-blue-400" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-blue-400 mb-2">IOTA Wallet Required</h3>
-                        <p className="text-gray-400">Connect your IOTA wallet above to access native staking</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-
+          <TabsContent value="staking" className="space-y-6">
+            {isWalletConnected ? (
+              <div className="space-y-6">
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold text-green-400 flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full"></div>
@@ -296,10 +279,26 @@ return (
                   </h3>
                   <EVMStakingRewards />
                 </div>
+                
+                {walletType === 'iota' && (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-semibold text-blue-400 flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                      IOTA Native Staking
+                    </h3>
+                    <StakingRewards />
+                  </div>
+                )}
               </div>
-            </>
-          )}
-        </div>
+            ) : (
+              <Card className="bg-slate-800/50 border-amber-500/30">
+                <CardContent className="p-12 text-center">
+                  <Lock className="h-16 w-16 text-amber-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-amber-400 mb-2">Wallet Connection Required</h3>
+                  <p className="text-gray-400">Connect your wallet to access staking features</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-6">
