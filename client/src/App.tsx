@@ -5,8 +5,11 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import StakingPoolPage from "./components/StakingPoolPage";
 import PoolsPage from "./pages/PoolsPage";
+import IOTAPage from "./pages/IOTAPage";
+import EVMPage from "./pages/EVMPage";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
+import EVMIncidentReport from "./components/EVMIncidentReport";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { WalletProvider } from "./components/WalletProvider";
 import "./App.css";
@@ -83,6 +86,8 @@ function App() {
           <div className="min-h-screen bg-background text-foreground">
             <Switch>
               <Route path="/" component={Index} />
+              <Route path="/iota" component={IOTAPage} />
+              <Route path="/evm" component={EVMPage} />
               <Route path="/staking" component={StakingPoolPage} />
               <Route path="/pools" component={PoolsPage} />
               <Route component={NotFound} />
@@ -157,7 +162,11 @@ function App() {
                     </button>
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <IncidentReport onClose={() => setShowIncidentReport(false)} />
+                    {window.location.pathname === '/evm' ? (
+                      <EVMIncidentReport onClose={() => setShowIncidentReport(false)} />
+                    ) : (
+                      <IncidentReport onClose={() => setShowIncidentReport(false)} />
+                    )}
                   </div>
                 </div>
               </div>

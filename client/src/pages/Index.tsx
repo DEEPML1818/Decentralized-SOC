@@ -104,9 +104,15 @@ function IndexPageContent({ selectedRole, setSelectedRole, showRoleModal, setSho
     });
   };
 
-  // Show dashboard when wallet is connected and role is selected
+  // Redirect to appropriate blockchain-specific page when connected
   if (isConnected && userRole) {
-    return <Dashboard currentRole={userRole} />;
+    if (walletType === 'iota' && isIOTAConnected) {
+      window.location.href = '/iota';
+      return null;
+    } else if (walletType === 'evm' && isEVMConnected) {
+      window.location.href = '/evm';
+      return null;
+    }
   }
 
   const navigationSections = [
@@ -167,11 +173,42 @@ function IndexPageContent({ selectedRole, setSelectedRole, showRoleModal, setSho
               Decentralized SOC-as-a-Service on IOTA
             </h2>
 
-            <div className="mb-8">
-              <ConnectButton 
-                connectText="Connect Wallet & Enter Platform"
-                className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white font-semibold py-3 px-6 rounded-xl text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
-              />
+            <div className="mb-8 space-y-4">
+              <p className="text-gray-300 text-lg mb-6">Choose your blockchain to get started:</p>
+              
+              <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                <Card className="bg-blue-500/10 border-blue-500/30 hover:border-blue-400/50 transition-colors cursor-pointer">
+                  <CardContent className="p-6 text-center">
+                    <Network className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-blue-400 mb-2">IOTA Platform</h3>
+                    <p className="text-gray-300 text-sm mb-4">
+                      Feeless transactions, sustainable blockchain
+                    </p>
+                    <Button 
+                      onClick={() => window.location.href = '/iota'}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      Enter IOTA Platform
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-orange-500/10 border-orange-500/30 hover:border-orange-400/50 transition-colors cursor-pointer">
+                  <CardContent className="p-6 text-center">
+                    <Zap className="h-12 w-12 text-orange-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-orange-400 mb-2">Scroll Platform</h3>
+                    <p className="text-gray-300 text-sm mb-4">
+                      EVM compatible, pay with ETH, earn CLT
+                    </p>
+                    <Button 
+                      onClick={() => window.location.href = '/evm'}
+                      className="w-full bg-orange-600 hover:bg-orange-700"
+                    >
+                      Enter EVM Platform
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>
