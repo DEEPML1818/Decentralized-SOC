@@ -8,6 +8,7 @@ import PoolsPage from "./pages/PoolsPage";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { WalletProvider } from "./components/WalletProvider";
 import "./App.css";
 import SmartContractAudit from "./components/SmartContractAudit";
 
@@ -77,15 +78,16 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <Router>
-        <div className="min-h-screen bg-background text-foreground">
-          <Switch>
-            <Route path="/" component={Index} />
-            <Route path="/staking" component={StakingPoolPage} />
-            <Route path="/pools" component={PoolsPage} />
-            <Route component={NotFound} />
-          </Switch>
-          <Toaster />
+      <WalletProvider>
+        <Router>
+          <div className="min-h-screen bg-background text-foreground">
+            <Switch>
+              <Route path="/" component={Index} />
+              <Route path="/staking" component={StakingPoolPage} />
+              <Route path="/pools" component={PoolsPage} />
+              <Route component={NotFound} />
+            </Switch>
+            <Toaster />
 
             {/* AI Assistant Modal */}
             {showAIAssistant && (
@@ -162,6 +164,7 @@ function App() {
             )}
           </div>
         </Router>
+      </WalletProvider>
     </ThemeProvider>
   );
 }

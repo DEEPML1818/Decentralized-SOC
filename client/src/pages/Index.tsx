@@ -8,7 +8,7 @@ import Header from "@/components/Header";
 import Dashboard from "@/components/Dashboard";
 import RoleSelectionModal from "@/components/RoleSelectionModal";
 import BlockchainSelector from "@/components/BlockchainSelector";
-import { WalletProvider, useWallet } from "@/components/WalletProvider";
+import { useWallet } from "@/components/WalletProvider";
 import { 
   Shield, 
   Network, 
@@ -33,11 +33,7 @@ import {
 import { createContractService } from "@/lib/contract";
 
 export default function Index() {
-  return (
-    <WalletProvider>
-      <IndexContent />
-    </WalletProvider>
-  );
+  return <IndexContent />;
 }
 
 function IndexContent() {
