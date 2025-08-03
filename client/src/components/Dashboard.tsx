@@ -1,33 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import Header from "./Header";
-import TicketList from "./TicketList";
-import TicketForm from "./TicketForm";
+import { useToast } from "@/hooks/use-toast";
+import { useWallet } from "./WalletProvider";
 import IncidentReport from "./IncidentReport";
+import EVMIncidentReport from "./EVMIncidentReport";
+import TicketList from "./TicketList";
 import StakingRewards from "./StakingRewards";
 import EVMStakingRewards from "./EVMStakingRewards";
-import SmartContractAudit from "./SmartContractAudit";
 import AIAssistant from "./AIAssistant";
-import { useWallet } from './WalletProvider';
-import { 
-  Shield, 
-  FileText, 
-  Users, 
-  Award, 
-  Target,
-  Coins,
-  Bot,
-  Code,
+import SmartContractAudit from "./SmartContractAudit";
+import { evmContractService } from "@/lib/evm-contract";
+import {
+  Shield,
+  AlertTriangle,
+  Users,
   TrendingUp,
+  Brain,
+  Code,
+  Coins,
   Activity,
-  Link,
-  Lock,
-  AlertCircle,
-  CheckCircle,
-  Clock
+  DollarSign,
+  Zap
 } from "lucide-react";
 
 interface DashboardProps {
@@ -35,288 +30,216 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ currentRole }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState("overview");
-  const { walletType, isEVMConnected, isIOTAConnected } = useWallet();
-  const [activeView, setActiveView] = useState<"report" | "tickets" | "staking" | "audit" | "ai">("report");
+  const [activeTab, setActiveTab] = useState("incidents");
+  const [evmStats, setEvmStats] = useState({
+    ethBalance: "0",
+    cltBalance: "0",
+    totalStaked: "0",
+  });
 
-  const getRoleDescription = (role: string) => {
-    switch (role) {
-      case 'client':
-        return 'Submit security incidents and track their resolution progress';
-      case 'analyst':
-        return 'Analyze security incidents and provide detailed reports';
-      case 'certifier':
-        return 'Validate and certify security analysis reports';
-      default:
-        return 'Welcome to the decentralized security operations center';
-    }
-  };
+  const { walletType, evmAddress, iotaAddress, isEVMConnected, isIOTAConnected } = useWallet();
+  const { toast } = useToast();
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'client': return 'from-blue-500 to-cyan-500';
-      case 'analyst': return 'from-green-500 to-emerald-500';
-      case 'certifier': return 'from-purple-500 to-violet-500';
-      default: return 'from-gray-500 to-slate-500';
-    }
-  };
+  // Load EVM statistics
+  useEffect(() => {
+    const loadEVMStats = async () => {
+      if (walletType === 'evm' && isEVMConnected && evmAddress) {
+        try {
+          const [ethBalance, cltBalance, stakeInfo] = await Promise.all([
+            evmContractService.getETHBalance(evmAddress),
+            evmContractService.getCLTBalance(evmAddress),
+            evmContractService.getStakeInfo(evmAddress)
+          ]);
 
-  const isWalletConnected = walletType === 'iota' ? isIOTAConnected : isEVMConnected;
+          setEvmStats({
+            ethBalance: evmContractService.formatETH(ethBalance),
+            cltBalance: evmContractService.formatCLT(cltBalance),
+            totalStaked: evmContractService.formatCLT(stakeInfo.amount),
+          });
+        } catch (error) {
+          console.error('Failed to load EVM stats:', error);
+        }
+      }
+    };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
-      <Header 
-        onRoleChange={(role: string) => {}} 
-        currentRole={currentRole}
-      />
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl font-bold text-white">Security Operations Center</h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Decentralized security incident management powered by blockchain technology. 
-            Submit, analyze, and validate security incidents in a trustless environment.
+    loadEVMStats();
+  }, [walletType, isEVMConnected, evmAddress]);
+
+  const isWalletConnected = walletType === 'evm' ? isEVMConnected : isIOTAConnected;
+  const currentAddress = walletType === 'evm' ? evmAddress : iotaAddress;
+
+  if (!isWalletConnected) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-white mb-4">
+            {walletType === 'evm' ? 'EVM dSOC Platform' : 'IOTA dSOC Platform'}
+          </h1>
+          <p className="text-gray-300 mb-8">
+            {walletType === 'evm' 
+              ? 'Please connect your MetaMask wallet to access EVM features' 
+              : 'Please connect your IOTA wallet to access IOTA features'
+            }
           </p>
         </div>
+      </div>
+    );
+  }
 
-        {!isWalletConnected && (
-          <Card className="bg-amber-900/20 border-amber-500/30 backdrop-blur-sm">
-            <CardContent className="p-6 text-center">
-              <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Target className="h-8 w-8 text-amber-400" />
+  const tabs = [
+    { id: "incidents", label: "Report Incident", icon: AlertTriangle },
+    { id: "tickets", label: "Ticket Management", icon: Shield },
+    { id: "staking", label: "Staking Rewards", icon: TrendingUp },
+    { id: "ai", label: "AI Assistant", icon: Brain },
+    { id: "audit", label: "Smart Contract Audit", icon: Code },
+  ];
+
+  const statCards = walletType === 'evm' ? [
+    {
+      title: "ETH Balance",
+      value: `${parseFloat(evmStats.ethBalance).toFixed(4)} ETH`,
+      icon: DollarSign,
+      color: "text-orange-400",
+      bgColor: "bg-orange-500/10 border-orange-500/30"
+    },
+    {
+      title: "CLT Tokens",
+      value: `${parseFloat(evmStats.cltBalance).toFixed(2)} CLT`,
+      icon: Coins,
+      color: "text-green-400",
+      bgColor: "bg-green-500/10 border-green-500/30"
+    },
+    {
+      title: "Staked CLT",
+      value: `${parseFloat(evmStats.totalStaked).toFixed(2)} CLT`,
+      icon: TrendingUp,
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/10 border-blue-500/30"
+    },
+    {
+      title: "Network",
+      value: "Scroll EVM",
+      icon: Zap,
+      color: "text-purple-400",
+      bgColor: "bg-purple-500/10 border-purple-500/30"
+    }
+  ] : [
+    {
+      title: "Active Tickets",
+      value: "12",
+      icon: Shield,
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/10 border-blue-500/30"
+    },
+    {
+      title: "Resolved Issues",
+      value: "156",
+      icon: Activity,
+      color: "text-green-400",
+      bgColor: "bg-green-500/10 border-green-500/30"
+    },
+    {
+      title: "Total Rewards",
+      value: "2,450 IOTA",
+      icon: Coins,
+      color: "text-yellow-400",
+      bgColor: "bg-yellow-500/10 border-yellow-500/30"
+    },
+    {
+      title: "Network",
+      value: "IOTA Testnet",
+      icon: Zap,
+      color: "text-purple-400",
+      bgColor: "bg-purple-500/10 border-purple-500/30"
+    }
+  ];
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">
+          {walletType === 'evm' ? 'EVM' : 'IOTA'} Security Operations Center
+        </h1>
+        <p className="text-gray-300">
+          Role: <Badge variant="outline" className="ml-1 text-blue-400 border-blue-500/30">{currentRole}</Badge>
+          {currentAddress && (
+            <span className="ml-4 text-sm text-gray-400">
+              Connected: {currentAddress.slice(0, 6)}...{currentAddress.slice(-4)}
+            </span>
+          )}
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {statCards.map((stat, index) => (
+          <Card key={index} className={`${stat.bgColor}`}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm font-medium">{stat.title}</p>
+                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                </div>
+                <stat.icon className={`h-8 w-8 ${stat.color}`} />
               </div>
-              <h3 className="text-xl font-semibold text-amber-400 mb-2">Connect Your Wallet</h3>
-              <p className="text-gray-400 mb-4">
-                Please connect your {walletType === 'iota' ? 'IOTA' : 'MetaMask'} wallet to access all features of the dSOC platform
-              </p>
-              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-                {walletType.toUpperCase()} Network Selected
-              </Badge>
             </CardContent>
           </Card>
+        ))}
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-700">
+        {tabs.map((tab) => (
+          <Button
+            key={tab.id}
+            variant={activeTab === tab.id ? "default" : "ghost"}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 ${
+              activeTab === tab.id
+                ? walletType === 'evm' 
+                  ? "bg-orange-600 hover:bg-orange-700 text-white"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+                : "text-gray-300 hover:text-white hover:bg-gray-800"
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+          </Button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="space-y-6">
+        {activeTab === "incidents" && (
+          <div>
+            {walletType === 'evm' ? <EVMIncidentReport /> : <IncidentReport />}
+          </div>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-6 bg-slate-800/50">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="tickets" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Cases</span>
-            </TabsTrigger>
-            <TabsTrigger value="report" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Reports</span>
-            </TabsTrigger>
-            <TabsTrigger value="staking" className="flex items-center gap-2">
-              <Coins className="h-4 w-4" />
-              <span className="hidden sm:inline">Staking</span>
-            </TabsTrigger>
-            <TabsTrigger value="audit" className="flex items-center gap-2">
-              <Code className="h-4 w-4" />
-              <span className="hidden sm:inline">Audit</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="flex items-center gap-2">
-              <Bot className="h-4 w-4" />
-              <span className="hidden sm:inline">AI</span>
-            </TabsTrigger>
-          </TabsList>
+        {activeTab === "tickets" && (
+          <div>
+            <TicketList currentRole={currentRole} />
+          </div>
+        )}
 
-          <TabsContent value="overview" className="space-y-6">
-            {/* Role Status Card */}
-            <Card className={`bg-gradient-to-r ${getRoleColor(currentRole)} p-1 rounded-lg`}>
-              <div className="bg-slate-900 rounded-lg p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-white/10 rounded-full">
-                      {currentRole === 'client' && <FileText className="h-6 w-6 text-white" />}
-                      {currentRole === 'analyst' && <Shield className="h-6 w-6 text-white" />}
-                      {currentRole === 'certifier' && <Award className="h-6 w-6 text-white" />}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white capitalize">{currentRole} Dashboard</h3>
-                      <p className="text-gray-300">{getRoleDescription(currentRole)}</p>
-                    </div>
-                  </div>
-                  <Badge className="bg-white/20 text-white border-white/30">
-                    Active Role
-                  </Badge>
-                </div>
-              </div>
-            </Card>
+        {activeTab === "staking" && (
+          <div>
+            {walletType === 'evm' ? <EVMStakingRewards /> : <StakingRewards />}
+          </div>
+        )}
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-slate-800/50 border-purple-500/30 hover:border-purple-500/50 transition-colors cursor-pointer"
-                    onClick={() => setActiveTab("report")}>
-                <CardContent className="p-6 text-center">
-                  <Shield className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">Submit Incident Report</h3>
-                  <p className="text-gray-400 text-sm">Report security incidents and get analysis</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-blue-500/30 hover:border-blue-500/50 transition-colors cursor-pointer"
-                    onClick={() => setActiveTab("tickets")}>
-                <CardContent className="p-6 text-center">
-                  <FileText className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">Manage Cases</h3>
-                  <p className="text-gray-400 text-sm">View and manage security cases</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-green-500/30 hover:border-green-500/50 transition-colors cursor-pointer"
-                    onClick={() => setActiveTab("staking")}>
-                <CardContent className="p-6 text-center">
-                  <Coins className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">Staking Rewards</h3>
-                  <p className="text-gray-400 text-sm">Stake tokens and earn rewards</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Platform Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="bg-slate-800/50 border-slate-700">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-400 text-sm">Total Cases</p>
-                      <p className="text-2xl font-bold text-white">156</p>
-                    </div>
-                    <FileText className="h-8 w-8 text-blue-400" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-slate-700">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-400 text-sm">Active Analysts</p>
-                      <p className="text-2xl font-bold text-white">42</p>
-                    </div>
-                    <Users className="h-8 w-8 text-green-400" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-slate-700">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-400 text-sm">Resolved Cases</p>
-                      <p className="text-2xl font-bold text-white">89</p>
-                    </div>
-                    <CheckCircle className="h-8 w-8 text-purple-400" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-slate-700">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-400 text-sm">Total Staked</p>
-                      <p className="text-2xl font-bold text-white">2.4M CLT</p>
-                    </div>
-                    <TrendingUp className="h-8 w-8 text-orange-400" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            <Button 
-            onClick={() => setActiveTab('report')}
-            className="bg-purple-600 hover:bg-purple-700 border-purple-500/30"
-          >
-            <Bot className="h-4 w-4 mr-2" />
-            Submit Security Case
-          </Button>
-          </TabsContent>
-
-          <TabsContent value="tickets" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-slate-800/50 border-purple-500/30">
-                <CardHeader>
-                  <CardTitle className="text-white">Submit New Case</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Create a new security incident case
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TicketForm />
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-purple-500/30">
-                <CardHeader>
-                  <CardTitle className="text-white">Case Management</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    View and manage existing cases
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TicketList />
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="report" className="space-y-6">
-            <Card className="bg-slate-800/50 border-purple-500/30">
-              <CardHeader>
-                <CardTitle className="text-white">Incident Reporting</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Submit detailed security incident reports for analysis
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <IncidentReport onClose={() => {}} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="staking" className="space-y-6">
-            {isWalletConnected ? (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-green-400 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    EVM Cross-Chain Staking
-                  </h3>
-                  <EVMStakingRewards />
-                </div>
-
-                {walletType === 'iota' && (
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-semibold text-blue-400 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                      IOTA Native Staking
-                    </h3>
-                    <StakingRewards />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Card className="bg-slate-800/50 border-amber-500/30">
-                <CardContent className="p-12 text-center">
-                  <Lock className="h-16 w-16 text-amber-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-amber-400 mb-2">Wallet Connection Required</h3>
-                  <p className="text-gray-400">Connect your wallet to access staking features</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="audit" className="space-y-6">
-            <SmartContractAudit />
-          </TabsContent>
-
-          <TabsContent value="ai" className="space-y-6">
+        {activeTab === "ai" && (
+          <div>
             <AIAssistant />
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
+
+        {activeTab === "audit" && (
+          <div>
+            <SmartContractAudit />
+          </div>
+        )}
       </div>
     </div>
   );

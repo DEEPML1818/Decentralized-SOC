@@ -1,3 +1,4 @@
+
 import { ethers, BrowserProvider, Contract, formatUnits, parseUnits } from 'ethers';
 
 // Scroll Sepolia Testnet configuration
@@ -13,14 +14,14 @@ export const SCROLL_TESTNET_CONFIG = {
   blockExplorerUrls: ['https://sepolia.scrollscan.dev/'],
 };
 
-// Contract addresses
+// Updated Contract addresses from your deployment
 export const CONTRACT_ADDRESSES = {
   CLT_REWARD: '0xBb647745eFfFD6a950d08cE6Dddc6D6c308D1403',
   CLT_STAKING_POOL: '0xB480FA23e8d586Af034aae3CA9a0D111E071a01e',
   SOC_SERVICE: '0x284B4cE9027b8f81211efd19A3a5D40D8b232D60',
 };
 
-// Complete CLT Reward Token ABI
+// Updated CLT Reward Token ABI from your contract
 export const CLT_REWARD_ABI = [
   {
     "inputs": [
@@ -76,6 +77,72 @@ export const CLT_REWARD_ABI = [
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "approver",
+        "type": "address"
+      }
+    ],
+    "name": "ERC20InvalidApprover",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      }
+    ],
+    "name": "ERC20InvalidReceiver",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "ERC20InvalidSender",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      }
+    ],
+    "name": "ERC20InvalidSpender",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -98,6 +165,25 @@ export const CLT_REWARD_ABI = [
       }
     ],
     "name": "Approval",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
     "type": "event"
   },
   {
@@ -238,6 +324,26 @@ export const CLT_REWARD_ABI = [
   },
   {
     "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "symbol",
     "outputs": [
       {
@@ -314,10 +420,23 @@ export const CLT_REWARD_ABI = [
     ],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ];
 
-// CLT Staking Pool ABI
+// Updated CLT Staking Pool ABI from your contract
 export const CLT_STAKING_POOL_ABI = [
   {
     "inputs": [
@@ -334,6 +453,47 @@ export const CLT_STAKING_POOL_ABI = [
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
   },
   {
     "inputs": [],
@@ -366,6 +526,26 @@ export const CLT_STAKING_POOL_ABI = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -434,6 +614,19 @@ export const CLT_STAKING_POOL_ABI = [
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -446,7 +639,7 @@ export const CLT_STAKING_POOL_ABI = [
   }
 ];
 
-// SOC Service ABI
+// Updated SOC Service ABI from your contract
 export const SOC_SERVICE_ABI = [
   {
     "inputs": [
@@ -465,6 +658,28 @@ export const SOC_SERVICE_ABI = [
     "type": "constructor"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -481,6 +696,25 @@ export const SOC_SERVICE_ABI = [
       }
     ],
     "name": "AnalystAssigned",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
     "type": "event"
   },
   {
@@ -592,6 +826,26 @@ export const SOC_SERVICE_ABI = [
   },
   {
     "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "rewardToken",
     "outputs": [
       {
@@ -658,6 +912,19 @@ export const SOC_SERVICE_ABI = [
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "ticketId",
         "type": "uint256"
@@ -693,7 +960,7 @@ export interface EVMTicket {
   rewardClaimed: boolean;
 }
 
-// EVM Contract Service Class
+// EVM Contract Service Class - ETH ONLY
 export class EVMContractService {
   private provider: BrowserProvider | null = null;
   private signer: any = null;
@@ -755,6 +1022,12 @@ export class EVMContractService {
       console.error('Failed to connect wallet:', error);
       throw new Error(`Failed to connect wallet: ${error.message}`);
     }
+  }
+
+  // Get ETH balance
+  async getETHBalance(address: string): Promise<bigint> {
+    if (!this.provider) throw new Error('Provider not initialized');
+    return await this.provider.getBalance(address);
   }
 
   // CLT Token functions
@@ -831,10 +1104,14 @@ export class EVMContractService {
     return tx.hash;
   }
 
-  // SOC Service functions
-  async createTicket(): Promise<{ ticketId: bigint; txHash: string }> {
+  // SOC Service functions - Pay with ETH, earn CLT
+  async createTicketWithETH(ethAmount: bigint = parseUnits("0.01", 18)): Promise<{ ticketId: bigint; txHash: string }> {
     if (!this.socServiceContract) throw new Error('Contract not initialized');
-    const tx = await this.socServiceContract.createTicket();
+    
+    // Create ticket and pay ETH gas fees
+    const tx = await this.socServiceContract.createTicket({
+      value: ethAmount, // Optional ETH payment for premium features
+    });
     const receipt = await tx.wait();
     
     // Find the TicketCreated event to get the ticket ID
@@ -900,6 +1177,14 @@ export class EVMContractService {
   }
 
   // Utility functions
+  formatETH(amount: bigint): string {
+    return formatUnits(amount, 18);
+  }
+
+  parseETH(amount: string): bigint {
+    return parseUnits(amount, 18);
+  }
+
   formatCLT(amount: bigint): string {
     return formatUnits(amount, 18);
   }

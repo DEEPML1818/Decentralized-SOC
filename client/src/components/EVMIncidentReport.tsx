@@ -18,25 +18,30 @@ import {
   Zap
 } from "lucide-react";
 
-interface EVMIncidentReportProps {
-  onClose: () => void;
-}
-
-export default function EVMIncidentReport({ onClose }: EVMIncidentReportProps) {
+export default function EVMIncidentReport() {
   const [incidentData, setIncidentData] = useState({
     title: "",
     description: "",
-    category: "",
-    severity: "medium",
-    stakeAmount: "0.01" // ETH amount
+    category: "malware",
+    location: "",
+    priority: "medium",
+    ethAmount: "0.01" // ETH amount for transaction
   });
-  
-  const [evidence, setEvidence] = useState<File[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const { toast } = useToast();
-  const { isEVMConnected, evmAddress } = useWallet();
 
-  const handleEVMSubmission = async () => {
+  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { evmAddress, isEVMConnected } = useWallet();
+  const { toast } = useToast();
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setEvidenceFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!isEVMConnected || !evmAddress) {
       toast({
         title: "Wallet Not Connected",
@@ -46,246 +51,270 @@ export default function EVMIncidentReport({ onClose }: EVMIncidentReportProps) {
       return;
     }
 
-    setSubmitting(true);
+    if (!incidentData.title || !incidentData.description) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       toast({
-        title: "Submitting to Scroll",
-        description: `Paying ${incidentData.stakeAmount} ETH and creating ticket...`,
+        title: "Creating EVM Ticket",
+        description: "Submitting to Scroll blockchain using ETH...",
       });
 
-      // Convert evidence to base64 for storage
-      const evidenceData = await Promise.all(
-        evidence.map(async (file) => {
-          const base64 = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(file);
-          });
-          return {
-            name: file.name,
-            type: file.type,
-            data: base64,
-          };
-        })
-      );
+      // Parse ETH amount
+      const ethAmount = evmContractService.parseETH(incidentData.ethAmount);
 
-      // Submit to EVM contract
-      const result = await evmContractService.createTicket(
-        incidentData.title,
-        incidentData.description,
-        incidentData.category,
-        evidenceData,
-        parseFloat(incidentData.stakeAmount) // ETH amount
-      );
+      // Create ticket on EVM using ETH
+      const result = await evmContractService.createTicketWithETH(ethAmount);
 
       toast({
-        title: "EVM Transaction Confirmed!",
-        description: `Incident submitted on Scroll. Paid ${incidentData.stakeAmount} ETH. You'll earn CLT tokens upon resolution.`,
+        title: "Ticket Created Successfully!",
+        description: `Ticket ID: ${result.ticketId} | Transaction: ${result.txHash}`,
       });
 
       // Reset form
       setIncidentData({
         title: "",
         description: "",
-        category: "",
-        severity: "medium",
-        stakeAmount: "0.01"
+        category: "malware",
+        location: "",
+        priority: "medium",
+        ethAmount: "0.01"
       });
-      setEvidence([]);
-      onClose();
+      setEvidenceFiles([]);
 
     } catch (error: any) {
-      console.error('EVM submission error:', error);
+      console.error('EVM ticket creation failed:', error);
       
-      let errorMessage = "Failed to submit incident to EVM";
+      let errorMessage = "Failed to create ticket";
+      
       if (error.code === 4001) {
         errorMessage = "Transaction was rejected by user";
-      } else if (error.code === 'INSUFFICIENT_FUNDS') {
-        errorMessage = "Insufficient ETH for gas fees and stake amount";
+      } else if (error.code === -32603 || error.message?.includes('insufficient funds')) {
+        errorMessage = "Insufficient ETH for gas fees";
+      } else if (error.message?.includes('user rejected')) {
+        errorMessage = "Transaction rejected in MetaMask";
       } else if (error.message) {
         errorMessage = error.message;
       }
 
       toast({
-        title: "EVM Submission Failed",
+        title: "Transaction Failed",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setEvidence(Array.from(e.target.files));
-    }
-  };
+  if (!isEVMConnected) {
+    return (
+      <Card className="bg-orange-500/5 border-orange-500/20">
+        <CardContent className="p-6 text-center">
+          <Zap className="h-12 w-12 text-orange-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-orange-400 mb-2">Connect MetaMask</h3>
+          <p className="text-gray-300">
+            Please connect your MetaMask wallet to submit incident reports on Scroll EVM
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="space-y-6 p-6 max-h-[80vh] overflow-y-auto">
-      {/* Header */}
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Zap className="h-6 w-6 text-orange-400" />
-          <h2 className="text-2xl font-bold text-orange-400">EVM Incident Report</h2>
-        </div>
-        <p className="text-gray-400">Submit security incidents using ETH on Scroll network</p>
-        
-        {isEVMConnected && (
-          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 mt-2">
-            Connected: {evmAddress?.slice(0, 6)}...{evmAddress?.slice(-4)}
-          </Badge>
-        )}
-      </div>
+    <Card className="bg-gradient-to-br from-orange-500/5 to-red-500/5 border-orange-500/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-orange-400">
+          <AlertTriangle className="h-5 w-5" />
+          EVM Incident Report
+        </CardTitle>
+        <CardDescription className="text-gray-300">
+          Submit security incidents using ETH on Scroll blockchain. Earn CLT tokens as rewards.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Incident Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Incident Title *
+            </label>
+            <Input
+              value={incidentData.title}
+              onChange={(e) => setIncidentData({ ...incidentData, title: e.target.value })}
+              placeholder="Brief description of the security incident"
+              className="bg-gray-800/50 border-orange-500/30 text-white"
+              required
+            />
+          </div>
 
-      {/* Form */}
-      <div className="grid gap-6">
-        {/* Basic Info */}
-        <Card className="bg-slate-800/50 border-orange-500/30">
-          <CardHeader>
-            <CardTitle className="text-orange-400 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Incident Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          {/* Category and Priority */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-300 mb-2 block">
-                Incident Title
-              </label>
-              <Input
-                value={incidentData.title}
-                onChange={(e) => setIncidentData({ ...incidentData, title: e.target.value })}
-                placeholder="Brief title describing the security incident"
-                className="bg-slate-700 border-gray-600 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-300 mb-2 block">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Category
               </label>
               <select
                 value={incidentData.category}
                 onChange={(e) => setIncidentData({ ...incidentData, category: e.target.value })}
-                className="w-full p-2 bg-slate-700 border border-gray-600 rounded-md text-white"
+                className="w-full p-2 bg-gray-800/50 border border-orange-500/30 rounded-md text-white"
               >
-                <option value="">Select category</option>
-                <option value="smart-contract">Smart Contract Vulnerability</option>
-                <option value="defi-exploit">DeFi Protocol Exploit</option>
-                <option value="bridge-hack">Bridge Security Issue</option>
-                <option value="wallet-compromise">Wallet Compromise</option>
-                <option value="phishing">Phishing Attack</option>
+                <option value="malware">Malware</option>
+                <option value="phishing">Phishing</option>
+                <option value="data-breach">Data Breach</option>
+                <option value="ddos">DDoS Attack</option>
+                <option value="insider-threat">Insider Threat</option>
                 <option value="other">Other</option>
               </select>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-300 mb-2 block">
-                Description
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Priority
               </label>
-              <Textarea
-                value={incidentData.description}
-                onChange={(e) => setIncidentData({ ...incidentData, description: e.target.value })}
-                placeholder="Detailed description of the incident, including timeline, impact, and technical details"
-                className="bg-slate-700 border-gray-600 text-white min-h-[100px]"
-              />
+              <select
+                value={incidentData.priority}
+                onChange={(e) => setIncidentData({ ...incidentData, priority: e.target.value })}
+                className="w-full p-2 bg-gray-800/50 border border-orange-500/30 rounded-md text-white"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Evidence Upload */}
-        <Card className="bg-slate-800/50 border-orange-500/30">
-          <CardHeader>
-            <CardTitle className="text-orange-400 flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Evidence & Documentation
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div>
-              <label className="text-sm font-medium text-gray-300 mb-2 block">
-                Upload Evidence Files
-              </label>
-              <input
-                type="file"
-                multiple
-                onChange={handleFileUpload}
-                className="w-full p-2 bg-slate-700 border border-gray-600 rounded-md text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-700"
-              />
-              {evidence.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm text-gray-400">
-                    {evidence.length} file(s) selected
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ETH Stake */}
-        <Card className="bg-slate-800/50 border-orange-500/30">
-          <CardHeader>
-            <CardTitle className="text-orange-400 flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              ETH Stake Amount
-            </CardTitle>
-            <CardDescription className="text-gray-400">
-              Stake ETH to prioritize your incident. You'll earn CLT tokens as rewards.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div>
-              <label className="text-sm font-medium text-gray-300 mb-2 block">
-                Stake Amount (ETH)
-              </label>
+          {/* ETH Amount */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              ETH Payment Amount
+            </label>
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-5 w-5 text-orange-400" />
               <Input
                 type="number"
                 step="0.001"
                 min="0.001"
-                value={incidentData.stakeAmount}
-                onChange={(e) => setIncidentData({ ...incidentData, stakeAmount: e.target.value })}
+                value={incidentData.ethAmount}
+                onChange={(e) => setIncidentData({ ...incidentData, ethAmount: e.target.value })}
                 placeholder="0.01"
-                className="bg-slate-700 border-gray-600 text-white"
+                className="bg-gray-800/50 border-orange-500/30 text-white"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Higher stakes get priority. Minimum: 0.001 ETH
-              </p>
+              <span className="text-orange-400 font-medium">ETH</span>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <p className="text-gray-400 text-xs mt-1">
+              ETH payment for transaction fees and premium features
+            </p>
+          </div>
 
-      {/* Submit Button */}
-      <div className="flex justify-end space-x-3 pt-4 border-t border-gray-700">
-        <Button
-          variant="outline"
-          onClick={onClose}
-          className="border-gray-600 text-gray-300 hover:bg-gray-700"
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleEVMSubmission}
-          disabled={submitting || !incidentData.title || !incidentData.description || !isEVMConnected}
-          className="bg-orange-600 hover:bg-orange-700 text-white"
-        >
-          {submitting ? (
-            <>
-              <Clock className="h-4 w-4 mr-2 animate-spin" />
-              Submitting to Scroll...
-            </>
-          ) : (
-            <>
-              <Send className="h-4 w-4 mr-2" />
-              Submit for {incidentData.stakeAmount} ETH
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Location/Network
+            </label>
+            <Input
+              value={incidentData.location}
+              onChange={(e) => setIncidentData({ ...incidentData, location: e.target.value })}
+              placeholder="Network segment, IP range, or physical location"
+              className="bg-gray-800/50 border-orange-500/30 text-white"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Detailed Description *
+            </label>
+            <Textarea
+              value={incidentData.description}
+              onChange={(e) => setIncidentData({ ...incidentData, description: e.target.value })}
+              placeholder="Provide detailed information about the incident, affected systems, timeline, and any immediate actions taken"
+              className="bg-gray-800/50 border-orange-500/30 text-white min-h-[120px]"
+              required
+            />
+          </div>
+
+          {/* Evidence Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Evidence Files
+            </label>
+            <input
+              type="file"
+              multiple
+              onChange={handleFileUpload}
+              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.txt,.log"
+              className="w-full p-2 bg-gray-800/50 border border-orange-500/30 rounded-md text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-orange-600 file:text-white"
+            />
+            {evidenceFiles.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm text-gray-400">Selected files:</p>
+                {evidenceFiles.map((file, index) => (
+                  <Badge key={index} variant="outline" className="mr-2 mt-1 text-orange-400 border-orange-500/30">
+                    <FileText className="h-3 w-3 mr-1" />
+                    {file.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-3"
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                Creating Ticket on Scroll...
+              </>
+            ) : (
+              <>
+                <Send className="h-5 w-5 mr-2" />
+                Submit EVM Incident Report
+              </>
+            )}
+          </Button>
+        </form>
+
+        {/* Status Info */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="h-5 w-5 text-orange-400" />
+              <span className="font-medium text-orange-400">Payment</span>
+            </div>
+            <p className="text-gray-300 text-sm">Pay with ETH</p>
+          </div>
+
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="h-5 w-5 text-green-400" />
+              <span className="font-medium text-green-400">Rewards</span>
+            </div>
+            <p className="text-gray-300 text-sm">Earn CLT tokens</p>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="h-5 w-5 text-blue-400" />
+              <span className="font-medium text-blue-400">Network</span>
+            </div>
+            <p className="text-gray-300 text-sm">Scroll EVM</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
