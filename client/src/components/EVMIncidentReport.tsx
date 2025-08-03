@@ -68,11 +68,14 @@ export default function EVMIncidentReport() {
         description: "Submitting to Scroll blockchain using ETH...",
       });
 
-      // Parse ETH amount
-      const ethAmount = evmContractService.parseETH(incidentData.ethAmount);
-
-      // Create ticket on EVM using ETH
-      const result = await evmContractService.createTicketWithETH(ethAmount);
+      // Create ticket on EVM blockchain
+      const tx = await evmContractService.createTicket();
+      const receipt = await tx.wait();
+      
+      const result = {
+        ticketId: receipt.logs[0]?.topics[1] || 'Unknown',
+        txHash: receipt.transactionHash
+      };
 
       toast({
         title: "Ticket Created Successfully!",

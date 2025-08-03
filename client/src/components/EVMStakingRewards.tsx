@@ -98,7 +98,9 @@ export default function EVMStakingRewards() {
     try {
       setIsStaking(true);
       const amount = evmContractService.parseCLT(stakeAmount);
-      const txHash = await evmContractService.stakeCLT(amount);
+      const tx = await evmContractService.stake(stakeAmount);
+      const receipt = await tx.wait();
+      const txHash = receipt.transactionHash;
 
       if (txHash) {
         toast({
@@ -145,7 +147,9 @@ export default function EVMStakingRewards() {
     try {
       setIsWithdrawing(true);
       const amount = evmContractService.parseCLT(withdrawAmount);
-      const txHash = await evmContractService.withdrawStake(amount);
+      const tx = await evmContractService.withdraw(withdrawAmount);
+      const receipt = await tx.wait();
+      const txHash = receipt.transactionHash;
 
       if (txHash) {
         toast({

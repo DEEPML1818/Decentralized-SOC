@@ -20,6 +20,10 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - Real-time dashboard with role-specific views
 
 ## Recent Changes
+- **2025-08-03**: Successfully completed migration from Replit Agent to Replit environment
+- **2025-08-03**: Integrated EVM contracts with deployed addresses on Scroll Sepolia testnet
+- **2025-08-03**: Updated contract service with complete ABIs for CLT Reward, Staking Pool, and SOC Service
+- **2025-08-03**: Fixed EVM staking and incident reporting functionality
 - **2025-01-20**: Successfully migrated project from Replit Agent to Replit environment
 - **2025-01-20**: Fixed AI functionality by migrating from hardcoded API keys to secure backend endpoints
 - **2025-01-20**: Enhanced AI chat interface with improved scrolling for long responses
