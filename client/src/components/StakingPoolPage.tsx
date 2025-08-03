@@ -193,6 +193,7 @@ export default function StakingPoolPage() {
           </Card>
         </div>
       </div>
+    </div>
     </WalletProvider>
   );
 }
