@@ -3,13 +3,14 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useCurrentAccount } from '@iota/dapp-kit';
 import { evmContractService } from '@/lib/evm-contract';
 
+// Completely separate blockchain types - no mixing
 export type WalletType = 'iota' | 'evm';
 
 interface WalletContextType {
-  walletType: WalletType;
+  walletType: WalletType; // Selected blockchain - either IOTA OR EVM, never both
   setWalletType: (type: WalletType) => void;
-  evmAddress: string | null;
-  iotaAddress: string | null;
+  evmAddress: string | null; // EVM-only wallet address
+  iotaAddress: string | null; // IOTA-only wallet address
   connectEVMWallet: () => Promise<string | null>;
   disconnectEVMWallet: () => void;
   isEVMConnected: boolean;
