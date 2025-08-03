@@ -401,6 +401,10 @@ Provide detailed technical analysis suitable for security analysts and certifier
       console.log('Storing incident report in backend...', { txHash, network: walletType });
       
       // Store in backend for enhanced tracking and analyst notification
+      const reporterAddress = walletType === 'iota' 
+        ? iotaAccount?.address 
+        : await evmContractService.getSigner()?.getAddress();
+
       const response = await fetch('/api/incident-reports', {
         method: 'POST',
         headers: {
@@ -411,9 +415,10 @@ Provide detailed technical analysis suitable for security analysts and certifier
           status: 'submitted',
           blockchainTxHash: txHash,
           network: walletType,
-          reporter_address: walletType === 'iota' ? iotaAccount?.address : await evmContractService.getSigner()?.getAddress(),
+          reporter_address: reporterAddress,
           estimatedReward: incidentData.estimatedLoss ? parseFloat(incidentData.estimatedLoss.replace(/[^0-9.]/g, '')) || 100 : 100,
           requiredAnalysts: incidentData.severity === 'critical' ? 3 : incidentData.severity === 'high' ? 2 : 1,
+          submissionType: reportMode === 'ai-assisted' ? 'ai_generated_case' : 'manual_incident_report'
         }),
       });
 

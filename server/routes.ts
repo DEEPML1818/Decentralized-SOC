@@ -344,7 +344,7 @@ Ensure the JSON is valid and parseable.`;
     }
   });
 
-  // Store incident reports submitted via blockchain
+  // Store incident reports submitted via blockchain (handles both manual and AI-generated cases)
   app.post('/api/incident-reports', async (req, res) => {
     try {
       const incidentData = req.body;
@@ -358,17 +358,25 @@ Ensure the JSON is valid and parseable.`;
         analysisStatus: 'pending_assignment'
       };
       
-      console.log('Incident report stored:', {
+      console.log('Unified incident report stored:', {
         id: incidentReport.id,
         title: incidentReport.title,
         network: incidentReport.network,
-        txHash: incidentReport.blockchainTxHash
+        txHash: incidentReport.blockchainTxHash,
+        submissionType: incidentReport.submissionType || 'manual_incident_report'
+      });
+      
+      // Trigger analyst notification for both types
+      console.log('Notifying analysts of new case:', {
+        type: incidentReport.submissionType,
+        severity: incidentReport.severity,
+        requiredAnalysts: incidentReport.requiredAnalysts
       });
       
       res.json({ 
         success: true, 
         incidentId: incidentReport.id,
-        message: 'Incident report stored successfully' 
+        message: 'Case submitted successfully to dSOC network' 
       });
       
     } catch (error) {

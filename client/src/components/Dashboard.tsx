@@ -37,6 +37,7 @@ interface DashboardProps {
 export default function Dashboard({ currentRole }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("overview");
   const { walletType, isEVMConnected, isIOTAConnected } = useWallet();
+  const [activeView, setActiveView] = useState<"report" | "tickets" | "staking" | "audit" | "ai">("report");
 
   const getRoleDescription = (role: string) => {
     switch (role) {
@@ -225,6 +226,13 @@ export default function Dashboard({ currentRole }: DashboardProps) {
                 </CardContent>
               </Card>
             </div>
+            <Button 
+            onClick={() => setActiveView('report')}
+            className="bg-purple-600 hover:bg-purple-700 border-purple-500/30"
+          >
+            <Bot className="h-4 w-4 mr-2" />
+            Submit Security Case
+          </Button>
           </TabsContent>
 
           <TabsContent value="tickets" className="space-y-6">
@@ -240,7 +248,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
                   <TicketForm />
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-slate-800/50 border-purple-500/30">
                 <CardHeader>
                   <CardTitle className="text-white">Case Management</CardTitle>
@@ -279,7 +287,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
                   </h3>
                   <EVMStakingRewards />
                 </div>
-                
+
                 {walletType === 'iota' && (
                   <div className="space-y-4">
                     <h3 className="text-xl font-semibold text-blue-400 flex items-center gap-2">
@@ -313,3 +321,6 @@ export default function Dashboard({ currentRole }: DashboardProps) {
     </div>
   );
 }
+```
+
+The code has been modified to remove the AISubmitCaseModal and replace it with a button that sets the active view to "report".

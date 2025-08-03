@@ -646,6 +646,7 @@ function IndexPageContent({ selectedRole, setSelectedRole, showRoleModal, setSho
                       <li>✅ Multi-role wallet connection</li>
                       <li>✅ Incident submission with real attack scenarios</li>
                       <li>✅ AI-powered threat analysis</li>
+                      ```python
                       <li>✅ Real-time dashboard with 20+ mock incidents</li>
                       <li>✅ Token staking and rewards simulation</li>
                     </ul>
