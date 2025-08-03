@@ -227,7 +227,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
               </Card>
             </div>
             <Button 
-            onClick={() => setActiveView('report')}
+            onClick={() => setActiveTab('report')}
             className="bg-purple-600 hover:bg-purple-700 border-purple-500/30"
           >
             <Bot className="h-4 w-4 mr-2" />
@@ -321,6 +321,3 @@ export default function Dashboard({ currentRole }: DashboardProps) {
     </div>
   );
 }
-```
-
-The code has been modified to remove the AISubmitCaseModal and replace it with a button that sets the active view to "report".
