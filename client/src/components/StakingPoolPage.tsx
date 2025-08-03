@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import JobStakingDashboard from "./JobStakingDashboard";
 import EVMStakingRewards from "./EVMStakingRewards";
 import Header from "./Header";
-import { WalletProvider } from "./WalletProvider";
 import { 
   Coins, 
   TrendingUp, 
@@ -19,10 +18,9 @@ export default function StakingPoolPage() {
   const [currentRole, setCurrentRole] = useState('client');
 
   return (
-    <WalletProvider>
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-        <Header onRoleChange={setCurrentRole} currentRole={currentRole} />
-      
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+      <Header onRoleChange={setCurrentRole} currentRole={currentRole} />
+    
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Staking Dashboard</h1>
@@ -194,6 +192,5 @@ export default function StakingPoolPage() {
         </div>
       </div>
     </div>
-    </WalletProvider>
   );
 }
