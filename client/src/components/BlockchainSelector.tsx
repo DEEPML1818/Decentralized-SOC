@@ -183,7 +183,7 @@ export default function BlockchainSelector({ isOpen, onClose, onConnected }: Blo
         <div className="p-4 border-t border-purple-500/20">
           <p className="text-sm text-gray-400 text-center mb-4">
             Choose your blockchain network. IOTA and EVM are completely separate - transactions will only go to your selected network.
-          </p></div>
+          </p>
           
           {(isIOTAConnected || isEVMConnected) && (
             <div className="flex justify-center">
