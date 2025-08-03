@@ -62,11 +62,10 @@ export default function EVMStakingRewards() {
       const cltBalance = parseFloat(evmContractService.formatCLT(cltBalanceBN));
 
       // Get staking info
-      const stakedAmountBN = await evmContractService.getStakedAmount(evmAddress);
-      const rewardsBN = await evmContractService.getRewards(evmAddress);
+      const stakeInfo = await evmContractService.getStakeInfo(evmAddress);
       
-      const stakedAmount = parseFloat(evmContractService.formatCLT(stakedAmountBN));
-      const rewardDebt = parseFloat(evmContractService.formatCLT(rewardsBN));
+      const stakedAmount = parseFloat(evmContractService.formatCLT(stakeInfo.amount));
+      const rewardDebt = parseFloat(evmContractService.formatCLT(stakeInfo.rewardDebt));
 
       setStakingData({
         stakedAmount,
@@ -99,8 +98,7 @@ export default function EVMStakingRewards() {
     try {
       setIsStaking(true);
       const amount = evmContractService.parseCLT(stakeAmount);
-      const tx = await evmContractService.stake(amount);
-      const txHash = tx.hash;
+      const txHash = await evmContractService.stakeCLT(amount);
 
       if (txHash) {
         toast({
@@ -147,8 +145,7 @@ export default function EVMStakingRewards() {
     try {
       setIsWithdrawing(true);
       const amount = evmContractService.parseCLT(withdrawAmount);
-      const tx = await evmContractService.unstake(amount);
-      const txHash = tx.hash;
+      const txHash = await evmContractService.withdrawStake(amount);
 
       if (txHash) {
         toast({
@@ -185,8 +182,7 @@ export default function EVMStakingRewards() {
   const handleClaimRewards = async () => {
     try {
       setIsClaiming(true);
-      const tx = await evmContractService.claimRewards();
-      const txHash = tx.hash;
+      const txHash = await evmContractService.claimRewards();
 
       if (txHash) {
         toast({

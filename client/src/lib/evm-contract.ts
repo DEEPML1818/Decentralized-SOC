@@ -238,19 +238,6 @@ export const CLT_REWARD_ABI = [
   },
   {
     "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "symbol",
     "outputs": [
       {
@@ -327,19 +314,6 @@ export const CLT_REWARD_ABI = [
     ],
     "stateMutability": "nonpayable",
     "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   }
 ];
 
@@ -389,19 +363,6 @@ export const CLT_STAKING_POOL_ABI = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -631,19 +592,6 @@ export const SOC_SERVICE_ABI = [
   },
   {
     "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "rewardToken",
     "outputs": [
       {
@@ -795,28 +743,13 @@ export class EVMContractService {
 
       this.signer = await this.provider.getSigner();
       
-      // Verify network connection
-      const network = await this.provider.getNetwork();
-      console.log('Connected to network:', network.name, 'ChainId:', network.chainId);
-      
-      if (network.chainId.toString() !== '534351') {
-        throw new Error('Please switch to Scroll Sepolia Testnet');
-      }
-      
-      // Initialize contracts with verification
+      // Initialize contracts
       this.cltRewardContract = new Contract(CONTRACT_ADDRESSES.CLT_REWARD, CLT_REWARD_ABI, this.signer);
       this.stakingPoolContract = new Contract(CONTRACT_ADDRESSES.CLT_STAKING_POOL, CLT_STAKING_POOL_ABI, this.signer);
       this.socServiceContract = new Contract(CONTRACT_ADDRESSES.SOC_SERVICE, SOC_SERVICE_ABI, this.signer);
 
-      // Verify contract deployment
-      const socCode = await this.provider.getCode(CONTRACT_ADDRESSES.SOC_SERVICE);
-      if (socCode === '0x') {
-        throw new Error('SOC Service contract not deployed on this network');
-      }
-
       const address = await this.signer.getAddress();
       console.log('Successfully connected to EVM wallet:', address);
-      console.log('SOC Service contract verified at:', CONTRACT_ADDRESSES.SOC_SERVICE);
       return address;
     } catch (error: any) {
       console.error('Failed to connect wallet:', error);
@@ -825,219 +758,191 @@ export class EVMContractService {
   }
 
   // CLT Token functions
-  async getCLTBalance(address: string): Promise<string> {
+  async getCLTBalance(address: string): Promise<bigint> {
     if (!this.cltRewardContract) throw new Error('Contract not initialized');
-    const balance = await this.cltRewardContract.balanceOf(address);
-    return formatUnits(balance, 18);
+    return await this.cltRewardContract.balanceOf(address);
   }
 
-  async getCLTTotalSupply(): Promise<string> {
+  async getCLTTotalSupply(): Promise<bigint> {
     if (!this.cltRewardContract) throw new Error('Contract not initialized');
-    const supply = await this.cltRewardContract.totalSupply();
-    return formatUnits(supply, 18);
+    return await this.cltRewardContract.totalSupply();
   }
 
-  async approveCLT(spender: string, amount: string): Promise<any> {
+  async getCLTName(): Promise<string> {
     if (!this.cltRewardContract) throw new Error('Contract not initialized');
-    const parsedAmount = parseUnits(amount, 18);
-    return await this.cltRewardContract.approve(spender, parsedAmount);
+    return await this.cltRewardContract.name();
   }
 
-  // Staking functions
-  async stake(amount: string): Promise<any> {
-    if (!this.stakingPoolContract) throw new Error('Contract not initialized');
-    
-    // First approve the staking contract to spend CLT tokens
-    await this.approveCLT(CONTRACT_ADDRESSES.CLT_STAKING_POOL, amount);
-    
-    const parsedAmount = parseUnits(amount, 18);
-    return await this.stakingPoolContract.stake(parsedAmount);
+  async getCLTSymbol(): Promise<string> {
+    if (!this.cltRewardContract) throw new Error('Contract not initialized');
+    return await this.cltRewardContract.symbol();
   }
 
-  async withdraw(amount: string): Promise<any> {
-    if (!this.stakingPoolContract) throw new Error('Contract not initialized');
-    const parsedAmount = parseUnits(amount, 18);
-    return await this.stakingPoolContract.withdraw(parsedAmount);
+  async approveCLT(spender: string, amount: bigint): Promise<string> {
+    if (!this.cltRewardContract) throw new Error('Contract not initialized');
+    const tx = await this.cltRewardContract.approve(spender, amount);
+    return tx.hash;
   }
 
-  async claimRewards(): Promise<any> {
-    if (!this.stakingPoolContract) throw new Error('Contract not initialized');
-    return await this.stakingPoolContract.claim();
+  async transferCLT(to: string, amount: bigint): Promise<string> {
+    if (!this.cltRewardContract) throw new Error('Contract not initialized');
+    const tx = await this.cltRewardContract.transfer(to, amount);
+    return tx.hash;
   }
 
-  async getUserStake(address: string): Promise<EVMStake> {
+  // Staking Pool functions
+  async getStakeInfo(address: string): Promise<EVMStake> {
     if (!this.stakingPoolContract) throw new Error('Contract not initialized');
-    const stake = await this.stakingPoolContract.stakes(address);
+    const result = await this.stakingPoolContract.stakes(address);
     return {
-      amount: stake.amount,
-      rewardDebt: stake.rewardDebt
+      amount: result.amount,
+      rewardDebt: result.rewardDebt
     };
   }
 
-  async getRewardRate(): Promise<string> {
+  async getRewardRate(): Promise<bigint> {
     if (!this.stakingPoolContract) throw new Error('Contract not initialized');
-    const rate = await this.stakingPoolContract.rewardRate();
-    return formatUnits(rate, 18);
+    return await this.stakingPoolContract.rewardRate();
+  }
+
+  async getLastUpdateBlock(): Promise<bigint> {
+    if (!this.stakingPoolContract) throw new Error('Contract not initialized');
+    return await this.stakingPoolContract.lastUpdateBlock();
+  }
+
+  async stakeCLT(amount: bigint): Promise<string> {
+    if (!this.stakingPoolContract) throw new Error('Contract not initialized');
+    // First approve the staking pool to spend CLT tokens
+    await this.approveCLT(CONTRACT_ADDRESSES.CLT_STAKING_POOL, amount);
+    
+    const tx = await this.stakingPoolContract.stake(amount);
+    return tx.hash;
+  }
+
+  async withdrawStake(amount: bigint): Promise<string> {
+    if (!this.stakingPoolContract) throw new Error('Contract not initialized');
+    const tx = await this.stakingPoolContract.withdraw(amount);
+    return tx.hash;
+  }
+
+  async claimRewards(): Promise<string> {
+    if (!this.stakingPoolContract) throw new Error('Contract not initialized');
+    const tx = await this.stakingPoolContract.claim();
+    return tx.hash;
   }
 
   // SOC Service functions
-  async createTicket(): Promise<any> {
-    if (!this.socServiceContract) {
-      await this.connectWallet();
-    }
-    if (!this.socServiceContract) throw new Error('SOC Service contract not initialized');
+  async createTicket(): Promise<{ ticketId: bigint; txHash: string }> {
+    if (!this.socServiceContract) throw new Error('Contract not initialized');
+    const tx = await this.socServiceContract.createTicket();
+    const receipt = await tx.wait();
     
-    try {
-      // Check if wallet is properly connected
-      const signerAddress = await this.signer.getAddress();
-      console.log('Creating ticket from address:', signerAddress);
-
-      // Estimate gas for the transaction
-      const gasEstimate = await this.socServiceContract.createTicket.estimateGas();
-      console.log('Estimated gas:', gasEstimate.toString());
-
-      // Add 20% buffer to gas estimate
-      const gasLimit = (gasEstimate * BigInt(120)) / BigInt(100);
-
-      // Get current gas price
-      const gasPrice = await this.provider!.getFeeData();
-      
-      // Create the transaction with proper gas settings
-      const tx = await this.socServiceContract.createTicket({
-        gasLimit: gasLimit,
-        maxFeePerGas: gasPrice.maxFeePerGas,
-        maxPriorityFeePerGas: gasPrice.maxPriorityFeePerGas,
-      });
-      
-      console.log('Ticket creation transaction submitted:', {
-        hash: tx.hash,
-        gasLimit: gasLimit.toString(),
-        maxFeePerGas: gasPrice.maxFeePerGas?.toString(),
-      });
-      
-      return tx;
-    } catch (error: any) {
-      console.error('Error creating ticket:', error);
-      
-      // Handle common error cases
-      if (error.code === 'INSUFFICIENT_FUNDS') {
-        throw new Error('Insufficient funds to pay for gas');
-      } else if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
-        throw new Error('Unable to estimate gas - contract may revert');
-      } else if (error.reason) {
-        throw new Error(`Contract error: ${error.reason}`);
-      } else {
-        throw new Error(`Transaction failed: ${error.message}`);
+    // Find the TicketCreated event to get the ticket ID
+    const event = receipt.logs.find((log: any) => {
+      try {
+        const parsed = this.socServiceContract!.interface.parseLog(log);
+        return parsed?.name === 'TicketCreated';
+      } catch {
+        return false;
+      }
+    });
+    
+    if (event) {
+      const parsedEvent = this.socServiceContract!.interface.parseLog(event);
+      if (parsedEvent) {
+        return {
+          ticketId: parsedEvent.args.ticketId,
+          txHash: tx.hash
+        };
       }
     }
+    
+    throw new Error('Failed to create ticket');
   }
 
-  async getTicket(ticketId: number): Promise<EVMTicket> {
+  async getTicket(ticketId: bigint): Promise<EVMTicket> {
     if (!this.socServiceContract) throw new Error('Contract not initialized');
-    const ticket = await this.socServiceContract.tickets(ticketId);
+    const result = await this.socServiceContract.tickets(ticketId);
     return {
-      reporter: ticket.reporter,
-      analyst: ticket.analyst,
-      validated: ticket.validated,
-      rewardClaimed: ticket.rewardClaimed
+      reporter: result.reporter,
+      analyst: result.analyst,
+      validated: result.validated,
+      rewardClaimed: result.rewardClaimed
     };
   }
 
-  async assignAnalyst(ticketId: number, analyst: string): Promise<any> {
+  async getNextTicketId(): Promise<bigint> {
     if (!this.socServiceContract) throw new Error('Contract not initialized');
-    return await this.socServiceContract.assignAnalyst(ticketId, analyst);
+    return await this.socServiceContract.nextTicketId();
   }
 
-  async submitReport(ticketId: number, reportLink: string): Promise<any> {
+  async assignAnalyst(ticketId: bigint, analyst: string): Promise<string> {
     if (!this.socServiceContract) throw new Error('Contract not initialized');
-    return await this.socServiceContract.submitReport(ticketId, reportLink);
+    const tx = await this.socServiceContract.assignAnalyst(ticketId, analyst);
+    return tx.hash;
   }
 
-  async validateTicket(ticketId: number, certifier: string, rewardAmount: string): Promise<any> {
+  async submitReport(ticketId: bigint, reportLink: string): Promise<string> {
     if (!this.socServiceContract) throw new Error('Contract not initialized');
-    const parsedAmount = parseUnits(rewardAmount, 18);
-    return await this.socServiceContract.validateTicket(ticketId, certifier, parsedAmount);
+    const tx = await this.socServiceContract.submitReport(ticketId, reportLink);
+    return tx.hash;
   }
 
-  async getNextTicketId(): Promise<number> {
+  async validateTicket(ticketId: bigint, certifier: string, rewardAmount: bigint): Promise<string> {
     if (!this.socServiceContract) throw new Error('Contract not initialized');
-    const nextId = await this.socServiceContract.nextTicketId();
-    return Number(nextId);
+    const tx = await this.socServiceContract.validateTicket(ticketId, certifier, rewardAmount);
+    return tx.hash;
   }
 
-  // Pool ticket functions
-  async openPool(poolData: {
-    title: string;
-    description: string;
-    severity: string;
-    rewardAmount: string;
-    requiredAnalysts: number;
-    timeline: string;
-  }): Promise<any> {
+  async getRewardToken(): Promise<string> {
     if (!this.socServiceContract) throw new Error('Contract not initialized');
-    
-    const rewardAmount = parseUnits(poolData.rewardAmount, 18);
-    
-    // In a real implementation, this would call the smart contract
-    // For now, we'll simulate the transaction
-    return {
-      wait: async () => {
-        console.log('Pool opened:', poolData);
-        return { transactionHash: '0x' + Math.random().toString(16).substr(2, 8) };
-      }
-    };
-  }
-
-  async joinPool(poolId: string): Promise<any> {
-    if (!this.socServiceContract) throw new Error('Contract not initialized');
-    
-    // In a real implementation, this would call the smart contract
-    return {
-      wait: async () => {
-        console.log('Joined pool:', poolId);
-        return { transactionHash: '0x' + Math.random().toString(16).substr(2, 8) };
-      }
-    };
-  }
-
-  async claimPoolReward(poolId: string): Promise<any> {
-    if (!this.socServiceContract) throw new Error('Contract not initialized');
-    
-    // In a real implementation, this would call the smart contract
-    return {
-      wait: async () => {
-        console.log('Claimed pool reward:', poolId);
-        return { transactionHash: '0x' + Math.random().toString(16).substr(2, 8) };
-      }
-    };
+    return await this.socServiceContract.rewardToken();
   }
 
   // Utility functions
-  isConnected(): boolean {
-    return this.signer !== null;
+  formatCLT(amount: bigint): string {
+    return formatUnits(amount, 18);
   }
 
-  getProvider(): BrowserProvider | null {
-    return this.provider;
+  parseCLT(amount: string): bigint {
+    return parseUnits(amount, 18);
   }
 
-  getSigner(): any {
-    return this.signer;
+  async waitForTransaction(txHash: string) {
+    if (!this.provider) throw new Error('Provider not initialized');
+    return await this.provider.waitForTransaction(txHash);
   }
 
   // Event listeners
-  async listenToTicketEvents(callback: (event: any) => void): Promise<void> {
+  onTicketCreated(callback: (ticketId: bigint, reporter: string) => void) {
     if (!this.socServiceContract) throw new Error('Contract not initialized');
-    
     this.socServiceContract.on('TicketCreated', callback);
+  }
+
+  onAnalystAssigned(callback: (ticketId: bigint, analyst: string) => void) {
+    if (!this.socServiceContract) throw new Error('Contract not initialized');
     this.socServiceContract.on('AnalystAssigned', callback);
+  }
+
+  onReportSubmitted(callback: (ticketId: bigint, reportLink: string) => void) {
+    if (!this.socServiceContract) throw new Error('Contract not initialized');
     this.socServiceContract.on('ReportSubmitted', callback);
+  }
+
+  onTicketValidated(callback: (ticketId: bigint, certifier: string, reward: bigint) => void) {
+    if (!this.socServiceContract) throw new Error('Contract not initialized');
     this.socServiceContract.on('TicketValidated', callback);
   }
 
-  removeAllListeners(): void {
+  removeAllListeners() {
     if (this.socServiceContract) {
       this.socServiceContract.removeAllListeners();
+    }
+    if (this.stakingPoolContract) {
+      this.stakingPoolContract.removeAllListeners();
+    }
+    if (this.cltRewardContract) {
+      this.cltRewardContract.removeAllListeners();
     }
   }
 }
