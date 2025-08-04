@@ -620,6 +620,20 @@ class EVMContractService {
     }
   }
 
+  // Get ETH balance (wallet-based function using ethers.js)
+  async getETHBalance(address: string): Promise<string> {
+    try {
+      if (!this.provider) {
+        await this.connectWallet();
+      }
+      const balance = await this.provider!.getBalance(address);
+      return formatUnits(balance, 18);
+    } catch (error) {
+      console.error('Error getting ETH balance:', error);
+      return '0';
+    }
+  }
+
   // CLT Token functions
   async getCLTBalance(address: string): Promise<bigint> {
     if (!this.cltRewardContract) {

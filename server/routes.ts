@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { insertIncidentReportSchema } from "@shared/schema";
+import { insertIncidentReportSchema, insertTicketSchema } from "@shared/schema";
 
 const API_KEY = process.env.GOOGLE_API_KEY;
 
@@ -339,6 +339,34 @@ Ensure the JSON is valid and parseable.`;
       console.error("AI incident analysis error:", error);
       res.status(500).json({ 
         error: "Failed to analyze incident",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Ticket endpoints
+  app.get("/api/tickets", async (req, res) => {
+    try {
+      const tickets = await storage.getTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Failed to fetch tickets:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch tickets",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/tickets", async (req, res) => {
+    try {
+      const validatedData = insertTicketSchema.parse(req.body);
+      const ticket = await storage.createTicket(validatedData);
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Failed to create ticket:", error);
+      res.status(500).json({ 
+        error: "Failed to create ticket",
         details: error instanceof Error ? error.message : "Unknown error"
       });
     }

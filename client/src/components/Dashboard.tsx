@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "./WalletProvider";
 import IncidentReport from "./IncidentReport";
 import EVMIncidentReport from "./EVMIncidentReport";
-import TicketList from "./TicketList";
+import CasesList from "./CasesList";
 import StakingRewards from "./StakingRewards";
 import EVMStakingRewards from "./EVMStakingRewards";
 import AIAssistant from "./AIAssistant";
@@ -52,7 +52,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
           ]);
 
           setEvmStats({
-            ethBalance: evmContractService.formatETH(ethBalance),
+            ethBalance: ethBalance,
             cltBalance: evmContractService.formatCLT(cltBalance),
             totalStaked: evmContractService.formatCLT(stakeInfo.amount),
           });
@@ -88,7 +88,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
 
   const tabs = [
     { id: "incidents", label: "Report Incident", icon: AlertTriangle },
-    { id: "tickets", label: "Ticket Management", icon: Shield },
+    { id: "tickets", label: "Cases Management", icon: Shield },
     { id: "staking", label: "Staking Rewards", icon: TrendingUp },
     { id: "ai", label: "AI Assistant", icon: Brain },
     { id: "audit", label: "Smart Contract Audit", icon: Code },
@@ -161,14 +161,14 @@ export default function Dashboard({ currentRole }: DashboardProps) {
         <h1 className="text-3xl font-bold text-white mb-2">
           {walletType === 'evm' ? 'EVM' : 'IOTA'} Security Operations Center
         </h1>
-        <p className="text-gray-300">
+        <div className="text-gray-300">
           Role: <Badge variant="outline" className="ml-1 text-blue-400 border-blue-500/30">{currentRole}</Badge>
           {currentAddress && (
             <span className="ml-4 text-sm text-gray-400">
               Connected: {currentAddress.slice(0, 6)}...{currentAddress.slice(-4)}
             </span>
           )}
-        </p>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -213,13 +213,13 @@ export default function Dashboard({ currentRole }: DashboardProps) {
       <div className="space-y-6">
         {activeTab === "incidents" && (
           <div>
-            {walletType === 'evm' ? <EVMIncidentReport /> : <IncidentReport />}
+            {walletType === 'evm' ? <EVMIncidentReport onClose={() => setActiveTab("tickets")} /> : <IncidentReport onClose={() => setActiveTab("tickets")} />}
           </div>
         )}
 
         {activeTab === "tickets" && (
           <div>
-            <TicketList currentRole={currentRole} />
+            <CasesList walletType={walletType} />
           </div>
         )}
 

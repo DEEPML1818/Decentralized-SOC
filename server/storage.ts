@@ -4,8 +4,7 @@ import {
   type Ticket, type InsertTicket,
   type IncidentReport, type InsertIncidentReport
 } from "@shared/schema";
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
 // Interface for all CRUD operations
@@ -114,50 +113,40 @@ export class MemoryStorage implements IStorage {
   }
 }
 
-// Real database storage using Drizzle + Neon/Supabase
+// Real database storage using Drizzle + Neon
 export class DatabaseStorage implements IStorage {
-  private db: any;
-
-  constructor() {
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL environment variable is required");
-    }
-    
-    const sql = neon(process.env.DATABASE_URL);
-    this.db = drizzle(sql);
-  }
 
   async getUser(id: number): Promise<User | undefined> {
-    const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0];
   }
 
   async getUserByWallet(walletAddress: string): Promise<User | undefined> {
-    const result = await this.db.select().from(users).where(eq(users.wallet_address, walletAddress)).limit(1);
+    const result = await db.select().from(users).where(eq(users.wallet_address, walletAddress)).limit(1);
     return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await this.db.insert(users).values(insertUser).returning();
+    const result = await db.insert(users).values(insertUser).returning();
     return result[0];
   }
 
   async createIncidentReport(report: InsertIncidentReport): Promise<IncidentReport> {
-    const result = await this.db.insert(incident_reports).values(report).returning();
+    const result = await db.insert(incident_reports).values(report).returning();
     return result[0];
   }
 
   async getIncidentReports(): Promise<IncidentReport[]> {
-    return await this.db.select().from(incident_reports).orderBy(desc(incident_reports.created_at));
+    return await db.select().from(incident_reports).orderBy(desc(incident_reports.created_at));
   }
 
   async getIncidentReportById(id: number): Promise<IncidentReport | undefined> {
-    const result = await this.db.select().from(incident_reports).where(eq(incident_reports.id, id)).limit(1);
+    const result = await db.select().from(incident_reports).where(eq(incident_reports.id, id)).limit(1);
     return result[0];
   }
 
   async updateIncidentReport(id: number, updates: Partial<IncidentReport>): Promise<IncidentReport> {
-    const result = await this.db.update(incident_reports)
+    const result = await db.update(incident_reports)
       .set({ ...updates, updated_at: new Date() })
       .where(eq(incident_reports.id, id))
       .returning();
@@ -165,16 +154,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
-    const result = await this.db.insert(tickets).values(ticket).returning();
+    const result = await db.insert(tickets).values(ticket).returning();
     return result[0];
   }
 
   async getTickets(): Promise<Ticket[]> {
-    return await this.db.select().from(tickets).orderBy(desc(tickets.created_at));
+    return await db.select().from(tickets).orderBy(desc(tickets.created_at));
   }
 
   async updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket> {
-    const result = await this.db.update(tickets)
+    const result = await db.update(tickets)
       .set({ ...updates, updated_at: new Date() })
       .where(eq(tickets.id, id))
       .returning();

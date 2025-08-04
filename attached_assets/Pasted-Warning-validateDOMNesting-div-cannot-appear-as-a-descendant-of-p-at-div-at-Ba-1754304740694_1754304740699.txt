@@ -1,0 +1,211 @@
+Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at Badge (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/src/components/ui/badge.tsx:35:18)
+    at p
+    at div
+    at div
+    at Dashboard (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/src/components/Dashboard.tsx:43:37)
+    at div
+    at EVMPage (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/src/pages/EVMPage.tsx:27:43)
+    at Route (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=a5cbd8e7:191:16)
+    at Switch (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=a5cbd8e7:247:17)
+    at div
+    at Router (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=a5cbd8e7:159:17)
+    at WalletProvider (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/src/components/WalletProvider.tsx:22:34)
+    at ThemeProvider (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/src/components/ThemeProvider.tsx:25:3)
+    at App (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/src/App.tsx?v=zopj8kG7gu0r0NKiimUYN:36:49)
+    at WalletConnectionManager (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=a5cbd8e7:13843:3)
+    at WalletProvider (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=a5cbd8e7:13812:3)
+    at IotaClientProvider (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@iota_dapp-kit.js?v=a5cbd8e7:13266:11)
+    at QueryClientProvider (https://8851c7c3-a1c7-4e0e-9135-aad042335e44-00-2gxn3d21ev89e.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4FXSW5XJ.js?v=a5cbd8e7:2934:3)
+printWarning @ chunk-NFC5BX5N.js?v=a5cbd8e7:521
+error @ chunk-NFC5BX5N.js?v=a5cbd8e7:505
+validateDOMNesting @ chunk-NFC5BX5N.js?v=a5cbd8e7:8256
+createInstance @ chunk-NFC5BX5N.js?v=a5cbd8e7:8328
+completeWork @ chunk-NFC5BX5N.js?v=a5cbd8e7:16290
+completeUnitOfWork @ chunk-NFC5BX5N.js?v=a5cbd8e7:19224
+performUnitOfWork @ chunk-NFC5BX5N.js?v=a5cbd8e7:19206
+workLoopSync @ chunk-NFC5BX5N.js?v=a5cbd8e7:19137
+renderRootSync @ chunk-NFC5BX5N.js?v=a5cbd8e7:19116
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=a5cbd8e7:18874
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=a5cbd8e7:9119
+(anonymous) @ chunk-NFC5BX5N.js?v=a5cbd8e7:18627Understand this error
+Dashboard.tsx:60 Failed to load EVM stats: TypeError: evmContractService.getETHBalance is not a function
+    at loadEVMStats (Dashboard.tsx:49:32)
+    at Dashboard.tsx:65:5
+    at commitHookEffectListMount (chunk-NFC5BX5N.js?v=a5cbd8e7:16915:34)
+    at commitPassiveMountOnFiber (chunk-NFC5BX5N.js?v=a5cbd8e7:18156:19)
+    at commitPassiveMountEffects_complete (chunk-NFC5BX5N.js?v=a5cbd8e7:18129:17)
+    at commitPassiveMountEffects_begin (chunk-NFC5BX5N.js?v=a5cbd8e7:18119:15)
+    at commitPassiveMountEffects (chunk-NFC5BX5N.js?v=a5cbd8e7:18109:11)
+    at flushPassiveEffectsImpl (chunk-NFC5BX5N.js?v=a5cbd8e7:19490:11)
+    at flushPassiveEffects (chunk-NFC5BX5N.js?v=a5cbd8e7:19447:22)
+    at commitRootImpl (chunk-NFC5BX5N.js?v=a5cbd8e7:19416:13)
+loadEVMStats @ Dashboard.tsx:60
+(anonymous) @ Dashboard.tsx:65
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=a5cbd8e7:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=a5cbd8e7:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=a5cbd8e7:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=a5cbd8e7:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=a5cbd8e7:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=a5cbd8e7:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=a5cbd8e7:19447
+commitRootImpl @ chunk-NFC5BX5N.js?v=a5cbd8e7:19416
+commitRoot @ chunk-NFC5BX5N.js?v=a5cbd8e7:19277
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=a5cbd8e7:18895
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=a5cbd8e7:9119
+(anonymous) @ chunk-NFC5BX5N.js?v=a5cbd8e7:18627Understand this error
+EVMStakingRewards.tsx:77 Error loading staking data: Error: Contract not initialized
+    at EVMContractService.getCLTBalance (evm-contract.ts:626:13)
+    at loadStakingData (EVMStakingRewards.tsx:61:53)
+    at EVMStakingRewards.tsx:50:7
+    at commitHookEffectListMount (chunk-NFC5BX5N.js?v=a5cbd8e7:16915:34)
+    at commitPassiveMountOnFiber (chunk-NFC5BX5N.js?v=a5cbd8e7:18156:19)
+    at commitPassiveMountEffects_complete (chunk-NFC5BX5N.js?v=a5cbd8e7:18129:17)
+    at commitPassiveMountEffects_begin (chunk-NFC5BX5N.js?v=a5cbd8e7:18119:15)
+    at commitPassiveMountEffects (chunk-NFC5BX5N.js?v=a5cbd8e7:18109:11)
+    at flushPassiveEffectsImpl (chunk-NFC5BX5N.js?v=a5cbd8e7:19490:11)
+    at flushPassiveEffects (chunk-NFC5BX5N.js?v=a5cbd8e7:19447:22)
+
+CLTReward.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract CLTReward is ERC20, Ownable {
+    constructor(address initialOwner) ERC20("CyberLink Token", "CLT") Ownable(initialOwner) {}
+
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
+    }
+}
+
+
+
+CLTStakingPool.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract CLTStakingPool is Ownable {
+    IERC20 public clt;
+    uint256 public rewardRate = 100; // reward per block
+    uint256 public lastUpdateBlock;
+
+    struct StakeInfo {
+        uint256 amount;
+        uint256 rewardDebt;
+    }
+
+    mapping(address => StakeInfo) public stakes;
+
+    constructor(address _clt, address initialOwner) Ownable(initialOwner) {
+        clt = IERC20(_clt);
+        lastUpdateBlock = block.number;
+    }
+
+    function stake(uint256 amount) external {
+        StakeInfo storage user = stakes[msg.sender];
+        _updateReward(msg.sender);
+
+        clt.transferFrom(msg.sender, address(this), amount);
+        user.amount += amount;
+    }
+
+    function withdraw(uint256 amount) external {
+        StakeInfo storage user = stakes[msg.sender];
+        require(user.amount >= amount, "Not enough staked");
+
+        _updateReward(msg.sender);
+        user.amount -= amount;
+        clt.transfer(msg.sender, amount);
+    }
+
+    function claim() external {
+        _updateReward(msg.sender);
+    }
+
+    function _updateReward(address userAddr) internal {
+        StakeInfo storage user = stakes[userAddr];
+        if (user.amount > 0) {
+            uint256 blocks = block.number - lastUpdateBlock;
+            uint256 reward = (blocks * rewardRate * user.amount) / 1e18;
+            if (reward > 0) {
+                clt.transfer(userAddr, reward);
+            }
+        }
+        lastUpdateBlock = block.number;
+    }
+
+    function setRewardRate(uint256 _rate) external onlyOwner {
+        rewardRate = _rate;
+    }
+}
+
+
+SOCService.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./CLTReward.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract SOCService is Ownable {
+    CLTReward public rewardToken;
+
+    event TicketCreated(uint256 indexed ticketId, address indexed reporter);
+    event AnalystAssigned(uint256 indexed ticketId, address analyst);
+    event ReportSubmitted(uint256 indexed ticketId, string reportLink);
+    event TicketValidated(uint256 indexed ticketId, address certifier, uint256 reward);
+
+    struct Ticket {
+        address reporter;
+        address analyst;
+        bool validated;
+        bool rewardClaimed;
+    }
+
+    mapping(uint256 => Ticket) public tickets;
+    uint256 public nextTicketId;
+
+    constructor(address _rewardToken, address initialOwner) Ownable(initialOwner) {
+        rewardToken = CLTReward(_rewardToken);
+    }
+
+    function createTicket() external returns (uint256) {
+        uint256 ticketId = nextTicketId++;
+        tickets[ticketId] = Ticket(msg.sender, address(0), false, false);
+        emit TicketCreated(ticketId, msg.sender);
+        return ticketId;
+    }
+
+    function assignAnalyst(uint256 ticketId, address analyst) external onlyOwner {
+        tickets[ticketId].analyst = analyst;
+        emit AnalystAssigned(ticketId, analyst);
+    }
+
+    function submitReport(uint256 ticketId, string memory reportLink) external {
+        require(tickets[ticketId].analyst == msg.sender, "Not assigned analyst");
+        emit ReportSubmitted(ticketId, reportLink);
+    }
+
+    function validateTicket(uint256 ticketId, address certifier, uint256 rewardAmount) external onlyOwner {
+        Ticket storage ticket = tickets[ticketId];
+        require(!ticket.validated, "Already validated");
+
+        ticket.validated = true;
+        rewardToken.mint(ticket.analyst, rewardAmount);
+        ticket.rewardClaimed = true;
+
+        emit TicketValidated(ticketId, certifier, rewardAmount);
+    }
+}
+
+
+
+
