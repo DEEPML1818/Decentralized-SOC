@@ -7,7 +7,7 @@ import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/components/WalletProvider";
-import { evmContractService } from "@/lib/evm-contract";
+import { evmContractService, CONTRACT_ADDRESSES } from "@/lib/evm-contract";
 import {
   AlertTriangle,
   Shield,
@@ -18,7 +18,11 @@ import {
   Zap
 } from "lucide-react";
 
-export default function EVMIncidentReport() {
+interface EVMIncidentReportProps {
+  onClose?: () => void;
+}
+
+export default function EVMIncidentReport(props: EVMIncidentReportProps) {
   const [incidentData, setIncidentData] = useState({
     title: "",
     description: "",
@@ -77,10 +81,55 @@ export default function EVMIncidentReport() {
         txHash: receipt.transactionHash
       };
 
+      // Store the incident with blockchain transaction data in the database
+      try {
+        const incidentReport = {
+          title: incidentData.title,
+          description: incidentData.description,
+          severity: incidentData.priority,
+          client_name: evmAddress || 'Anonymous',
+          contact_info: `EVM Wallet: ${evmAddress}`,
+          affected_systems: incidentData.location || 'Not specified',
+          attack_vectors: incidentData.category,
+          status: 'pending',
+          client_wallet: evmAddress,
+          // Blockchain transaction data
+          transaction_hash: receipt.transactionHash,
+          block_number: receipt.blockNumber,
+          gas_used: receipt.gasUsed?.toString(),
+          contract_address: CONTRACT_ADDRESSES.SOC_SERVICE,
+          ticket_id: parseInt(result.ticketId, 16) || null, // Convert hex to decimal
+        };
+
+        const response = await fetch('/api/incident-reports', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(incidentReport),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to store incident report');
+        }
+
+        const savedReport = await response.json();
+        console.log('Incident report saved to database:', savedReport);
+
+      } catch (dbError) {
+        console.error('Failed to save incident to database:', dbError);
+        // Don't fail the whole transaction if database save fails
+      }
+
       toast({
         title: "Ticket Created Successfully!",
-        description: `Ticket ID: ${result.ticketId} | Transaction: ${result.txHash}`,
+        description: `Ticket ID: ${result.ticketId} | TX: ${result.txHash.slice(0, 10)}...`,
       });
+
+      // Close the modal and navigate to cases
+      if (props.onClose) {
+        props.onClose();
+      }
 
       // Reset form
       setIncidentData({

@@ -634,6 +634,19 @@ class EVMContractService {
     }
   }
 
+  // Get contract addresses
+  getSocServiceAddress(): string {
+    return this.socServiceAddress;
+  }
+
+  getCLTAddress(): string {
+    return this.cltAddress;
+  }
+
+  getStakingPoolAddress(): string {
+    return this.stakingPoolAddress;
+  }
+
   // CLT Token functions
   async getCLTBalance(address: string): Promise<bigint> {
     if (!this.cltRewardContract) {

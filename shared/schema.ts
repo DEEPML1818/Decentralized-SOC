@@ -73,6 +73,12 @@ export const incident_reports = pgTable("incident_reports", {
   assigned_certifier: varchar("assigned_certifier", { length: 255 }),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   client_wallet: varchar("client_wallet", { length: 255 }),
+  // Blockchain transaction data fields
+  transaction_hash: varchar("transaction_hash", { length: 66 }), // 0x + 64 hex chars
+  block_number: integer("block_number"), // Block number where tx was mined
+  gas_used: varchar("gas_used", { length: 50 }), // Gas used for transaction
+  contract_address: varchar("contract_address", { length: 42 }), // Contract address used
+  ticket_id: integer("ticket_id"), // On-chain ticket ID if created
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

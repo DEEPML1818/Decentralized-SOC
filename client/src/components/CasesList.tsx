@@ -23,7 +23,10 @@ import {
   Eye,
   Filter,
   SortDesc,
-  RefreshCw
+  RefreshCw,
+  ExternalLink,
+  Hash,
+  Coins
 } from "lucide-react";
 import { LoadingSpinner } from "./ui/loading-spinner";
 
@@ -37,6 +40,12 @@ interface Case {
   contact_info: string; 
   assigned_analyst?: string;
   assigned_certifier?: string;
+  transaction_hash?: string;
+  block_number?: number;
+  gas_used?: string;
+  contract_address?: string;
+  ticket_id?: number;
+  client_wallet?: string;
   created_at: string;
   updated_at: string;
 }
@@ -234,12 +243,80 @@ export default function CasesList({ walletType }: CasesListProps) {
                           {caseItem.description}
                         </p>
                         
+                        {/* Blockchain Transaction Data */}
+                        {caseItem.transaction_hash && (
+                          <div className="bg-gray-800/30 rounded p-3 mb-3 border border-gray-700/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Hash className="h-4 w-4 text-blue-400" />
+                              <span className="text-sm font-medium text-blue-400">Blockchain Transaction</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400">TX Hash:</span>
+                                <button
+                                  onClick={() => {
+                                    if (caseItem.transaction_hash) {
+                                      window.open(`https://sepolia.scrollscan.com/tx/${caseItem.transaction_hash}`, '_blank');
+                                    }
+                                  }}
+                                  className="text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+                                  title="View on ScrollScan"
+                                >
+                                  {caseItem.transaction_hash.slice(0, 10)}...{caseItem.transaction_hash.slice(-6)}
+                                  <ExternalLink className="h-3 w-3" />
+                                </button>
+                              </div>
+                              {caseItem.block_number && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">Block:</span>
+                                  <span className="text-green-400">#{caseItem.block_number}</span>
+                                </div>
+                              )}
+                              {caseItem.gas_used && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">Gas Used:</span>
+                                  <span className="text-yellow-400">{parseFloat(caseItem.gas_used).toLocaleString()}</span>
+                                </div>
+                              )}
+                              {caseItem.ticket_id && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">Ticket ID:</span>
+                                  <span className="text-purple-400">#{caseItem.ticket_id}</span>
+                                </div>
+                              )}
+                            </div>
+                            {caseItem.contract_address && (
+                              <div className="flex items-center gap-2 mt-2 text-xs">
+                                <span className="text-gray-400">Contract:</span>
+                                <button
+                                  onClick={() => {
+                                    if (caseItem.contract_address) {
+                                      window.open(`https://sepolia.scrollscan.com/address/${caseItem.contract_address}`, '_blank');
+                                    }
+                                  }}
+                                  className="text-orange-400 hover:text-orange-300 flex items-center gap-1 transition-colors"
+                                  title="View Contract on ScrollScan"
+                                >
+                                  {caseItem.contract_address.slice(0, 6)}...{caseItem.contract_address.slice(-4)}
+                                  <ExternalLink className="h-3 w-3" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
                         <div className="flex items-center justify-between text-xs text-gray-400">
                           <div className="flex items-center gap-4">
                             <span className="flex items-center gap-1">
                               <User className="h-3 w-3" />
                               {caseItem.client_name || 'Anonymous'}
                             </span>
+                            {caseItem.client_wallet && (
+                              <span className="flex items-center gap-1">
+                                <Coins className="h-3 w-3" />
+                                {caseItem.client_wallet.slice(0, 6)}...{caseItem.client_wallet.slice(-4)}
+                              </span>
+                            )}
                             {caseItem.assigned_analyst && (
                               <span className="flex items-center gap-1">
                                 <Shield className="h-3 w-3" />
