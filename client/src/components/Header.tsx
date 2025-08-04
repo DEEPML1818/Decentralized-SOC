@@ -2,7 +2,7 @@ import { ConnectButton, useCurrentAccount } from "@iota/dapp-kit";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
-import { Shield, Wallet, ChevronDown, Link, Coins, Network, FileText } from "lucide-react";
+import { Shield, Wallet, ChevronDown, Link, Coins, Network, FileText, DollarSign } from "lucide-react";
 import { useWallet } from './WalletProvider';
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -23,7 +23,8 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
     connectEVMWallet, 
     disconnectEVMWallet,
     isEVMConnected,
-    isIOTAConnected 
+    isIOTAConnected,
+    ethBalance
   } = useWallet();
   const { toast } = useToast();
   const [showBlockchainSelector, setShowBlockchainSelector] = useState(false);
@@ -37,7 +38,7 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
     }
   };
 
-  
+
 
   const handleEVMConnect = async () => {
     if (isEVMConnected) {
@@ -136,7 +137,7 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
               <FileText className="h-4 w-4 mr-2" />
               Security Pools
             </Button>
-            
+
             <Button
               variant="ghost"
               onClick={() => window.location.href = '/staking'}
@@ -177,7 +178,7 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
           </div>
         </div>
       </div>
-      
+
       {/* Blockchain Selector Modal */}
       <BlockchainSelector
         isOpen={showBlockchainSelector}

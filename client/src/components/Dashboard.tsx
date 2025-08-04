@@ -26,6 +26,7 @@ import {
   DollarSign,
   Zap
 } from "lucide-react";
+import EVMBalanceDisplay from './EVMBalanceDisplay';
 
 interface DashboardProps {
   currentRole: string;
@@ -236,7 +237,18 @@ export default function Dashboard({ currentRole }: DashboardProps) {
       <div className="space-y-6">
         {activeTab === "incidents" && (
           <div>
-            {walletType === 'evm' ? <EVMIncidentReport onClose={() => setActiveTab("tickets")} /> : <IncidentReport onClose={() => setActiveTab("tickets")} />}
+            {walletType === 'evm' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <EVMIncidentReport onClose={() => setActiveTab("tickets")} />
+                </div>
+                <div>
+                  <EVMBalanceDisplay />
+                </div>
+              </div>
+            ) : (
+              <IncidentReport onClose={() => setActiveTab("tickets")} />
+            )}
           </div>
         )}
 
