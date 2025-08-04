@@ -2,75 +2,144 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom animations and effects */
-@keyframes pulse-glow {
+/* Cybersecurity Theme - Red & Black */
+:root {
+  --cyber-red: #dc2626;
+  --cyber-red-dark: #991b1b;
+  --cyber-red-light: #ef4444;
+  --cyber-black: #0a0a0a;
+  --cyber-gray: #1f1f1f;
+  --cyber-gray-light: #2a2a2a;
+  --cyber-border: #dc2626;
+}
+
+.dark {
+  --background: 10 10 10;
+  --foreground: 240 10% 95%;
+  --card: 20 20 20;
+  --card-foreground: 240 10% 95%;
+  --popover: 20 20 20;
+  --popover-foreground: 240 10% 95%;
+  --primary: 346 77% 49%;
+  --primary-foreground: 355.7 100% 97.3%;
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 240 5% 84%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 5% 64%;
+  --accent: 12 6% 15%;
+  --accent-foreground: 240 5% 84%;
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 240 10% 95%;
+  --border: 346 77% 49%;
+  --input: 240 4% 16%;
+  --ring: 346 77% 49%;
+  --radius: 0.5rem;
+}
+
+/* Cybersecurity animations */
+@keyframes cyber-pulse {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
   }
   50% {
-    box-shadow: 0 0 30px rgba(147, 51, 234, 0.8);
+    box-shadow: 0 0 40px rgba(220, 38, 38, 0.8);
   }
 }
 
-@keyframes float {
+@keyframes data-flow {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes security-scan {
   0%, 100% {
-    transform: translateY(0px);
+    border-color: rgba(220, 38, 38, 0.3);
   }
   50% {
-    transform: translateY(-10px);
+    border-color: rgba(220, 38, 38, 0.8);
   }
 }
 
-@keyframes gradient-shift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
+.cyber-pulse {
+  animation: cyber-pulse 2s ease-in-out infinite;
 }
 
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+.data-flow {
+  animation: data-flow 3s linear infinite;
 }
 
-.float-animation {
-  animation: float 3s ease-in-out infinite;
+.security-scan {
+  animation: security-scan 2s ease-in-out infinite;
 }
 
-.gradient-animation {
-  background-size: 400% 400%;
-  animation: gradient-shift 4s ease infinite;
-}
-
-/* Custom gradient backgrounds */
+/* Cybersecurity gradient backgrounds */
 .cyber-gradient {
   background: linear-gradient(135deg, 
-    rgba(147, 51, 234, 0.1) 0%, 
-    rgba(59, 130, 246, 0.1) 25%, 
-    rgba(16, 185, 129, 0.1) 50%, 
-    rgba(245, 158, 11, 0.1) 75%, 
-    rgba(239, 68, 68, 0.1) 100%);
+    rgba(220, 38, 38, 0.1) 0%, 
+    rgba(0, 0, 0, 0.8) 50%, 
+    rgba(220, 38, 38, 0.1) 100%);
 }
 
-.neon-border {
-  border: 1px solid transparent;
-  background: linear-gradient(90deg, #8b5cf6, #06b6d4, #10b981, #f59e0b) padding-box,
-              linear-gradient(90deg, #8b5cf6, #06b6d4, #10b981, #f59e0b) border-box;
+.threat-gradient {
+  background: linear-gradient(45deg, 
+    rgba(220, 38, 38, 0.2) 0%, 
+    rgba(153, 27, 27, 0.3) 100%);
 }
 
-.glass-effect {
+.secure-gradient {
+  background: linear-gradient(45deg, 
+    rgba(34, 197, 94, 0.2) 0%, 
+    rgba(21, 128, 61, 0.3) 100%);
+}
+
+.alert-gradient {
+  background: linear-gradient(45deg, 
+    rgba(245, 158, 11, 0.2) 0%, 
+    rgba(217, 119, 6, 0.3) 100%);
+}
+
+/* Glass effect with cybersecurity theme */
+.cyber-glass {
   backdrop-filter: blur(20px);
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid rgba(220, 38, 38, 0.3);
 }
 
-/* Enhanced button styles */
+/* Enhanced button styles for security theme */
 .btn-cyber {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+  background: linear-gradient(45deg, #dc2626, #991b1b);
   transition: all 0.3s ease;
+  border: 1px solid #dc2626;
+}
+
+.btn-cyber:hover {
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+}
+
+/* Security status indicators */
+.status-critical {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.status-warning {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-secure {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .btn-cyber::before {

@@ -9,6 +9,8 @@ import EVMIncidentReport from "./EVMIncidentReport";
 import CasesList from "./CasesList";
 import StakingRewards from "./StakingRewards";
 import EVMStakingRewards from "./EVMStakingRewards";
+import StakingPoolsPage from "./StakingPoolsPage";
+import CaseDetailModal from "./CaseDetailModal";
 import AIAssistant from "./AIAssistant";
 import SmartContractAudit from "./SmartContractAudit";
 import { evmContractService } from "@/lib/evm-contract";
@@ -31,6 +33,7 @@ interface DashboardProps {
 
 export default function Dashboard({ currentRole }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("incidents");
+  const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
   const [evmStats, setEvmStats] = useState({
     ethBalance: "0",
     cltBalance: "0",
@@ -70,28 +73,41 @@ export default function Dashboard({ currentRole }: DashboardProps) {
 
   if (!isWalletConnected) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">
-            {walletType === 'evm' ? 'EVM dSOC Platform' : 'IOTA dSOC Platform'}
-          </h1>
-          <p className="text-gray-300 mb-8">
-            {walletType === 'evm' 
-              ? 'Please connect your MetaMask wallet to access EVM features' 
-              : 'Please connect your IOTA wallet to access IOTA features'
-            }
-          </p>
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-950">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="cyber-pulse">
+              <Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            </div>
+            <h1 className="text-4xl font-bold text-red-500 mb-4 font-mono">dSOC Security Center</h1>
+            <p className="text-xl text-gray-300 mb-4">
+              {walletType === 'evm' ? 'EVM dSOC Platform' : 'IOTA dSOC Platform'}
+            </p>
+            <p className="text-gray-300 mb-8">
+              {walletType === 'evm' 
+                ? 'Please connect your MetaMask wallet to access EVM features' 
+                : 'Please connect your IOTA wallet to access IOTA features'
+              }
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
-  const tabs = [
+  // Only show EVM options when EVM is connected, only show IOTA options when IOTA is connected
+  const tabs = isEVMConnected ? [
+    { id: "incidents", label: "Report Incident", icon: AlertTriangle },
+    { id: "tickets", label: "Cases Management", icon: Shield },
+    { id: "pools", label: "Staking Pools", icon: Coins },
+    { id: "staking", label: "Staking Rewards", icon: TrendingUp },
+    { id: "ai", label: "AI Assistant", icon: Brain },
+    { id: "audit", label: "Smart Contract Audit", icon: Code },
+  ] : [
     { id: "incidents", label: "Report Incident", icon: AlertTriangle },
     { id: "tickets", label: "Cases Management", icon: Shield },
     { id: "staking", label: "Staking Rewards", icon: TrendingUp },
     { id: "ai", label: "AI Assistant", icon: Brain },
-    { id: "audit", label: "Smart Contract Audit", icon: Code },
   ];
 
   const statCards = walletType === 'evm' ? [
@@ -155,59 +171,66 @@ export default function Dashboard({ currentRole }: DashboardProps) {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">
-          {walletType === 'evm' ? 'EVM' : 'IOTA'} Security Operations Center
-        </h1>
-        <div className="text-gray-300">
-          Role: <Badge variant="outline" className="ml-1 text-blue-400 border-blue-500/30">{currentRole}</Badge>
-          {currentAddress && (
-            <span className="ml-4 text-sm text-gray-400">
-              Connected: {currentAddress.slice(0, 6)}...{currentAddress.slice(-4)}
-            </span>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-950">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="cyber-pulse mb-4">
+            <Shield className="h-12 w-12 text-red-500 mx-auto" />
+          </div>
+          <h1 className="text-4xl font-bold text-red-500 mb-2 font-mono">
+            dSOC Security Center
+          </h1>
+          <p className="text-gray-300">
+            Role: {currentRole} | {isEVMConnected ? 'EVM' : 'IOTA'} Wallet: {currentAddress?.slice(0, 6)}...{currentAddress?.slice(-4)}
+          </p>
+          {isEVMConnected && (
+            <div className="mt-4 text-center">
+              <p className="text-green-400 text-lg font-mono cyber-pulse">
+                💰 ETH Balance: {parseFloat(evmStats.ethBalance).toFixed(4)} ETH
+              </p>
+              <p className="text-blue-400 text-sm font-mono">
+                CLT Tokens: {parseFloat(evmStats.cltBalance).toFixed(2)} | Staked: {parseFloat(evmStats.totalStaked).toFixed(2)}
+              </p>
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statCards.map((stat, index) => (
-          <Card key={index} className={`${stat.bgColor}`}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">{stat.title}</p>
-                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {statCards.map((stat, index) => (
+            <Card key={index} className={`cyber-glass ${stat.bgColor} security-scan`}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm font-medium">{stat.title}</p>
+                    <p className={`text-2xl font-bold ${stat.color} font-mono`}>{stat.value}</p>
+                  </div>
+                  <stat.icon className={`h-8 w-8 ${stat.color}`} />
                 </div>
-                <stat.icon className={`h-8 w-8 ${stat.color}`} />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-700">
-        {tabs.map((tab) => (
-          <Button
-            key={tab.id}
-            variant={activeTab === tab.id ? "default" : "ghost"}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 ${
-              activeTab === tab.id
-                ? walletType === 'evm' 
-                  ? "bg-orange-600 hover:bg-orange-700 text-white"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
-                : "text-gray-300 hover:text-white hover:bg-gray-800"
-            }`}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </Button>
-        ))}
-      </div>
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap gap-2 mb-8 border-b border-red-500/30">
+          {tabs.map((tab) => (
+            <Button
+              key={tab.id}
+              variant={activeTab === tab.id ? "default" : "ghost"}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 font-mono ${
+                activeTab === tab.id
+                  ? "btn-cyber cyber-pulse text-white"
+                  : "text-gray-300 hover:text-red-400 hover:bg-red-950/30 cyber-glass"
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </Button>
+          ))}
+        </div>
 
       {/* Tab Content */}
       <div className="space-y-6">
@@ -220,6 +243,12 @@ export default function Dashboard({ currentRole }: DashboardProps) {
         {activeTab === "tickets" && (
           <div>
             <CasesList walletType={walletType} />
+          </div>
+        )}
+
+        {activeTab === "pools" && isEVMConnected && (
+          <div>
+            <StakingPoolsPage />
           </div>
         )}
 
@@ -240,6 +269,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
             <SmartContractAudit />
           </div>
         )}
+        </div>
       </div>
     </div>
   );

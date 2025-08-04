@@ -69,6 +69,12 @@ export class MemoryStorage implements IStorage {
     );
   }
 
+  async getAllIncidentReports(): Promise<IncidentReport[]> {
+    return Array.from(this.incidentReports.values()).sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }
+
   async getIncidentReportById(id: number): Promise<IncidentReport | undefined> {
     return this.incidentReports.get(id);
   }
@@ -137,6 +143,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getIncidentReports(): Promise<IncidentReport[]> {
+    return await db.select().from(incident_reports).orderBy(desc(incident_reports.created_at));
+  }
+
+  async getAllIncidentReports(): Promise<IncidentReport[]> {
     return await db.select().from(incident_reports).orderBy(desc(incident_reports.created_at));
   }
 

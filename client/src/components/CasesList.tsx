@@ -11,6 +11,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
+import CaseDetailModal from "./CaseDetailModal";
 import { 
   Search, 
   FileText, 
@@ -26,7 +27,9 @@ import {
   RefreshCw,
   ExternalLink,
   Hash,
-  Coins
+  Coins,
+  Target,
+  Lock
 } from "lucide-react";
 import { LoadingSpinner } from "./ui/loading-spinner";
 
