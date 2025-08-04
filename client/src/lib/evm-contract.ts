@@ -620,31 +620,58 @@ class EVMContractService {
     }
   }
 
+  async getCurrentNetwork(): Promise<string> {
+    if (!this.provider) {
+      throw new Error('Provider not initialized');
+    }
+    const network = await this.provider.getNetwork();
+    return network.chainId.toString();
+  }
+
+  async isConnectedToScrollTestnet(): Promise<boolean> {
+    try {
+      const currentChainId = await this.getCurrentNetwork();
+      return currentChainId === '534351'; // Scroll Sepolia chainId in decimal
+    } catch (error) {
+      console.error('Error checking network:', error);
+      return false;
+    }
+  }
+
   // Get ETH balance (wallet-based function using ethers.js)
   async getETHBalance(address: string): Promise<string> {
     try {
       if (!this.provider) {
+        console.log('Provider not initialized, connecting wallet...');
         await this.connectWallet();
       }
-      const balance = await this.provider!.getBalance(address);
-      return formatUnits(balance, 18);
+      
+      if (!this.provider) {
+        throw new Error('Failed to initialize provider');
+      }
+
+      console.log('Fetching ETH balance for address:', address);
+      const balance = await this.provider.getBalance(address);
+      const formattedBalance = formatUnits(balance, 18);
+      console.log('ETH balance fetched:', formattedBalance);
+      return formattedBalance;
     } catch (error) {
       console.error('Error getting ETH balance:', error);
-      return '0';
+      throw error; // Re-throw to let calling code handle it
     }
   }
 
   // Get contract addresses
   getSocServiceAddress(): string {
-    return this.socServiceAddress;
+    return CONTRACT_ADDRESSES.SOC_SERVICE;
   }
 
   getCLTAddress(): string {
-    return this.cltAddress;
+    return CONTRACT_ADDRESSES.CLT_REWARD;
   }
 
   getStakingPoolAddress(): string {
-    return this.stakingPoolAddress;
+    return CONTRACT_ADDRESSES.CLT_STAKING_POOL;
   }
 
   // CLT Token functions
