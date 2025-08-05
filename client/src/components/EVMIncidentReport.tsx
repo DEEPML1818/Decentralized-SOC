@@ -21,46 +21,6 @@ interface EVMIncidentReportProps {
   onClose?: () => void;
 }
 
-// Mock FormData and setFormData for demonstration purposes since they are used in the changes but not defined in the original code.
-// In a real scenario, these would be managed by a form library or local state.
-interface FormData {
-  title: string;
-  description: string;
-  severity: string;
-  category: string;
-  transactionHash: string;
-  contractAddress: string;
-  network: string;
-  gasUsed: string;
-  blockNumber: string;
-  affectedSystems: string;
-  attackVectors: string;
-  evidenceUrls: string;
-  clientWallet: string;
-  clientName: string;
-  contactInfo: string;
-}
-
-// Mock state management for formData and setFormData
-const [formData, setFormData] = useState<FormData>({
-  title: "",
-  description: "",
-  severity: "medium",
-  category: "vulnerability",
-  transactionHash: "",
-  contractAddress: "",
-  network: "ethereum",
-  gasUsed: "",
-  blockNumber: "",
-  affectedSystems: "",
-  attackVectors: "",
-  evidenceUrls: "",
-  clientWallet: "",
-  clientName: "",
-  contactInfo: ""
-});
-
-
 export default function EVMIncidentReport(props: EVMIncidentReportProps) {
   const [incidentData, setIncidentData] = useState({
     title: "",
@@ -215,25 +175,6 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
         ethAmount: "0.01"
       });
       setEvidenceFiles([]);
-      // Resetting formData as well, though it's not directly used in the final submission logic here.
-      // If formData were to be managed separately, it should also be reset.
-      setFormData({
-        title: '',
-        description: '',
-        severity: 'medium',
-        category: 'vulnerability',
-        transactionHash: '',
-        contractAddress: '',
-        network: 'ethereum',
-        gasUsed: '',
-        blockNumber: '',
-        affectedSystems: '',
-        attackVectors: '',
-        evidenceUrls: '',
-        clientWallet: evmAddress || '',
-        clientName: '',
-        contactInfo: ''
-      });
 
     } catch (error: any) {
       console.error('EVM ticket creation failed:', error);
