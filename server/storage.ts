@@ -6,7 +6,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Supabase configuration
 const supabaseUrl = process.env.SUPABASE_URL || 'https://sncziafbwxgjkvymkolp.supabase.co';
@@ -139,7 +139,7 @@ export class MemoryStorage implements IStorage {
   async getAllTickets(): Promise<Ticket[]> {
     return this.getTickets();
   }
-  
+
   async getTicketById(id: number): Promise<Ticket | null> {
     return this.tickets.get(id) || null;
   }
@@ -158,10 +158,79 @@ export class MemoryStorage implements IStorage {
 
 // Supabase storage for production-ready data management
 export class SupabaseStorage implements IStorage {
-  private supabase: any;
+  private supabase: SupabaseClient;
 
   constructor() {
     this.supabase = supabase;
+    this.initializeTables();
+  }
+
+  private async initializeTables() {
+    try {
+      // Check if tables exist, create them if they don't
+      // This is a simplified check. A more robust solution would involve checking specific tables.
+      // For now, we assume if getIncidentReports fails with "relation does not exist", we should try to create tables.
+      // In a real-world scenario, you'd have a dedicated migration system.
+      await this.supabase.from('incident_reports').select('id', { count: 1 }).limit(1);
+    } catch (error: any) {
+      if (error.message.includes('relation "public.incident_reports" does not exist')) {
+        console.warn("⚠️  Supabase incident_reports table not found. Attempting to create tables.");
+        await this.createSupabaseTables();
+      } else {
+        console.warn('Could not verify Supabase table existence:', error.message);
+      }
+    }
+  }
+
+  private async createSupabaseTables() {
+    // This is a placeholder. In a real application, you would use a migration tool
+    // or a separate script to create these tables.
+    // For this example, we'll simulate table creation.
+    console.log("Simulating creation of Supabase tables...");
+    // Example SQL for creating tables (would normally be run via a migration tool or psql)
+    /*
+    CREATE TABLE users (
+      id SERIAL PRIMARY KEY,
+      wallet_address VARCHAR(255) UNIQUE NOT NULL,
+      clt_balance BIGINT DEFAULT 0,
+      stake_balance BIGINT DEFAULT 0,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE incident_reports (
+      id SERIAL PRIMARY KEY,
+      ticket_id INT NULL,
+      severity VARCHAR(50) DEFAULT 'medium',
+      status VARCHAR(50) DEFAULT 'pending',
+      transaction_hash VARCHAR(255) NULL,
+      affected_systems TEXT NULL,
+      attack_vectors TEXT NULL,
+      ai_analysis TEXT NULL,
+      contract_address VARCHAR(255) NULL,
+      evidence_urls TEXT NULL,
+      assigned_analyst VARCHAR(255) NULL,
+      assigned_certifier VARCHAR(255) NULL,
+      client_wallet VARCHAR(255) NULL,
+      block_number BIGINT NULL,
+      gas_used BIGINT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE tickets (
+      id SERIAL PRIMARY KEY,
+      analyst_address VARCHAR(255) NULL,
+      report_hash VARCHAR(255) NULL,
+      transaction_hash VARCHAR(255) NULL,
+      status INT DEFAULT 0,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+    */
+    // For the purpose of this example, we will assume the tables exist after this point
+    // or that the error handling in other methods will catch issues if they don't.
+    console.log("Supabase tables creation simulated.");
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -171,7 +240,7 @@ export class SupabaseStorage implements IStorage {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) {
       console.error('Supabase error fetching user:', error);
       return undefined;
@@ -186,7 +255,7 @@ export class SupabaseStorage implements IStorage {
       .select('*')
       .eq('wallet_address', walletAddress)
       .single();
-    
+
     if (error) {
       console.error('Supabase error fetching user by wallet:', error);
       return undefined;
@@ -384,10 +453,6 @@ export class DatabaseStorage implements IStorage {
     return this.getTickets();
   }
 
-  async getAllTickets(): Promise<Ticket[]> {
-    return this.getTickets();
-  }
-
   async getTicketById(id: number): Promise<Ticket | null> {
     if (!db) throw new Error("Database not initialized");
     const result = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
@@ -412,12 +477,13 @@ async function initializeStorage(): Promise<IStorage> {
   if (supabaseUrl && supabaseKey) {
     try {
       const supabaseStorage = new SupabaseStorage();
-      // Test the connection
+      // Test the connection by fetching incident reports
       await supabaseStorage.getIncidentReports();
       console.log("✅ Connected to Supabase for data storage");
       return supabaseStorage;
-    } catch (error) {
-      console.warn("⚠️  Supabase connection failed:", (error as Error).message);
+    } catch (error: any) {
+      console.warn("⚠️  Supabase connection failed:", error.message);
+      // If Supabase fails, we'll fall through to the next option
     }
   }
 
@@ -425,12 +491,12 @@ async function initializeStorage(): Promise<IStorage> {
   if (process.env.DATABASE_URL) {
     try {
       const dbStorage = new DatabaseStorage();
-      // Test the connection
+      // Test the connection by fetching incident reports
       await dbStorage.getIncidentReports();
       console.log("✅ Connected to Neon database");
       return dbStorage;
-    } catch (error) {
-      console.warn("⚠️  Database connection failed:", (error as Error).message);
+    } catch (error: any) {
+      console.warn("⚠️  Database connection failed:", error.message);
     }
   }
 
