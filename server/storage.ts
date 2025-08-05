@@ -30,6 +30,7 @@ export interface IStorage {
   // Ticket operations
   createTicket(ticket: InsertTicket): Promise<Ticket>;
   getTickets(): Promise<Ticket[]>;
+  getAllTickets(): Promise<Ticket[]>;
   getTicketById(id: number): Promise<Ticket | null>;
   updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket>;
 }
@@ -134,6 +135,10 @@ export class MemoryStorage implements IStorage {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }
+
+  async getAllTickets(): Promise<Ticket[]> {
+    return this.getTickets();
+  }
   
   async getTicketById(id: number): Promise<Ticket | null> {
     return this.tickets.get(id) || null;
@@ -148,6 +153,167 @@ export class MemoryStorage implements IStorage {
     const updated = { ...existing, ...updates, updated_at: new Date() };
     this.tickets.set(id, updated);
     return updated;
+  }
+}
+
+// Supabase storage for production-ready data management
+export class SupabaseStorage implements IStorage {
+  private supabase: any;
+
+  constructor() {
+    this.supabase = supabase;
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Supabase error fetching user:', error);
+      return undefined;
+    }
+    return data;
+  }
+
+  async getUserByWallet(walletAddress: string): Promise<User | undefined> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('wallet_address', walletAddress)
+      .single();
+    
+    if (error) {
+      console.error('Supabase error fetching user by wallet:', error);
+      return undefined;
+    }
+    return data;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('users')
+      .insert([insertUser])
+      .select()
+      .single();
+
+    if (error) throw new Error(`Supabase error creating user: ${error.message}`);
+    return data;
+  }
+
+  async createIncidentReport(report: InsertIncidentReport): Promise<IncidentReport> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('incident_reports')
+      .insert([report])
+      .select()
+      .single();
+
+    if (error) throw new Error(`Supabase error creating incident report: ${error.message}`);
+    return data;
+  }
+
+  async getIncidentReports(): Promise<IncidentReport[]> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('incident_reports')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(`Supabase error fetching incident reports: ${error.message}`);
+    return data || [];
+  }
+
+  async getAllIncidentReports(): Promise<IncidentReport[]> {
+    return this.getIncidentReports();
+  }
+
+  async getIncidentReportById(id: number): Promise<IncidentReport | undefined> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('incident_reports')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Supabase error fetching incident report:', error);
+      return undefined;
+    }
+    return data;
+  }
+
+  async updateIncidentReport(id: number, updates: Partial<IncidentReport>): Promise<IncidentReport> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('incident_reports')
+      .update({ ...updates, updated_at: new Date() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Supabase error updating incident report: ${error.message}`);
+    return data;
+  }
+
+  async createTicket(ticket: InsertTicket): Promise<Ticket> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('tickets')
+      .insert([ticket])
+      .select()
+      .single();
+
+    if (error) throw new Error(`Supabase error creating ticket: ${error.message}`);
+    return data;
+  }
+
+  async getTickets(): Promise<Ticket[]> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(`Supabase error fetching tickets: ${error.message}`);
+    return data || [];
+  }
+
+  async getAllTickets(): Promise<Ticket[]> {
+    return this.getTickets();
+  }
+
+  async getTicketById(id: number): Promise<Ticket | null> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('tickets')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Supabase error fetching ticket:', error);
+      return null;
+    }
+    return data;
+  }
+
+  async updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket> {
+    if (!this.supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await this.supabase
+      .from('tickets')
+      .update({ ...updates, updated_at: new Date() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Supabase error updating ticket: ${error.message}`);
+    return data;
   }
 }
 
@@ -214,6 +380,14 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(tickets).orderBy(desc(tickets.created_at));
   }
 
+  async getAllTickets(): Promise<Ticket[]> {
+    return this.getTickets();
+  }
+
+  async getAllTickets(): Promise<Ticket[]> {
+    return this.getTickets();
+  }
+
   async getTicketById(id: number): Promise<Ticket | null> {
     if (!db) throw new Error("Database not initialized");
     const result = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
@@ -230,31 +404,44 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Try database first, fallback to memory storage if connection fails
+// Try Supabase first, then database, then fallback to memory storage
 let storage: IStorage;
 
 async function initializeStorage(): Promise<IStorage> {
+  // Try Supabase first for better storage management
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const supabaseStorage = new SupabaseStorage();
+      // Test the connection
+      await supabaseStorage.getIncidentReports();
+      console.log("✅ Connected to Supabase for data storage");
+      return supabaseStorage;
+    } catch (error) {
+      console.warn("⚠️  Supabase connection failed:", (error as Error).message);
+    }
+  }
+
+  // Fallback to Drizzle + Neon database
   if (process.env.DATABASE_URL) {
     try {
       const dbStorage = new DatabaseStorage();
       // Test the connection
       await dbStorage.getIncidentReports();
-      console.log("✅ Connected to Supabase database");
+      console.log("✅ Connected to Neon database");
       return dbStorage;
     } catch (error) {
-      console.warn("⚠️  Database connection failed, using in-memory storage:", (error as Error).message);
-      console.warn("📝 To use real database: verify your DATABASE_URL from Supabase");
+      console.warn("⚠️  Database connection failed:", (error as Error).message);
     }
   }
 
-  console.log("📝 Using in-memory storage for real-time dashboard demo");
+  console.log("📝 Using in-memory storage for demo");
   return new MemoryStorage();
 }
 
 // Initialize with memory storage immediately for demo
 storage = new MemoryStorage();
 
-// Try to upgrade to database in background
+// Try to upgrade to persistent storage in background
 initializeStorage().then(newStorage => {
   storage = newStorage;
 }).catch(console.error);

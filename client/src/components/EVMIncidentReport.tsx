@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -21,6 +20,46 @@ import {
 interface EVMIncidentReportProps {
   onClose?: () => void;
 }
+
+// Mock FormData and setFormData for demonstration purposes since they are used in the changes but not defined in the original code.
+// In a real scenario, these would be managed by a form library or local state.
+interface FormData {
+  title: string;
+  description: string;
+  severity: string;
+  category: string;
+  transactionHash: string;
+  contractAddress: string;
+  network: string;
+  gasUsed: string;
+  blockNumber: string;
+  affectedSystems: string;
+  attackVectors: string;
+  evidenceUrls: string;
+  clientWallet: string;
+  clientName: string;
+  contactInfo: string;
+}
+
+// Mock state management for formData and setFormData
+const [formData, setFormData] = useState<FormData>({
+  title: "",
+  description: "",
+  severity: "medium",
+  category: "vulnerability",
+  transactionHash: "",
+  contractAddress: "",
+  network: "ethereum",
+  gasUsed: "",
+  blockNumber: "",
+  affectedSystems: "",
+  attackVectors: "",
+  evidenceUrls: "",
+  clientWallet: "",
+  clientName: "",
+  contactInfo: ""
+});
+
 
 export default function EVMIncidentReport(props: EVMIncidentReportProps) {
   const [incidentData, setIncidentData] = useState({
@@ -45,7 +84,7 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isEVMConnected || !evmAddress) {
       toast({
         title: "Wallet Not Connected",
@@ -64,74 +103,109 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
       return;
     }
 
-    setIsSubmitting(true);
+    // This part of the original code was replaced by the changes.
+    // The new logic in the <changes> section handles the submission.
+    // The following is a placeholder to indicate where the original logic was.
+    // Original logic was about creating ticket on EVM blockchain and then storing in DB.
+    // The new logic directly uses formData which is not fully defined in the original code snippet provided.
+    // I am adapting the new logic to use the incidentData state and wallet info.
 
     try {
-      toast({
-        title: "Creating EVM Ticket",
-        description: "Submitting to Scroll blockchain using ETH...",
-      });
+      setIsSubmitting(true);
 
-      // Create ticket on EVM blockchain
-      const tx = await evmContractService.createTicket();
-      const receipt = await tx.wait();
-      
-      const result = {
-        ticketId: receipt.logs[0]?.topics[1] || 'Unknown',
-        txHash: receipt.transactionHash || 'Unknown'
+      // Constructing the data object based on the new submission structure,
+      // merging existing incidentData with wallet information and other fields.
+      const submissionData = {
+        title: incidentData.title,
+        description: incidentData.description,
+        severity: incidentData.priority, // Mapping priority to severity
+        category: incidentData.category,
+        client_name: 'Anonymous', // Default or could be fetched/input
+        contact_info: `EVM Wallet: ${evmAddress}`, // Using EVM address as contact info
+        client_wallet: evmAddress,
+        transaction_hash: '', // This would come from the EVM transaction, if any
+        contract_address: CONTRACT_ADDRESSES.SOC_SERVICE, // Using defined contract address
+        block_number: 0, // This would come from the EVM transaction, if any
+        gas_used: '', // This would come from the EVM transaction, if any
+        affected_systems: incidentData.location || 'Not specified', // Using location field
+        attack_vectors: '', // Not directly provided in original incidentData
+        evidence_urls: evidenceFiles.map(file => file.name).join(', '), // Placeholder for evidence URLs
+        status: 'pending', // Default status
+        network: 'scroll', // Assuming Scroll network based on context
+        submissionType: 'evm_incident_report'
       };
 
-      // Store the incident with blockchain transaction data in the database
-      try {
-        const incidentReport = {
-          title: incidentData.title,
-          description: incidentData.description,
-          severity: incidentData.priority,
-          client_name: evmAddress || 'Anonymous',
-          contact_info: `EVM Wallet: ${evmAddress}`,
-          affected_systems: incidentData.location || 'Not specified',
-          attack_vectors: incidentData.category,
-          status: 'pending',
-          client_wallet: evmAddress,
-          // Blockchain transaction data
-          transaction_hash: receipt.transactionHash || '',
-          block_number: receipt.blockNumber || 0,
-          gas_used: receipt.gasUsed?.toString() || '0',
-          contract_address: CONTRACT_ADDRESSES.SOC_SERVICE,
-          ticket_id: result.ticketId !== 'Unknown' ? parseInt(result.ticketId, 16) : null,
-        };
+      // Mocking the EVM transaction part as the original code did,
+      // but the submission logic is now handled by the fetch call.
+      // In a real scenario, the transaction would be initiated here.
+      // For the purpose of this fix, we'll simulate getting transaction details.
 
-        const response = await fetch('/api/incident-reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(incidentReport),
+      // Simulate creating ticket on EVM blockchain to get transaction details
+      // This part is based on the original code's intention but adapted for the new submission flow.
+      try {
+        toast({
+          title: "Creating EVM Ticket",
+          description: "Submitting to Scroll blockchain...",
+        });
+        const tx = await evmContractService.createTicket(); // Assuming this returns a transaction object
+        const receipt = await tx.wait(); // Assuming this waits for transaction confirmation
+
+        submissionData.transaction_hash = receipt.transactionHash || '';
+        submissionData.block_number = receipt.blockNumber || 0;
+        submissionData.gas_used = receipt.gasUsed?.toString() || '0';
+        submissionData.client_name = evmAddress || 'Anonymous'; // Set client name from wallet
+        submissionData.contact_info = `EVM Wallet: ${evmAddress}`; // Update contact info
+
+        toast({
+          title: "Transaction successful",
+          description: `Transaction hash: ${receipt.transactionHash.slice(0, 10)}...`,
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to store incident report');
+      } catch (evmError: any) {
+        console.error('EVM ticket creation failed:', evmError);
+        let errorMessage = "Failed to create ticket on EVM";
+
+        if (evmError.code === 4001) {
+          errorMessage = "Transaction was rejected by user";
+        } else if (evmError.message?.includes('insufficient funds')) {
+          errorMessage = "Insufficient ETH for gas fees";
+        } else if (evmError.message) {
+          errorMessage = evmError.message;
         }
 
-        const savedReport = await response.json();
-        console.log('Incident report saved to database:', savedReport);
-
-      } catch (dbError) {
-        console.error('Failed to save incident to database:', dbError);
-        // Don't fail the whole transaction if database save fails
+        toast({
+          title: "EVM Transaction Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setIsSubmitting(false); // Stop submission if EVM part fails
+        return;
       }
 
-      toast({
-        title: "Ticket Created Successfully!",
-        description: `Ticket ID: ${result.ticketId} | TX: ${result.txHash !== 'Unknown' ? result.txHash.slice(0, 10) + '...' : 'Pending'}`,
+
+      // Now submit the consolidated data to the API
+      const response = await fetch('/api/incident-reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submissionData),
       });
 
-      // Close the modal and navigate to cases
-      if (props.onClose) {
-        props.onClose();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to submit incident report');
       }
 
-      // Reset form
+      const result = await response.json();
+      console.log('EVM incident report submitted:', result);
+
+      toast({
+        title: "Success",
+        description: `Incident report submitted successfully. Case ID: ${result.ticket_id || result.id}`,
+      });
+
+      // Reset form after successful submission
       setIncidentData({
         title: "",
         description: "",
@@ -141,25 +215,31 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
         ethAmount: "0.01"
       });
       setEvidenceFiles([]);
+      // Resetting formData as well, though it's not directly used in the final submission logic here.
+      // If formData were to be managed separately, it should also be reset.
+      setFormData({
+        title: '',
+        description: '',
+        severity: 'medium',
+        category: 'vulnerability',
+        transactionHash: '',
+        contractAddress: '',
+        network: 'ethereum',
+        gasUsed: '',
+        blockNumber: '',
+        affectedSystems: '',
+        attackVectors: '',
+        evidenceUrls: '',
+        clientWallet: evmAddress || '',
+        clientName: '',
+        contactInfo: ''
+      });
 
     } catch (error: any) {
       console.error('EVM ticket creation failed:', error);
-      
-      let errorMessage = "Failed to create ticket";
-      
-      if (error.code === 4001) {
-        errorMessage = "Transaction was rejected by user";
-      } else if (error.code === -32603 || error.message?.includes('insufficient funds')) {
-        errorMessage = "Insufficient ETH for gas fees";
-      } else if (error.message?.includes('user rejected')) {
-        errorMessage = "Transaction rejected in MetaMask";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
       toast({
-        title: "Transaction Failed",
-        description: errorMessage,
+        title: "Error",
+        description: error.message || "Failed to submit incident report",
         variant: "destructive",
       });
     } finally {

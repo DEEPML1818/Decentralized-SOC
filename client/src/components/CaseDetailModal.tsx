@@ -82,23 +82,24 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
     try {
       // Try incident reports first, then tickets as fallback
       let response = await fetch(`/api/incident-reports/${caseId}`);
-      
+
       if (!response.ok && response.status === 404) {
         // Fallback to tickets endpoint
         response = await fetch(`/api/tickets/${caseId}`);
       }
-      
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch case details: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Failed to fetch case details: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setCaseData(data);
     } catch (error) {
       console.error('Error fetching case details:', error);
       toast({
         title: "Error",
-        description: "Failed to load case details. Case may not exist.",
+        description: error instanceof Error ? error.message : "Failed to load case details.",
         variant: "destructive",
       });
     } finally {

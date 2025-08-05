@@ -69,7 +69,17 @@ export default function CasesList({ walletType }: CasesListProps) {
   // Fetch real tickets/cases from API - real-time integration
   const { data: cases = [], isLoading, error, refetch } = useQuery({
     queryKey: ['/api/tickets'],
-    refetchInterval: 5000, // Real-time updates every 5 seconds
+    queryFn: async () => {
+      const response = await fetch('/api/tickets');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch tickets`);
+      }
+      return response.json();
+    },
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+    retry: 3, // Retry failed requests up to 3 times
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   // Apply filters to real cases
@@ -200,7 +210,7 @@ export default function CasesList({ walletType }: CasesListProps) {
                 className="pl-10 bg-black/50 border-red-500/30 text-red-100 placeholder:text-gray-500"
               />
             </div>
-            
+
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
@@ -281,7 +291,7 @@ export default function CasesList({ walletType }: CasesListProps) {
                         <AlertTriangle className="h-3 w-3 mr-1" />
                         {caseItem.severity?.toUpperCase()}
                       </Badge>
-                      
+
                       <Badge className={getStatusColor(caseItem.status)}>
                         {getStatusIcon(caseItem.status)}
                         <span className="ml-1">{caseItem.status?.replace('_', ' ').toUpperCase()}</span>
@@ -307,7 +317,7 @@ export default function CasesList({ walletType }: CasesListProps) {
                         <User className="h-4 w-4" />
                         <span>Client: {caseItem.client_name}</span>
                       </div>
-                      
+
                       <div className="flex items-center gap-2 text-gray-400">
                         <Clock className="h-4 w-4" />
                         <span>Created: {formatDate(caseItem.created_at)}</span>
