@@ -67,17 +67,17 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
   };
 
   return (
-    <header className="border-b border-gray-800 bg-slate-900/95 backdrop-blur supports-[backdrop-filter]:bg-slate-900/60">
+    <header className="border-b border-red-500/30 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/80">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-                <Shield className="h-6 w-6 text-white" />
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-gradient-to-r from-red-600 to-red-800 rounded-lg cyber-pulse">
+                <Shield className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">dSOC</h1>
-                <p className="text-xs text-gray-400">Decentralized Security Operations</p>
+                <h1 className="text-2xl font-bold text-red-400 font-mono">dSOC</h1>
+                <p className="text-xs text-gray-400 font-mono">DECENTRALIZED SECURITY OPERATIONS CENTER</p>
               </div>
             </div>
           </div>
@@ -147,32 +147,45 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
               Staking
             </Button>
 
-            {/* Connection Status Display */}
+            {/* Connection Status Display - Hide IOTA when EVM connected */}
             <div className="flex items-center space-x-2">
-              {isIOTAConnected && (
-                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                  IOTA: {iotaAddress?.slice(0, 6)}...{iotaAddress?.slice(-4)}
+              {!isEVMConnected && isIOTAConnected && (
+                <Badge className="bg-red-500/20 text-red-400 border-red-500/30 font-mono">
+                  🔗 IOTA: {iotaAddress?.slice(0, 6)}...{iotaAddress?.slice(-4)}
                 </Badge>
               )}
               {isEVMConnected && (
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                  EVM: {evmAddress?.slice(0, 6)}...{evmAddress?.slice(-4)}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30 font-mono">
+                    🔗 EVM: {evmAddress?.slice(0, 6)}...{evmAddress?.slice(-4)}
+                  </Badge>
+                  {ethBalance && (
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-mono">
+                      ⚡ {parseFloat(ethBalance).toFixed(4)} ETH
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
 
-            {/* Wallet Connection Buttons */}
+            {/* Wallet Connection Buttons - Smart display */}
             <div className="flex items-center space-x-2">
-              <ConnectButton
-                connectText="Connect IOTA"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm"
-              />
+              {!isEVMConnected && (
+                <ConnectButton
+                  connectText="🔐 Connect IOTA"
+                  className="bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 text-white px-4 py-2 rounded-lg font-mono transition-all duration-200 text-sm border border-red-500/30"
+                />
+              )}
               <Button
                 onClick={handleEVMConnect}
                 size="sm"
-                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"
+                className={`${
+                  isEVMConnected 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900'
+                } text-white px-4 py-2 rounded-lg font-mono transition-all duration-200 border border-red-500/30`}
               >
-                {isEVMConnected ? 'Disconnect EVM' : 'Connect MetaMask'}
+                {isEVMConnected ? '🔓 Disconnect EVM' : '🔐 Connect MetaMask'}
               </Button>
             </div>
           </div>

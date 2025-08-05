@@ -96,20 +96,20 @@ export default function Dashboard({ currentRole }: DashboardProps) {
     );
   }
 
-  // Only show EVM options when EVM is connected, only show IOTA options when IOTA is connected
+  // Show features based on connected wallet type - prevent confusion
   const tabs = isEVMConnected ? [
-    { id: "incidents", label: "Report Incident", icon: AlertTriangle },
-    { id: "tickets", label: "Cases Management", icon: Shield },
-    { id: "pools", label: "Staking Pools", icon: Coins },
-    { id: "staking", label: "Staking Rewards", icon: TrendingUp },
-    { id: "ai", label: "AI Assistant", icon: Brain },
-    { id: "audit", label: "Smart Contract Audit", icon: Code },
-  ] : [
-    { id: "incidents", label: "Report Incident", icon: AlertTriangle },
-    { id: "tickets", label: "Cases Management", icon: Shield },
-    { id: "staking", label: "Staking Rewards", icon: TrendingUp },
-    { id: "ai", label: "AI Assistant", icon: Brain },
-  ];
+    { id: "incidents", label: "🚨 Security Incidents", icon: AlertTriangle },
+    { id: "tickets", label: "🛡️ Case Management", icon: Shield },
+    { id: "pools", label: "💰 Security Pools", icon: Coins },
+    { id: "staking", label: "📈 Staking Hub", icon: TrendingUp },
+    { id: "ai", label: "🤖 AI Analyst", icon: Brain },
+    { id: "audit", label: "🔍 Smart Audit", icon: Code },
+  ] : isIOTAConnected ? [
+    { id: "incidents", label: "🚨 Security Incidents", icon: AlertTriangle },
+    { id: "tickets", label: "🛡️ Case Management", icon: Shield },
+    { id: "staking", label: "📈 IOTA Rewards", icon: TrendingUp },
+    { id: "ai", label: "🤖 AI Analyst", icon: Brain },
+  ] : [];
 
   const statCards = walletType === 'evm' ? [
     {
@@ -182,19 +182,37 @@ export default function Dashboard({ currentRole }: DashboardProps) {
           <h1 className="text-4xl font-bold text-red-500 mb-2 font-mono">
             dSOC Security Center
           </h1>
-          <p className="text-gray-300">
-            Role: {currentRole} | {isEVMConnected ? 'EVM' : 'IOTA'} Wallet: {currentAddress?.slice(0, 6)}...{currentAddress?.slice(-4)}
-          </p>
-          {isEVMConnected && (
-            <div className="mt-4 text-center">
-              <p className="text-green-400 text-lg font-mono cyber-pulse">
-                💰 ETH Balance: {parseFloat(evmStats.ethBalance).toFixed(4)} ETH
-              </p>
-              <p className="text-blue-400 text-sm font-mono">
-                CLT Tokens: {parseFloat(evmStats.cltBalance).toFixed(2)} | Staked: {parseFloat(evmStats.totalStaked).toFixed(2)}
-              </p>
-            </div>
-          )}
+          <div className="space-y-2">
+            <p className="text-gray-300">
+              Role: <span className="text-red-400 font-bold">{currentRole}</span> | 
+              <span className="text-red-400 font-bold">{isEVMConnected ? 'EVM' : 'IOTA'}</span> Wallet: 
+              <span className="text-red-400 font-mono">{currentAddress?.slice(0, 6)}...{currentAddress?.slice(-4)}</span>
+            </p>
+            {isEVMConnected && (
+              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 inline-block">
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <p className="text-red-400 text-lg font-mono font-bold cyber-pulse">
+                      ⚡ {parseFloat(evmStats.ethBalance).toFixed(6)} ETH
+                    </p>
+                    <p className="text-xs text-gray-400">Scroll Sepolia Balance</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-red-400 text-sm font-mono">
+                      🪙 {parseFloat(evmStats.cltBalance).toFixed(2)} CLT
+                    </p>
+                    <p className="text-xs text-gray-400">Available Tokens</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-red-400 text-sm font-mono">
+                      🔒 {parseFloat(evmStats.totalStaked).toFixed(2)} CLT
+                    </p>
+                    <p className="text-xs text-gray-400">Staked Amount</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}
