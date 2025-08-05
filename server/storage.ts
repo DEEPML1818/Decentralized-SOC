@@ -62,6 +62,7 @@ export class MemoryStorage implements IStorage {
       updated_at: new Date(),
       ticket_id: report.ticket_id ?? null,
       severity: report.severity ?? "medium",
+      status: report.status ?? "pending",
       transaction_hash: report.transaction_hash ?? null,
       affected_systems: report.affected_systems ?? null,
       attack_vectors: report.attack_vectors ?? null,

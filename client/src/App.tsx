@@ -3,8 +3,8 @@ import { Router, Route, Switch } from "wouter";
 import { Toaster } from "sonner";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import StakingPoolPage from "./components/StakingPoolPage";
 import PoolsPage from "./pages/PoolsPage";
+import GuidePage from "./pages/GuidePage";
 import IOTAPage from "./pages/IOTAPage";
 import EVMPage from "./pages/EVMPage";
 import AIAssistant from "./components/AIAssistant";
@@ -88,7 +88,7 @@ function App() {
               <Route path="/" component={Index} />
               <Route path="/iota" component={IOTAPage} />
               <Route path="/evm" component={EVMPage} />
-              <Route path="/staking" component={StakingPoolPage} />
+              <Route path="/guide" component={GuidePage} />
               <Route path="/pools" component={PoolsPage} />
               <Route component={NotFound} />
             </Switch>

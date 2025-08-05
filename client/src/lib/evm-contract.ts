@@ -572,6 +572,12 @@ class EVMContractService {
         CLT_REWARD_ABI,
         this.signer
       );
+
+      this.cltTokenContract = new Contract(
+        CONTRACT_ADDRESSES.CLT_REWARD,
+        CLT_REWARD_ABI,
+        this.signer
+      );
       
       this.stakingPoolContract = new Contract(
         CONTRACT_ADDRESSES.CLT_STAKING_POOL,
@@ -723,12 +729,7 @@ class EVMContractService {
     return await this.stakingPoolContract.withdraw(amountWei);
   }
 
-  async claimRewards(): Promise<any> {
-    if (!this.stakingPoolContract) {
-      throw new Error('Contract not initialized');
-    }
-    return await this.stakingPoolContract.claim();
-  }
+
 
   async getRewardRate(): Promise<bigint> {
     if (!this.stakingPoolContract) {
@@ -808,6 +809,43 @@ class EVMContractService {
   parseETH(amount: string): bigint {
     return parseUnits(amount, 18);
   }
+
+  // Staking operations
+  async stakeTokens(amount: string): Promise<any> {
+    if (!this.stakingPoolContract) {
+      throw new Error('Staking contract not initialized');
+    }
+    const amountWei = parseUnits(amount, 18);
+    
+    // First approve the staking contract to spend tokens
+    if (this.cltTokenContract) {
+      const approveTx = await this.cltTokenContract.approve(CONTRACT_ADDRESSES.CLT_STAKING_POOL, amountWei);
+      await approveTx.wait();
+    }
+    
+    // Then stake the tokens
+    const stakeTx = await this.stakingPoolContract.stake(amountWei);
+    return await stakeTx.wait();
+  }
+
+  async withdrawTokens(amount: string): Promise<any> {
+    if (!this.stakingPoolContract) {
+      throw new Error('Staking contract not initialized');
+    }
+    const amountWei = parseUnits(amount, 18);
+    const withdrawTx = await this.stakingPoolContract.withdraw(amountWei);
+    return await withdrawTx.wait();
+  }
+
+  async claimRewards(): Promise<any> {
+    if (!this.stakingPoolContract) {
+      throw new Error('Staking contract not initialized');
+    }
+    const claimTx = await this.stakingPoolContract.claim();
+    return await claimTx.wait();
+  }
+
+
 
   // Event listeners
   onTicketCreated(callback: (ticketId: number, reporter: string) => void) {

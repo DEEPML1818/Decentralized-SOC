@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import Dashboard from "@/components/Dashboard";
 import RoleSelectionModal from "@/components/RoleSelectionModal";
 import BlockchainSelector from "@/components/BlockchainSelector";
+import UserGuide from "@/components/UserGuide";
 import { useWallet } from "@/components/WalletProvider";
 import { 
   Shield, 
@@ -44,10 +45,10 @@ function IndexContent() {
   const { walletType, isEVMConnected, isIOTAConnected } = useWallet();
   const iotaAccount = useCurrentAccount();
   const [stats, setStats] = useState({
-    totalTickets: 156,
-    activeAnalysts: 42,
-    resolvedIncidents: 89,
-    stakingRewards: 2.4
+    totalTickets: 0,
+    activeAnalysts: 0,
+    resolvedIncidents: 0,
+    stakingRewards: 0
   });
 
   // Determine if user is connected based on selected wallet type
@@ -106,6 +107,7 @@ function IndexPageContent({ selectedRole, setSelectedRole, showRoleModal, setSho
 
   // Redirect to appropriate blockchain-specific page when connected
   if (isConnected && userRole) {
+    const { walletType, isEVMConnected, isIOTAConnected } = useWallet();
     if (walletType === 'iota' && isIOTAConnected) {
       window.location.href = '/iota';
       return null;

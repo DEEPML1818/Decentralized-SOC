@@ -7,8 +7,8 @@ import { useWallet } from "./WalletProvider";
 import IncidentReport from "./IncidentReport";
 import EVMIncidentReport from "./EVMIncidentReport";
 import CasesList from "./CasesList";
-import StakingRewards from "./StakingRewards";
-import EVMStakingRewards from "./EVMStakingRewards";
+import UnifiedStakingDashboard from "./UnifiedStakingDashboard";
+
 import StakingPoolsPage from "./StakingPoolsPage";
 import CaseDetailModal from "./CaseDetailModal";
 import AIAssistant from "./AIAssistant";
@@ -284,7 +284,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
 
         {activeTab === "staking" && (
           <div>
-            {walletType === 'evm' ? <EVMStakingRewards /> : <StakingRewards />}
+            <UnifiedStakingDashboard />
           </div>
         )}
 

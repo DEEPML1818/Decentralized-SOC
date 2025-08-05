@@ -1,0 +1,139 @@
+
+
+CLTReward.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract CLTReward is ERC20, Ownable {
+    constructor(address initialOwner) ERC20("CyberLink Token", "CLT") Ownable(initialOwner) {}
+
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
+    }
+}
+
+
+
+CLTStakingPool.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract CLTStakingPool is Ownable {
+    IERC20 public clt;
+    uint256 public rewardRate = 100; // reward per block
+    uint256 public lastUpdateBlock;
+
+    struct StakeInfo {
+        uint256 amount;
+        uint256 rewardDebt;
+    }
+
+    mapping(address => StakeInfo) public stakes;
+
+    constructor(address _clt, address initialOwner) Ownable(initialOwner) {
+        clt = IERC20(_clt);
+        lastUpdateBlock = block.number;
+    }
+
+    function stake(uint256 amount) external {
+        StakeInfo storage user = stakes[msg.sender];
+        _updateReward(msg.sender);
+
+        clt.transferFrom(msg.sender, address(this), amount);
+        user.amount += amount;
+    }
+
+    function withdraw(uint256 amount) external {
+        StakeInfo storage user = stakes[msg.sender];
+        require(user.amount >= amount, "Not enough staked");
+
+        _updateReward(msg.sender);
+        user.amount -= amount;
+        clt.transfer(msg.sender, amount);
+    }
+
+    function claim() external {
+        _updateReward(msg.sender);
+    }
+
+    function _updateReward(address userAddr) internal {
+        StakeInfo storage user = stakes[userAddr];
+        if (user.amount > 0) {
+            uint256 blocks = block.number - lastUpdateBlock;
+            uint256 reward = (blocks * rewardRate * user.amount) / 1e18;
+            if (reward > 0) {
+                clt.transfer(userAddr, reward);
+            }
+        }
+        lastUpdateBlock = block.number;
+    }
+
+    function setRewardRate(uint256 _rate) external onlyOwner {
+        rewardRate = _rate;
+    }
+}
+
+SOCService.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./CLTReward.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract SOCService is Ownable {
+    CLTReward public rewardToken;
+
+    event TicketCreated(uint256 indexed ticketId, address indexed reporter);
+    event AnalystAssigned(uint256 indexed ticketId, address analyst);
+    event ReportSubmitted(uint256 indexed ticketId, string reportLink);
+    event TicketValidated(uint256 indexed ticketId, address certifier, uint256 reward);
+
+    struct Ticket {
+        address reporter;
+        address analyst;
+        bool validated;
+        bool rewardClaimed;
+    }
+
+    mapping(uint256 => Ticket) public tickets;
+    uint256 public nextTicketId;
+
+    constructor(address _rewardToken, address initialOwner) Ownable(initialOwner) {
+        rewardToken = CLTReward(_rewardToken);
+    }
+
+    function createTicket() external returns (uint256) {
+        uint256 ticketId = nextTicketId++;
+        tickets[ticketId] = Ticket(msg.sender, address(0), false, false);
+        emit TicketCreated(ticketId, msg.sender);
+        return ticketId;
+    }
+
+    function assignAnalyst(uint256 ticketId, address analyst) external onlyOwner {
+        tickets[ticketId].analyst = analyst;
+        emit AnalystAssigned(ticketId, analyst);
+    }
+
+    function submitReport(uint256 ticketId, string memory reportLink) external {
+        require(tickets[ticketId].analyst == msg.sender, "Not assigned analyst");
+        emit ReportSubmitted(ticketId, reportLink);
+    }
+
+    function validateTicket(uint256 ticketId, address certifier, uint256 rewardAmount) external onlyOwner {
+        Ticket storage ticket = tickets[ticketId];
+        require(!ticket.validated, "Already validated");
+
+        ticket.validated = true;
+        rewardToken.mint(ticket.analyst, rewardAmount);
+        ticket.rewardClaimed = true;
+
+        emit TicketValidated(ticketId, certifier, rewardAmount);
+    }
+}
