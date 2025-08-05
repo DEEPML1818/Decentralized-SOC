@@ -156,12 +156,21 @@ export class PinataStorage implements IStorage {
   private metadataHash: string | null = null;
 
   constructor() {
+    const pinataJWT = process.env.PINATA_JWT;
+    const pinataGateway = process.env.PINATA_GATEWAY || "https://gateway.pinata.cloud";
+    
+    console.log("Pinata initialization check:", {
+      jwt: pinataJWT ? "present" : "missing",
+      gateway: pinataGateway
+    });
+    
     if (pinataJWT) {
       this.pinata = new PinataSDK({
         pinataJwt: pinataJWT,
         pinataGateway: pinataGateway,
       });
       this.loadMetadata();
+      console.log("✅ Pinata IPFS storage initialized successfully");
     } else {
       console.warn("⚠️  PINATA_JWT not set, using in-memory storage");
     }
@@ -176,12 +185,12 @@ export class PinataStorage implements IStorage {
       
       if (metadataFile) {
         this.metadataHash = metadataFile.ipfs_pin_hash;
-        const response = await axios.get(`${pinataGateway}/ipfs/${this.metadataHash}`);
+        const response = await axios.get(`${process.env.PINATA_GATEWAY || "https://gateway.pinata.cloud"}/ipfs/${this.metadataHash}`);
         const metadata = response.data;
         
         for (const [key, hash] of Object.entries(metadata.dataHashes || {})) {
           try {
-            const dataResponse = await axios.get(`${pinataGateway}/ipfs/${hash}`);
+            const dataResponse = await axios.get(`${process.env.PINATA_GATEWAY || "https://gateway.pinata.cloud"}/ipfs/${hash}`);
             this.dataCache.set(key, dataResponse.data);
           } catch (error) {
             console.warn(`Failed to load cached data for ${key}:`, error);
@@ -495,6 +504,11 @@ export function createStorage(): IStorage {
   const databaseUrl = process.env.DATABASE_URL;
   const pinataJWT = process.env.PINATA_JWT;
 
+  console.log("Environment check:", { 
+    pinataJWT: pinataJWT ? "present" : "missing", 
+    databaseUrl: databaseUrl ? "present" : "missing" 
+  });
+
   if (pinataJWT) {
     console.log("🔗 Using Pinata IPFS storage for decentralized data");
     return new PinataStorage();
@@ -507,5 +521,12 @@ export function createStorage(): IStorage {
   }
 }
 
-// Global storage instance
-export const storage = createStorage();
+// Global storage instance - will be initialized after environment variables are loaded
+let storage: IStorage;
+
+export function getStorage(): IStorage {
+  if (!storage) {
+    storage = createStorage();
+  }
+  return storage;
+}

@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { getStorage } from "./storage";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { insertIncidentReportSchema, insertTicketSchema } from "@shared/schema";
 
@@ -206,6 +206,7 @@ Format as structured markdown for a security analyst.`;
   app.post("/api/incident-reports", async (req, res) => {
     try {
       const validatedData = insertIncidentReportSchema.parse(req.body);
+      const storage = getStorage();
       const report = await storage.createIncidentReport(validatedData);
 
       // Create corresponding ticket/case for the incident
@@ -243,6 +244,7 @@ Format as structured markdown for a security analyst.`;
 
   app.get("/api/incident-reports", async (req, res) => {
     try {
+      const storage = getStorage();
       const reports = await storage.getIncidentReports();
       res.json(reports);
     } catch (error) {
@@ -257,6 +259,7 @@ Format as structured markdown for a security analyst.`;
   // Get all tickets/cases for case management
   app.get("/api/tickets", async (req, res) => {
     try {
+      const storage = getStorage();
       const tickets = await storage.getAllTickets();
       res.json(tickets);
     } catch (error) {
@@ -271,6 +274,7 @@ Format as structured markdown for a security analyst.`;
   // Update ticket status
   app.patch("/api/tickets/:id", async (req, res) => {
     try {
+      const storage = getStorage();
       const id = parseInt(req.params.id);
       const updates = req.body;
       const ticket = await storage.updateTicket(id, updates);
@@ -283,6 +287,7 @@ Format as structured markdown for a security analyst.`;
 
   app.get("/api/incident-reports/:id", async (req, res) => {
     try {
+      const storage = getStorage();
       const id = parseInt(req.params.id);
       const report = await storage.getIncidentReportById(id);
 
@@ -302,6 +307,7 @@ Format as structured markdown for a security analyst.`;
 
   app.patch("/api/incident-reports/:id", async (req, res) => {
     try {
+      const storage = getStorage();
       const id = parseInt(req.params.id);
       const updates = req.body;
 
@@ -396,6 +402,7 @@ Ensure the JSON is valid and parseable.`;
   // Ticket endpoints
   app.get("/api/tickets", async (req, res) => {
     try {
+      const storage = getStorage();
       const tickets = await storage.getAllTickets();
       res.json(tickets);
     } catch (error) {
@@ -409,6 +416,7 @@ Ensure the JSON is valid and parseable.`;
 
   app.post("/api/tickets", async (req, res) => {
     try {
+      const storage = getStorage();
       const validatedData = insertTicketSchema.parse(req.body);
       const ticket = await storage.createTicket(validatedData);
       res.status(201).json(ticket);

@@ -1,6 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import dotenv from "dotenv";
+
+// Load environment variables first
+dotenv.config();
+
+// Initialize storage after environment variables are loaded
+import { getStorage } from "./storage";
+const storage = getStorage();
 
 const app = express();
 app.use(express.json());
