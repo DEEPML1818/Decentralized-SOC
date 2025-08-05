@@ -21,9 +21,12 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - Real-time dashboard with role-specific views
 
 ## Recent Changes
-- **2025-08-05**: Successfully migrated project from Replit Agent to standard Replit environment  
-- **2025-08-05**: Replaced Supabase with Pinata IPFS storage for decentralized data management
-- **2025-08-05**: Implemented PinataStorage class with IPFS-based data persistence and metadata tracking
+- **2025-08-05**: Successfully migrated from Supabase to lightweight Pinata Direct API implementation
+- **2025-08-05**: Pinata IPFS now serves as the complete decentralized database replacement
+- **2025-08-05**: Implemented direct Pinata API calls (removed heavy pinata-web3 SDK for lighter app)
+- **2025-08-05**: All incident reports, cases, and responses permanently stored on IPFS with immutable hashes
+- **2025-08-05**: Added comprehensive metadata tracking with detailed console logging for IPFS uploads
+- **2025-08-05**: Successfully tested incident report creation with IPFS storage and case linking
 - **2025-08-05**: Integrated incident reports with case management system for real-time tracking
 - **2025-08-05**: Removed all fake/mock data and replaced with real blockchain data sources  
 - **2025-08-05**: Consolidated staking components into UnifiedStakingDashboard with real-time updates
