@@ -6,7 +6,6 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
-import { PinataSDK } from "pinata-web3";
 import axios from "axios";
 
 // Pinata configuration for IPFS storage
@@ -149,86 +148,120 @@ export class MemoryStorage implements IStorage {
   }
 }
 
-// Pinata IPFS storage for decentralized data management
+// Pinata IPFS storage for decentralized data management (Direct API)
 export class PinataStorage implements IStorage {
-  private pinata: PinataSDK | null = null;
   private dataCache: Map<string, any> = new Map();
   private metadataHash: string | null = null;
+  private pinataApiKey: string;
+  private pinataSecretKey: string;
+  private pinataGateway: string;
 
   constructor() {
-    const pinataJWT = process.env.PINATA_JWT;
-    const pinataGateway = process.env.PINATA_GATEWAY || "https://gateway.pinata.cloud";
+    this.pinataApiKey = process.env.PINATA_API_KEY || "";
+    this.pinataSecretKey = process.env.PINATA_SECRET_KEY || "";
+    this.pinataGateway = process.env.PINATA_GATEWAY || "https://gateway.pinata.cloud";
     
-    console.log("Pinata initialization check:", {
-      jwt: pinataJWT ? "present" : "missing",
-      gateway: pinataGateway
+    console.log("Pinata Direct API initialization:", {
+      apiKey: this.pinataApiKey ? "present" : "missing",
+      secretKey: this.pinataSecretKey ? "present" : "missing",
+      gateway: this.pinataGateway
     });
     
-    if (pinataJWT) {
-      this.pinata = new PinataSDK({
-        pinataJwt: pinataJWT,
-        pinataGateway: pinataGateway,
-      });
+    if (this.pinataApiKey && this.pinataSecretKey) {
       this.loadMetadata();
-      console.log("✅ Pinata IPFS storage initialized successfully");
+      console.log("✅ Pinata Direct API storage initialized successfully");
     } else {
-      console.warn("⚠️  PINATA_JWT not set, using in-memory storage");
+      console.warn("⚠️  Pinata API credentials not complete");
     }
   }
 
   private async loadMetadata() {
     try {
-      if (!this.pinata) return;
+      if (!this.pinataApiKey || !this.pinataSecretKey) return;
       
-      const files = await this.pinata.listFiles();
-      const metadataFile = files.find((file: any) => file.name === 'dsoc-metadata.json');
+      // List files to find existing metadata
+      const listResponse = await fetch('https://api.pinata.cloud/data/pinList?status=pinned', {
+        headers: {
+          pinata_api_key: this.pinataApiKey,
+          pinata_secret_api_key: this.pinataSecretKey,
+        },
+      });
       
-      if (metadataFile) {
-        this.metadataHash = metadataFile.ipfs_pin_hash;
-        const response = await axios.get(`${process.env.PINATA_GATEWAY || "https://gateway.pinata.cloud"}/ipfs/${this.metadataHash}`);
-        const metadata = response.data;
+      if (listResponse.ok) {
+        const files = await listResponse.json();
+        const metadataFile = files.rows.find((file: any) => file.metadata.name === 'dSOC-Metadata');
         
-        for (const [key, hash] of Object.entries(metadata.dataHashes || {})) {
-          try {
-            const dataResponse = await axios.get(`${process.env.PINATA_GATEWAY || "https://gateway.pinata.cloud"}/ipfs/${hash}`);
-            this.dataCache.set(key, dataResponse.data);
-          } catch (error) {
-            console.warn(`Failed to load cached data for ${key}:`, error);
+        if (metadataFile) {
+          this.metadataHash = metadataFile.ipfs_pin_hash;
+          const response = await axios.get(`${this.pinataGateway}/ipfs/${this.metadataHash}`);
+          const metadata = response.data;
+          
+          console.log("📋 Current IPFS Metadata:", JSON.stringify(metadata, null, 2));
+          
+          for (const [key, hash] of Object.entries(metadata.dataHashes || {})) {
+            try {
+              const dataResponse = await axios.get(`${this.pinataGateway}/ipfs/${hash}`);
+              this.dataCache.set(key, dataResponse.data);
+            } catch (error) {
+              console.warn(`Failed to load cached data for ${key}:`, error);
+            }
           }
+          
+          console.log("✅ Pinata metadata loaded from IPFS");
+        } else {
+          console.log("📝 No existing metadata found, starting fresh");
         }
-        
-        console.log("✅ Pinata metadata loaded from IPFS");
-      } else {
-        console.log("📝 No existing metadata found, starting fresh");
       }
     } catch (error) {
       console.warn("Could not load Pinata metadata:", error);
     }
   }
 
-  private async saveToIPFS(data: any, filename: string): Promise<string> {
-    if (!this.pinata) throw new Error("Pinata not initialized");
-    
+  private async uploadToIPFSWithPinata(data: any, filename: string, name: string): Promise<string> {
+    const url = 'https://api.pinata.cloud/pinning/pinFileToIPFS';
+
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const file = new File([blob], filename, { type: 'application/json' });
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('pinataMetadata', JSON.stringify({ name }));
+
+    console.log(`📤 Uploading to IPFS: ${name} (${filename})`);
+    console.log(`📋 Data Preview:`, JSON.stringify(data, null, 2));
+
+    const res = await fetch(url, {
+      method: 'POST',
+      body: fd,
+      headers: {
+        pinata_api_key: this.pinataApiKey,
+        pinata_secret_api_key: this.pinataSecretKey,
+      },
+    });
     
-    const upload = await this.pinata.upload.file(file);
-    return upload.IpfsHash;
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(typeof result.error === 'object' ? JSON.stringify(result.error) : result.error);
+    }
+    
+    console.log(`✅ IPFS Upload Success: ${result.IpfsHash}`);
+    return result.IpfsHash;
   }
 
   private async updateMetadata() {
-    if (!this.pinata) return;
+    if (!this.pinataApiKey || !this.pinataSecretKey) return;
     
     try {
       const metadata = {
         timestamp: new Date().toISOString(),
-        version: "1.0",
+        version: "1.0.0",
+        platform: "dSOC",
         dataHashes: Object.fromEntries(this.dataCache.entries())
       };
       
-      const metadataHash = await this.saveToIPFS(metadata, 'dsoc-metadata.json');
+      const metadataHash = await this.uploadToIPFSWithPinata(metadata, 'dsoc-metadata.json', 'dSOC-Metadata');
       this.metadataHash = metadataHash;
       console.log(`📄 Metadata updated: ${metadataHash}`);
+      console.log(`🔗 View at: ${this.pinataGateway}/ipfs/${metadataHash}`);
     } catch (error) {
       console.error("Failed to update metadata:", error);
     }
@@ -259,10 +292,10 @@ export class PinataStorage implements IStorage {
     users.push(newUser);
     this.dataCache.set('users', users);
     
-    if (this.pinata) {
+    if (this.pinataApiKey && this.pinataSecretKey) {
       try {
-        const hash = await this.saveToIPFS(users, 'dsoc-users.json');
-        this.dataCache.set('users', hash);
+        const hash = await this.uploadToIPFSWithPinata(users, 'dsoc-users.json', 'dSOC-Users');
+        this.dataCache.set('users_hash', hash);
         await this.updateMetadata();
       } catch (error) {
         console.error("Failed to save users to IPFS:", error);
@@ -299,10 +332,10 @@ export class PinataStorage implements IStorage {
     reports.push(newReport);
     this.dataCache.set('incident_reports', reports);
     
-    if (this.pinata) {
+    if (this.pinataApiKey && this.pinataSecretKey) {
       try {
-        const hash = await this.saveToIPFS(reports, 'dsoc-incident-reports.json');
-        this.dataCache.set('incident_reports', hash);
+        const hash = await this.uploadToIPFSWithPinata(reports, 'dsoc-incident-reports.json', 'dSOC-IncidentReports');
+        this.dataCache.set('incident_reports_hash', hash);
         await this.updateMetadata();
       } catch (error) {
         console.error("Failed to save incident reports to IPFS:", error);
@@ -336,10 +369,10 @@ export class PinataStorage implements IStorage {
     reports[index] = updated;
     this.dataCache.set('incident_reports', reports);
     
-    if (this.pinata) {
+    if (this.pinataApiKey && this.pinataSecretKey) {
       try {
-        const hash = await this.saveToIPFS(reports, 'dsoc-incident-reports.json');
-        this.dataCache.set('incident_reports', hash);
+        const hash = await this.uploadToIPFSWithPinata(reports, 'dsoc-incident-reports.json', 'dSOC-IncidentReports');
+        this.dataCache.set('incident_reports_hash', hash);
         await this.updateMetadata();
       } catch (error) {
         console.error("Failed to update incident reports on IPFS:", error);
@@ -366,10 +399,10 @@ export class PinataStorage implements IStorage {
     tickets.push(newTicket);
     this.dataCache.set('tickets', tickets);
     
-    if (this.pinata) {
+    if (this.pinataApiKey && this.pinataSecretKey) {
       try {
-        const hash = await this.saveToIPFS(tickets, 'dsoc-tickets.json');
-        this.dataCache.set('tickets', hash);
+        const hash = await this.uploadToIPFSWithPinata(tickets, 'dsoc-tickets.json', 'dSOC-Tickets');
+        this.dataCache.set('tickets_hash', hash);
         await this.updateMetadata();
       } catch (error) {
         console.error("Failed to save tickets to IPFS:", error);
@@ -407,10 +440,10 @@ export class PinataStorage implements IStorage {
     tickets[index] = updated;
     this.dataCache.set('tickets', tickets);
     
-    if (this.pinata) {
+    if (this.pinataApiKey && this.pinataSecretKey) {
       try {
-        const hash = await this.saveToIPFS(tickets, 'dsoc-tickets.json');
-        this.dataCache.set('tickets', hash);
+        const hash = await this.uploadToIPFSWithPinata(tickets, 'dsoc-tickets.json', 'dSOC-Tickets');
+        this.dataCache.set('tickets_hash', hash);
         await this.updateMetadata();
       } catch (error) {
         console.error("Failed to update tickets on IPFS:", error);
