@@ -46,7 +46,9 @@ export class MemoryStorage implements IStorage {
       ...insertUser, 
       id: this.currentId++, 
       created_at: new Date(), 
-      updated_at: new Date() 
+      updated_at: new Date(),
+      clt_balance: insertUser.clt_balance ?? 0,
+      stake_balance: insertUser.stake_balance ?? 0
     };
     this.users.set(user.id, user);
     return user;
@@ -57,7 +59,20 @@ export class MemoryStorage implements IStorage {
       ...report,
       id: this.currentId++,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
+      ticket_id: report.ticket_id ?? null,
+      severity: report.severity ?? "medium",
+      transaction_hash: report.transaction_hash ?? null,
+      affected_systems: report.affected_systems ?? null,
+      attack_vectors: report.attack_vectors ?? null,
+      ai_analysis: report.ai_analysis ?? null,
+      contract_address: report.contract_address ?? null,
+      evidence_urls: report.evidence_urls ?? null,
+      assigned_analyst: report.assigned_analyst ?? null,
+      assigned_certifier: report.assigned_certifier ?? null,
+      client_wallet: report.client_wallet ?? null,
+      block_number: report.block_number ?? null,
+      gas_used: report.gas_used ?? null
     };
     this.incidentReports.set(newReport.id, newReport);
     return newReport;
@@ -95,7 +110,11 @@ export class MemoryStorage implements IStorage {
       ...ticket,
       id: this.currentId++,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
+      analyst_address: ticket.analyst_address ?? null,
+      report_hash: ticket.report_hash ?? null,
+      transaction_hash: ticket.transaction_hash ?? null,
+      status: ticket.status ?? 0
     };
     this.tickets.set(newTicket.id, newTicket);
     return newTicket;
@@ -123,39 +142,47 @@ export class MemoryStorage implements IStorage {
 export class DatabaseStorage implements IStorage {
 
   async getUser(id: number): Promise<User | undefined> {
+    if (!db) throw new Error("Database not initialized");
     const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0];
   }
 
   async getUserByWallet(walletAddress: string): Promise<User | undefined> {
+    if (!db) throw new Error("Database not initialized");
     const result = await db.select().from(users).where(eq(users.wallet_address, walletAddress)).limit(1);
     return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    if (!db) throw new Error("Database not initialized");
     const result = await db.insert(users).values(insertUser).returning();
     return result[0];
   }
 
   async createIncidentReport(report: InsertIncidentReport): Promise<IncidentReport> {
+    if (!db) throw new Error("Database not initialized");
     const result = await db.insert(incident_reports).values(report).returning();
     return result[0];
   }
 
   async getIncidentReports(): Promise<IncidentReport[]> {
+    if (!db) throw new Error("Database not initialized");
     return await db.select().from(incident_reports).orderBy(desc(incident_reports.created_at));
   }
 
   async getAllIncidentReports(): Promise<IncidentReport[]> {
+    if (!db) throw new Error("Database not initialized");
     return await db.select().from(incident_reports).orderBy(desc(incident_reports.created_at));
   }
 
   async getIncidentReportById(id: number): Promise<IncidentReport | undefined> {
+    if (!db) throw new Error("Database not initialized");
     const result = await db.select().from(incident_reports).where(eq(incident_reports.id, id)).limit(1);
     return result[0];
   }
 
   async updateIncidentReport(id: number, updates: Partial<IncidentReport>): Promise<IncidentReport> {
+    if (!db) throw new Error("Database not initialized");
     const result = await db.update(incident_reports)
       .set({ ...updates, updated_at: new Date() })
       .where(eq(incident_reports.id, id))
@@ -164,15 +191,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
+    if (!db) throw new Error("Database not initialized");
     const result = await db.insert(tickets).values(ticket).returning();
     return result[0];
   }
 
   async getTickets(): Promise<Ticket[]> {
+    if (!db) throw new Error("Database not initialized");
     return await db.select().from(tickets).orderBy(desc(tickets.created_at));
   }
 
   async updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket> {
+    if (!db) throw new Error("Database not initialized");
     const result = await db.update(tickets)
       .set({ ...updates, updated_at: new Date() })
       .where(eq(tickets.id, id))
@@ -193,7 +223,7 @@ async function initializeStorage(): Promise<IStorage> {
       console.log("✅ Connected to Supabase database");
       return dbStorage;
     } catch (error) {
-      console.warn("⚠️  Database connection failed, using in-memory storage:", error.message);
+      console.warn("⚠️  Database connection failed, using in-memory storage:", (error as Error).message);
       console.warn("📝 To use real database: verify your DATABASE_URL from Supabase");
     }
   }
