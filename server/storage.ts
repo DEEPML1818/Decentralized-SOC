@@ -198,12 +198,20 @@ export class PinataStorage implements IStorage {
           
           console.log("📋 Current IPFS Metadata:", JSON.stringify(metadata, null, 2));
           
-          for (const [key, hash] of Object.entries(metadata.dataHashes || {})) {
-            try {
-              const dataResponse = await axios.get(`${this.pinataGateway}/ipfs/${hash}`);
-              this.dataCache.set(key, dataResponse.data);
-            } catch (error) {
-              console.warn(`Failed to load cached data for ${key}:`, error);
+          for (const [key, value] of Object.entries(metadata.dataHashes || {})) {
+            // Check if the value is a hash string or actual data
+            if (typeof value === 'string' && value.startsWith('Qm')) {
+              try {
+                console.log(`🔄 Loading ${key} from IPFS hash: ${value}`);
+                const dataResponse = await axios.get(`${this.pinataGateway}/ipfs/${value}`);
+                this.dataCache.set(key.replace('_hash', ''), dataResponse.data);
+                this.dataCache.set(key, value); // Store the hash separately
+              } catch (error) {
+                console.warn(`Failed to load cached data for ${key}:`, error);
+              }
+            } else {
+              // It's actual data, store it directly
+              this.dataCache.set(key, value);
             }
           }
           
@@ -346,14 +354,17 @@ export class PinataStorage implements IStorage {
   }
 
   async getIncidentReports(): Promise<IncidentReport[]> {
+    // Return cached data directly for better performance
     const reports = this.dataCache.get('incident_reports') || [];
+    console.log(`📊 Returning ${Array.isArray(reports) ? reports.length : 0} incident reports from cache`);
     return Array.isArray(reports) ? reports.sort((a: IncidentReport, b: IncidentReport) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     ) : [];
   }
 
   async getIncidentReportById(id: number): Promise<IncidentReport | undefined> {
-    const reports = this.dataCache.get('incident_reports') || [];
+    // Ensure we have fresh data
+    const reports = await this.getIncidentReports();
     return reports.find((report: IncidentReport) => report.id === id);
   }
 
