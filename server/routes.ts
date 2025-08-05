@@ -208,8 +208,30 @@ Format as structured markdown for a security analyst.`;
       const validatedData = insertIncidentReportSchema.parse(req.body);
       const report = await storage.createIncidentReport(validatedData);
       
-      console.log(`New incident report created: ${report.title} (ID: ${report.id})`);
-      res.json(report);
+      // Create corresponding ticket/case for the incident
+      const ticket = await storage.createTicket({
+        title: report.title,
+        description: report.description,
+        severity: report.severity,
+        status: "open",
+        client_name: report.client_name,
+        contact_info: report.contact_info,
+        client_wallet: report.client_wallet,
+        transaction_hash: report.transaction_hash,
+        block_number: report.block_number,
+        contract_address: report.contract_address,
+        affected_systems: report.affected_systems,
+        attack_vectors: report.attack_vectors,
+        evidence_urls: report.evidence_urls
+      });
+      
+      // Update the incident report with the ticket ID
+      const updatedReport = await storage.updateIncidentReport(report.id, { 
+        ticket_id: ticket.id 
+      });
+      
+      console.log(`New incident report created: ${report.title} (ID: ${report.id}) with case ID: ${ticket.id}`);
+      res.json(updatedReport);
     } catch (error) {
       console.error("Failed to create incident report:", error);
       res.status(400).json({ 
@@ -229,6 +251,30 @@ Format as structured markdown for a security analyst.`;
         error: "Failed to fetch incident reports",
         details: error instanceof Error ? error.message : "Unknown error"
       });
+    }
+  });
+
+  // Get all tickets/cases for case management
+  app.get("/api/tickets", async (req, res) => {
+    try {
+      const tickets = await storage.getTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      res.status(500).json({ error: "Failed to fetch tickets" });
+    }
+  });
+
+  // Update ticket status
+  app.patch("/api/tickets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const ticket = await storage.updateTicket(id, updates);
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error updating ticket:", error);
+      res.status(500).json({ error: "Failed to update ticket" });
     }
   });
 
