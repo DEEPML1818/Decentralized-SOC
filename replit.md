@@ -7,6 +7,7 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - **Frontend**: React + TypeScript + Vite + wouter for routing
 - **Backend**: Express.js with TypeScript
 - **Blockchain**: IOTA integration with dApp Kit
+- **Storage**: Pinata IPFS for decentralized data storage with in-memory fallback
 - **UI Framework**: shadcn/ui components with Tailwind CSS
 - **State Management**: TanStack Query for data fetching
 - **Styling**: Dark theme with security-focused design
@@ -20,7 +21,9 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - Real-time dashboard with role-specific views
 
 ## Recent Changes
-- **2025-08-05**: Successfully migrated project from Replit Agent to standard Replit environment
+- **2025-08-05**: Successfully migrated project from Replit Agent to standard Replit environment  
+- **2025-08-05**: Replaced Supabase with Pinata IPFS storage for decentralized data management
+- **2025-08-05**: Implemented PinataStorage class with IPFS-based data persistence and metadata tracking
 - **2025-08-05**: Integrated incident reports with case management system for real-time tracking
 - **2025-08-05**: Removed all fake/mock data and replaced with real blockchain data sources  
 - **2025-08-05**: Consolidated staking components into UnifiedStakingDashboard with real-time updates

@@ -6,13 +6,12 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { PinataSDK } from "pinata-web3";
+import axios from "axios";
 
-// Supabase configuration
-const supabaseUrl = process.env.SUPABASE_URL || 'https://sncziafbwxgjkvymkolp.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuY3ppYWZid3hnamt2eW1rb2xwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNTMyNTksImV4cCI6MjA2NjgyOTI1OX0.r8xYuUWST0Hx6ifGLuFLgxj0GlvMSY3MGgrf90u5x5o';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Pinata configuration for IPFS storage
+const pinataJWT = process.env.PINATA_JWT;
+const pinataGateway = process.env.PINATA_GATEWAY || "https://gateway.pinata.cloud";
 
 // Interface for all CRUD operations
 export interface IStorage {
@@ -94,12 +93,6 @@ export class MemoryStorage implements IStorage {
     );
   }
 
-  async getAllIncidentReports(): Promise<IncidentReport[]> {
-    return Array.from(this.incidentReports.values()).sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-  }
-
   async getIncidentReportById(id: number): Promise<IncidentReport | undefined> {
     return this.incidentReports.get(id);
   }
@@ -156,200 +149,232 @@ export class MemoryStorage implements IStorage {
   }
 }
 
-// Supabase storage for production-ready data management
-export class SupabaseStorage implements IStorage {
-  private supabase: SupabaseClient;
+// Pinata IPFS storage for decentralized data management
+export class PinataStorage implements IStorage {
+  private pinata: PinataSDK | null = null;
+  private dataCache: Map<string, any> = new Map();
+  private metadataHash: string | null = null;
 
   constructor() {
-    this.supabase = supabase;
-    this.initializeTables();
+    if (pinataJWT) {
+      this.pinata = new PinataSDK({
+        pinataJwt: pinataJWT,
+        pinataGateway: pinataGateway,
+      });
+      this.loadMetadata();
+    } else {
+      console.warn("⚠️  PINATA_JWT not set, using in-memory storage");
+    }
   }
 
-  private async initializeTables() {
+  private async loadMetadata() {
     try {
-      // Check if tables exist by trying to select from them
-      await this.supabase.from('incident_reports').select('id').limit(1);
-      await this.supabase.from('tickets').select('id').limit(1);
-      console.log("✅ Supabase tables verified");
-    } catch (error: any) {
-      if (error.message && error.message.includes('does not exist')) {
-        console.warn("⚠️  Supabase tables not found. Please run the SQL script to create them.");
-        console.warn("Run: psql $DATABASE_URL -f supabase_tables.sql");
+      if (!this.pinata) return;
+      
+      const files = await this.pinata.listFiles();
+      const metadataFile = files.find((file: any) => file.name === 'dsoc-metadata.json');
+      
+      if (metadataFile) {
+        this.metadataHash = metadataFile.ipfs_pin_hash;
+        const response = await axios.get(`${pinataGateway}/ipfs/${this.metadataHash}`);
+        const metadata = response.data;
+        
+        for (const [key, hash] of Object.entries(metadata.dataHashes || {})) {
+          try {
+            const dataResponse = await axios.get(`${pinataGateway}/ipfs/${hash}`);
+            this.dataCache.set(key, dataResponse.data);
+          } catch (error) {
+            console.warn(`Failed to load cached data for ${key}:`, error);
+          }
+        }
+        
+        console.log("✅ Pinata metadata loaded from IPFS");
       } else {
-        console.warn('Could not verify Supabase table existence:', error.message);
+        console.log("📝 No existing metadata found, starting fresh");
       }
+    } catch (error) {
+      console.warn("Could not load Pinata metadata:", error);
     }
   }
 
-  private async createSupabaseTables() {
-    // This is a placeholder. In a real application, you would use a migration tool
-    // or a separate script to create these tables.
-    // For this example, we'll simulate table creation.
-    console.log("Simulating creation of Supabase tables...");
-    // Example SQL for creating tables (would normally be run via a migration tool or psql)
-    /*
-    CREATE TABLE users (
-      id SERIAL PRIMARY KEY,
-      wallet_address VARCHAR(255) UNIQUE NOT NULL,
-      clt_balance BIGINT DEFAULT 0,
-      stake_balance BIGINT DEFAULT 0,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE incident_reports (
-      id SERIAL PRIMARY KEY,
-      ticket_id INT NULL,
-      severity VARCHAR(50) DEFAULT 'medium',
-      status VARCHAR(50) DEFAULT 'pending',
-      transaction_hash VARCHAR(255) NULL,
-      affected_systems TEXT NULL,
-      attack_vectors TEXT NULL,
-      ai_analysis TEXT NULL,
-      contract_address VARCHAR(255) NULL,
-      evidence_urls TEXT NULL,
-      assigned_analyst VARCHAR(255) NULL,
-      assigned_certifier VARCHAR(255) NULL,
-      client_wallet VARCHAR(255) NULL,
-      block_number BIGINT NULL,
-      gas_used BIGINT NULL,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE tickets (
-      id SERIAL PRIMARY KEY,
-      analyst_address VARCHAR(255) NULL,
-      report_hash VARCHAR(255) NULL,
-      transaction_hash VARCHAR(255) NULL,
-      status INT DEFAULT 0,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-    */
-    // For the purpose of this example, we will assume the tables exist after this point
-    // or that the error handling in other methods will catch issues if they don't.
-    console.log("Supabase tables creation simulated.");
+  private async saveToIPFS(data: any, filename: string): Promise<string> {
+    if (!this.pinata) throw new Error("Pinata not initialized");
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const file = new File([blob], filename, { type: 'application/json' });
+    
+    const upload = await this.pinata.upload.file(file);
+    return upload.IpfsHash;
   }
 
+  private async updateMetadata() {
+    if (!this.pinata) return;
+    
+    try {
+      const metadata = {
+        timestamp: new Date().toISOString(),
+        version: "1.0",
+        dataHashes: Object.fromEntries(this.dataCache.entries())
+      };
+      
+      const metadataHash = await this.saveToIPFS(metadata, 'dsoc-metadata.json');
+      this.metadataHash = metadataHash;
+      console.log(`📄 Metadata updated: ${metadataHash}`);
+    } catch (error) {
+      console.error("Failed to update metadata:", error);
+    }
+  }
+
+  // User operations
   async getUser(id: number): Promise<User | undefined> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('users')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.error('Supabase error fetching user:', error);
-      return undefined;
-    }
-    return data;
+    const users = this.dataCache.get('users') || [];
+    return users.find((user: User) => user.id === id);
   }
 
   async getUserByWallet(walletAddress: string): Promise<User | undefined> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('users')
-      .select('*')
-      .eq('wallet_address', walletAddress)
-      .single();
-
-    if (error) {
-      console.error('Supabase error fetching user by wallet:', error);
-      return undefined;
-    }
-    return data;
+    const users = this.dataCache.get('users') || [];
+    return users.find((user: User) => user.wallet_address === walletAddress);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('users')
-      .insert([insertUser])
-      .select()
-      .single();
-
-    if (error) throw new Error(`Supabase error creating user: ${error.message}`);
-    return data;
+    const users = this.dataCache.get('users') || [];
+    const newUser: User = {
+      ...insertUser,
+      id: users.length + 1,
+      created_at: new Date(),
+      updated_at: new Date(),
+      clt_balance: insertUser.clt_balance ?? 0,
+      stake_balance: insertUser.stake_balance ?? 0
+    };
+    
+    users.push(newUser);
+    this.dataCache.set('users', users);
+    
+    if (this.pinata) {
+      try {
+        const hash = await this.saveToIPFS(users, 'dsoc-users.json');
+        this.dataCache.set('users', hash);
+        await this.updateMetadata();
+      } catch (error) {
+        console.error("Failed to save users to IPFS:", error);
+      }
+    }
+    
+    return newUser;
   }
 
+  // Incident Report operations
   async createIncidentReport(report: InsertIncidentReport): Promise<IncidentReport> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('incident_reports')
-      .insert([report])
-      .select()
-      .single();
-
-    if (error) throw new Error(`Supabase error creating incident report: ${error.message}`);
-    return data;
+    const reports = this.dataCache.get('incident_reports') || [];
+    const newReport: IncidentReport = {
+      ...report,
+      id: reports.length + 1,
+      created_at: new Date(),
+      updated_at: new Date(),
+      ticket_id: report.ticket_id ?? null,
+      severity: report.severity ?? "medium",
+      status: report.status ?? "pending",
+      transaction_hash: report.transaction_hash ?? null,
+      affected_systems: report.affected_systems ?? null,
+      attack_vectors: report.attack_vectors ?? null,
+      ai_analysis: report.ai_analysis ?? null,
+      contract_address: report.contract_address ?? null,
+      evidence_urls: report.evidence_urls ?? null,
+      assigned_analyst: report.assigned_analyst ?? null,
+      assigned_certifier: report.assigned_certifier ?? null,
+      client_wallet: report.client_wallet ?? null,
+      block_number: report.block_number ?? null,
+      gas_used: report.gas_used ?? null
+    };
+    
+    reports.push(newReport);
+    this.dataCache.set('incident_reports', reports);
+    
+    if (this.pinata) {
+      try {
+        const hash = await this.saveToIPFS(reports, 'dsoc-incident-reports.json');
+        this.dataCache.set('incident_reports', hash);
+        await this.updateMetadata();
+      } catch (error) {
+        console.error("Failed to save incident reports to IPFS:", error);
+      }
+    }
+    
+    return newReport;
   }
 
   async getIncidentReports(): Promise<IncidentReport[]> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('incident_reports')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw new Error(`Supabase error fetching incident reports: ${error.message}`);
-    return data || [];
-  }
-
-  async getAllIncidentReports(): Promise<IncidentReport[]> {
-    return this.getIncidentReports();
+    const reports = this.dataCache.get('incident_reports') || [];
+    return Array.isArray(reports) ? reports.sort((a: IncidentReport, b: IncidentReport) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    ) : [];
   }
 
   async getIncidentReportById(id: number): Promise<IncidentReport | undefined> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('incident_reports')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.error('Supabase error fetching incident report:', error);
-      return undefined;
-    }
-    return data;
+    const reports = this.dataCache.get('incident_reports') || [];
+    return reports.find((report: IncidentReport) => report.id === id);
   }
 
   async updateIncidentReport(id: number, updates: Partial<IncidentReport>): Promise<IncidentReport> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('incident_reports')
-      .update({ ...updates, updated_at: new Date() })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw new Error(`Supabase error updating incident report: ${error.message}`);
-    return data;
+    const reports = this.dataCache.get('incident_reports') || [];
+    const index = reports.findIndex((report: IncidentReport) => report.id === id);
+    
+    if (index === -1) {
+      throw new Error(`Incident report with id ${id} not found`);
+    }
+    
+    const updated = { ...reports[index], ...updates, updated_at: new Date() };
+    reports[index] = updated;
+    this.dataCache.set('incident_reports', reports);
+    
+    if (this.pinata) {
+      try {
+        const hash = await this.saveToIPFS(reports, 'dsoc-incident-reports.json');
+        this.dataCache.set('incident_reports', hash);
+        await this.updateMetadata();
+      } catch (error) {
+        console.error("Failed to update incident reports on IPFS:", error);
+      }
+    }
+    
+    return updated;
   }
 
+  // Ticket operations
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('tickets')
-      .insert([ticket])
-      .select()
-      .single();
-
-    if (error) throw new Error(`Supabase error creating ticket: ${error.message}`);
-    return data;
+    const tickets = this.dataCache.get('tickets') || [];
+    const newTicket: Ticket = {
+      ...ticket,
+      id: tickets.length + 1,
+      created_at: new Date(),
+      updated_at: new Date(),
+      analyst_address: ticket.analyst_address ?? null,
+      report_hash: ticket.report_hash ?? null,
+      transaction_hash: ticket.transaction_hash ?? null,
+      status: ticket.status ?? 0
+    };
+    
+    tickets.push(newTicket);
+    this.dataCache.set('tickets', tickets);
+    
+    if (this.pinata) {
+      try {
+        const hash = await this.saveToIPFS(tickets, 'dsoc-tickets.json');
+        this.dataCache.set('tickets', hash);
+        await this.updateMetadata();
+      } catch (error) {
+        console.error("Failed to save tickets to IPFS:", error);
+      }
+    }
+    
+    return newTicket;
   }
 
   async getTickets(): Promise<Ticket[]> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('tickets')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw new Error(`Supabase error fetching tickets: ${error.message}`);
-    return data || [];
+    const tickets = this.dataCache.get('tickets') || [];
+    return Array.isArray(tickets) ? tickets.sort((a: Ticket, b: Ticket) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    ) : [];
   }
 
   async getAllTickets(): Promise<Ticket[]> {
@@ -357,31 +382,33 @@ export class SupabaseStorage implements IStorage {
   }
 
   async getTicketById(id: number): Promise<Ticket | null> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('tickets')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.error('Supabase error fetching ticket:', error);
-      return null;
-    }
-    return data;
+    const tickets = this.dataCache.get('tickets') || [];
+    return tickets.find((ticket: Ticket) => ticket.id === id) || null;
   }
 
   async updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket> {
-    if (!this.supabase) throw new Error("Supabase not initialized");
-    const { data, error } = await this.supabase
-      .from('tickets')
-      .update({ ...updates, updated_at: new Date() })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw new Error(`Supabase error updating ticket: ${error.message}`);
-    return data;
+    const tickets = this.dataCache.get('tickets') || [];
+    const index = tickets.findIndex((ticket: Ticket) => ticket.id === id);
+    
+    if (index === -1) {
+      throw new Error(`Ticket with id ${id} not found`);
+    }
+    
+    const updated = { ...tickets[index], ...updates, updated_at: new Date() };
+    tickets[index] = updated;
+    this.dataCache.set('tickets', tickets);
+    
+    if (this.pinata) {
+      try {
+        const hash = await this.saveToIPFS(tickets, 'dsoc-tickets.json');
+        this.dataCache.set('tickets', hash);
+        await this.updateMetadata();
+      } catch (error) {
+        console.error("Failed to update tickets on IPFS:", error);
+      }
+    }
+    
+    return updated;
   }
 }
 
@@ -413,11 +440,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getIncidentReports(): Promise<IncidentReport[]> {
-    if (!db) throw new Error("Database not initialized");
-    return await db.select().from(incident_reports).orderBy(desc(incident_reports.created_at));
-  }
-
-  async getAllIncidentReports(): Promise<IncidentReport[]> {
     if (!db) throw new Error("Database not initialized");
     return await db.select().from(incident_reports).orderBy(desc(incident_reports.created_at));
   }
@@ -468,47 +490,22 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Try Supabase first, then database, then fallback to memory storage
-let storage: IStorage;
+// Storage factory - determines which storage to use based on environment
+export function createStorage(): IStorage {
+  const databaseUrl = process.env.DATABASE_URL;
+  const pinataJWT = process.env.PINATA_JWT;
 
-async function initializeStorage(): Promise<IStorage> {
-  // Try Supabase first for better storage management
-  if (supabaseUrl && supabaseKey) {
-    try {
-      const supabaseStorage = new SupabaseStorage();
-      // Test the connection by fetching incident reports
-      await supabaseStorage.getIncidentReports();
-      console.log("✅ Connected to Supabase for data storage");
-      return supabaseStorage;
-    } catch (error: any) {
-      console.warn("⚠️  Supabase connection failed:", error.message);
-      // If Supabase fails, we'll fall through to the next option
-    }
+  if (pinataJWT) {
+    console.log("🔗 Using Pinata IPFS storage for decentralized data");
+    return new PinataStorage();
+  } else if (databaseUrl) {
+    console.log("🗄️ Using database storage");
+    return new DatabaseStorage();
+  } else {
+    console.log("📝 Using in-memory storage for demo");
+    return new MemoryStorage();
   }
-
-  // Fallback to Drizzle + Neon database
-  if (process.env.DATABASE_URL) {
-    try {
-      const dbStorage = new DatabaseStorage();
-      // Test the connection by fetching incident reports
-      await dbStorage.getIncidentReports();
-      console.log("✅ Connected to Neon database");
-      return dbStorage;
-    } catch (error: any) {
-      console.warn("⚠️  Database connection failed:", error.message);
-    }
-  }
-
-  console.log("📝 Using in-memory storage for demo");
-  return new MemoryStorage();
 }
 
-// Initialize with memory storage immediately for demo
-storage = new MemoryStorage();
-
-// Try to upgrade to persistent storage in background
-initializeStorage().then(newStorage => {
-  storage = newStorage;
-}).catch(console.error);
-
-export { storage };
+// Global storage instance
+export const storage = createStorage();
