@@ -12,12 +12,12 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import CaseDetailModal from "./CaseDetailModal";
-import { 
-  Search, 
-  FileText, 
-  Clock, 
-  User, 
-  Shield, 
+import {
+  Search,
+  FileText,
+  Clock,
+  User,
+  Shield,
   AlertTriangle,
   CheckCircle,
   XCircle,
@@ -42,7 +42,7 @@ interface Case {
   severity: string;
   status: string;
   client_name: string;
-  contact_info: string; 
+  contact_info: string;
   assigned_analyst?: string;
   assigned_certifier?: string;
   transaction_hash?: string;
@@ -67,8 +67,8 @@ export default function CasesList({ walletType }: CasesListProps) {
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
 
   // Fetch real tickets/cases from API - real-time integration
-  const { data: cases = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/tickets'],
+  const { data: tickets = [], isLoading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useQuery({
+    queryKey: ['tickets'],
     queryFn: async () => {
       const response = await fetch('/api/tickets');
       if (!response.ok) {
@@ -82,16 +82,35 @@ export default function CasesList({ walletType }: CasesListProps) {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
-  // Apply filters to real cases
-  const filteredCases = cases.filter((caseItem: Case) => {
+  // Fetch incident reports from API
+  const { data: incidentReports = [], isLoading: reportsLoading, error: reportsError, refetch: refetchIncidentReports } = useQuery({
+    queryKey: ['incident-reports'],
+    queryFn: async () => {
+      const response = await fetch('/api/incident-reports');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch incident reports`);
+      }
+      return response.json();
+    },
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+    retry: 3, // Retry failed requests up to 3 times
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+
+  // Combine tickets and incident reports
+  const allCases = [...tickets, ...incidentReports];
+
+  // Apply filters to combined cases
+  const filteredCases = allCases.filter((caseItem: Case) => {
     const matchesSearch = caseItem.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       caseItem.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       caseItem.client_name?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesSeverity = severityFilter === "all" || 
+    const matchesSeverity = severityFilter === "all" ||
       caseItem.severity?.toLowerCase() === severityFilter;
 
-    const matchesStatus = statusFilter === "all" || 
+    const matchesStatus = statusFilter === "all" ||
       caseItem.status?.toLowerCase() === statusFilter;
 
     return matchesSearch && matchesSeverity && matchesStatus;
@@ -146,12 +165,16 @@ export default function CasesList({ walletType }: CasesListProps) {
   };
 
   const handleRefresh = () => {
-    refetch();
+    refetchTickets();
+    refetchIncidentReports();
     toast({
       title: "Refreshing Cases",
-      description: "Fetching latest case data...",
+      description: "Fetching latest case and incident report data...",
     });
   };
+
+  const isLoading = ticketsLoading || reportsLoading;
+  const error = ticketsError || reportsError;
 
   if (error) {
     return (
@@ -184,9 +207,9 @@ export default function CasesList({ walletType }: CasesListProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
+          <Button
             onClick={handleRefresh}
-            variant="outline" 
+            variant="outline"
             size="sm"
             className="border-red-500/30 text-red-400 hover:bg-red-950/30"
             disabled={isLoading}
@@ -239,7 +262,7 @@ export default function CasesList({ walletType }: CasesListProps) {
 
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <Filter className="h-4 w-4" />
-              <span>{filteredCases.length} of {cases.length} cases</span>
+              <span>{filteredCases.length} of {allCases.length} cases</span>
             </div>
           </div>
         </CardContent>
@@ -259,8 +282,8 @@ export default function CasesList({ walletType }: CasesListProps) {
             <FileText className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-yellow-400 mb-2">No Cases Found</h3>
             <p className="text-gray-300">
-              {cases.length === 0 
-                ? "No security cases have been submitted yet." 
+              {allCases.length === 0
+                ? "No security cases have been submitted yet."
                 : "No cases match your current filters."}
             </p>
           </CardContent>
@@ -268,8 +291,8 @@ export default function CasesList({ walletType }: CasesListProps) {
       ) : (
         <div className="grid gap-4">
           {filteredCases.map((caseItem: Case) => (
-            <Card 
-              key={caseItem.id} 
+            <Card
+              key={caseItem.id}
               className="cyber-glass bg-red-900/10 border-red-500/30 hover:border-red-400/50 transition-colors"
             >
               <CardContent className="p-6">

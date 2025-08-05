@@ -118,7 +118,7 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
 
         toast({
           title: "Transaction successful",
-          description: `Transaction hash: ${receipt.transactionHash.slice(0, 10)}...`,
+          description: `Transaction hash: ${receipt.transactionHash ? receipt.transactionHash.slice(0, 10) + '...' : 'Transaction completed'}`,
         });
 
       } catch (evmError: any) {

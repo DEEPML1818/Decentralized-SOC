@@ -167,15 +167,14 @@ export class SupabaseStorage implements IStorage {
 
   private async initializeTables() {
     try {
-      // Check if tables exist, create them if they don't
-      // This is a simplified check. A more robust solution would involve checking specific tables.
-      // For now, we assume if getIncidentReports fails with "relation does not exist", we should try to create tables.
-      // In a real-world scenario, you'd have a dedicated migration system.
-      await this.supabase.from('incident_reports').select('id', { count: 1 }).limit(1);
+      // Check if tables exist by trying to select from them
+      await this.supabase.from('incident_reports').select('id').limit(1);
+      await this.supabase.from('tickets').select('id').limit(1);
+      console.log("✅ Supabase tables verified");
     } catch (error: any) {
-      if (error.message.includes('relation "public.incident_reports" does not exist')) {
-        console.warn("⚠️  Supabase incident_reports table not found. Attempting to create tables.");
-        await this.createSupabaseTables();
+      if (error.message && error.message.includes('does not exist')) {
+        console.warn("⚠️  Supabase tables not found. Please run the SQL script to create them.");
+        console.warn("Run: psql $DATABASE_URL -f supabase_tables.sql");
       } else {
         console.warn('Could not verify Supabase table existence:', error.message);
       }
