@@ -78,7 +78,7 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
       
       const result = {
         ticketId: receipt.logs[0]?.topics[1] || 'Unknown',
-        txHash: receipt.transactionHash
+        txHash: receipt.transactionHash || 'Unknown'
       };
 
       // Store the incident with blockchain transaction data in the database
@@ -94,11 +94,11 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
           status: 'pending',
           client_wallet: evmAddress,
           // Blockchain transaction data
-          transaction_hash: receipt.transactionHash,
-          block_number: receipt.blockNumber,
-          gas_used: receipt.gasUsed?.toString(),
+          transaction_hash: receipt.transactionHash || '',
+          block_number: receipt.blockNumber || 0,
+          gas_used: receipt.gasUsed?.toString() || '0',
           contract_address: CONTRACT_ADDRESSES.SOC_SERVICE,
-          ticket_id: parseInt(result.ticketId, 16) || null, // Convert hex to decimal
+          ticket_id: result.ticketId !== 'Unknown' ? parseInt(result.ticketId, 16) : null,
         };
 
         const response = await fetch('/api/incident-reports', {
@@ -123,7 +123,7 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
 
       toast({
         title: "Ticket Created Successfully!",
-        description: `Ticket ID: ${result.ticketId} | TX: ${result.txHash.slice(0, 10)}...`,
+        description: `Ticket ID: ${result.ticketId} | TX: ${result.txHash !== 'Unknown' ? result.txHash.slice(0, 10) + '...' : 'Pending'}`,
       });
 
       // Close the modal and navigate to cases

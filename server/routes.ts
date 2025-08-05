@@ -11,7 +11,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/chat", async (req, res) => {
     try {
       const { question } = req.body;
-      
+
       if (!API_KEY) {
         return res.status(500).json({ 
           error: "AI service is not configured. Please add GOOGLE_API_KEY to environment variables." 
@@ -67,7 +67,7 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
   app.post("/api/ai/audit", async (req, res) => {
     try {
       const { contractCode } = req.body;
-      
+
       if (!API_KEY) {
         return res.status(500).json({ 
           error: "AI service is not configured. Please add GOOGLE_API_KEY to environment variables." 
@@ -79,26 +79,26 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
 
       const prompt = `
       You are an expert blockchain security auditor specializing in Move language (used in Sui blockchain).
-      
+
       Analyze the following Move smart contract code for vulnerabilities, security issues, and logical errors:
-      
+
       \`\`\`move
       ${contractCode}
       \`\`\`
-      
+
       Focus on Move-specific vulnerabilities including:
       - Resource handling issues
       - Ownership problems
       - Capability misuse
       - Type safety issues
       - Module initialization flaws
-      
+
       Provide a detailed report with:
         - Executive Summary (with vulnerability score from 0-10, where 0 is secure)
         - Summary of Risks
         - Detailed Findings
         - Recommendations
-        
+
       Include the statement "Certified by AuditWarp" as a certification stamp in your report.
       Format using markdown with headers, bullet points, and code blocks for examples.
       `;
@@ -164,7 +164,7 @@ Format as markdown with clear sections and actionable insights.`;
   app.post("/api/ai/analyze-vulnerability", async (req, res) => {
     try {
       const { description } = req.body;
-      
+
       if (!API_KEY) {
         return res.status(500).json({ 
           error: "AI service is not configured. Please add GOOGLE_API_KEY to environment variables." 
@@ -207,7 +207,7 @@ Format as structured markdown for a security analyst.`;
     try {
       const validatedData = insertIncidentReportSchema.parse(req.body);
       const report = await storage.createIncidentReport(validatedData);
-      
+
       // Create corresponding ticket/case for the incident
       const ticket = await storage.createTicket({
         title: report.title,
@@ -224,12 +224,12 @@ Format as structured markdown for a security analyst.`;
         attack_vectors: report.attack_vectors,
         evidence_urls: report.evidence_urls
       });
-      
+
       // Update the incident report with the ticket ID
       const updatedReport = await storage.updateIncidentReport(report.id, { 
         ticket_id: ticket.id 
       });
-      
+
       console.log(`New incident report created: ${report.title} (ID: ${report.id}) with case ID: ${ticket.id}`);
       res.json(updatedReport);
     } catch (error) {
@@ -257,11 +257,14 @@ Format as structured markdown for a security analyst.`;
   // Get all tickets/cases for case management
   app.get("/api/tickets", async (req, res) => {
     try {
-      const tickets = await storage.getTickets();
+      const tickets = await storage.getAllTickets();
       res.json(tickets);
     } catch (error) {
-      console.error("Error fetching tickets:", error);
-      res.status(500).json({ error: "Failed to fetch tickets" });
+      console.error("Failed to fetch tickets:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch tickets",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
@@ -282,11 +285,11 @@ Format as structured markdown for a security analyst.`;
     try {
       const id = parseInt(req.params.id);
       const report = await storage.getIncidentReportById(id);
-      
+
       if (!report) {
         return res.status(404).json({ error: "Incident report not found" });
       }
-      
+
       res.json(report);
     } catch (error) {
       console.error("Failed to fetch incident report:", error);
@@ -301,9 +304,9 @@ Format as structured markdown for a security analyst.`;
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
-      
+
       const updatedReport = await storage.updateIncidentReport(id, updates);
-      
+
       console.log(`Incident report updated: ${updatedReport.title} (ID: ${id})`);
       res.json(updatedReport);
     } catch (error) {
@@ -319,7 +322,7 @@ Format as structured markdown for a security analyst.`;
   app.post("/api/ai/analyze-incident", async (req, res) => {
     try {
       const { description } = req.body;
-      
+
       if (!API_KEY) {
         return res.status(500).json({ 
           error: "AI service is not configured. Please add GOOGLE_API_KEY to environment variables." 
@@ -393,7 +396,7 @@ Ensure the JSON is valid and parseable.`;
   // Ticket endpoints
   app.get("/api/tickets", async (req, res) => {
     try {
-      const tickets = await storage.getTickets();
+      const tickets = await storage.getAllTickets();
       res.json(tickets);
     } catch (error) {
       console.error("Failed to fetch tickets:", error);
@@ -422,7 +425,7 @@ Ensure the JSON is valid and parseable.`;
   app.post('/api/incident-reports', async (req, res) => {
     try {
       const incidentData = req.body;
-      
+
       // Store in memory (in production, this would go to a database)
       const incidentReport = {
         id: Date.now().toString(),
@@ -431,7 +434,7 @@ Ensure the JSON is valid and parseable.`;
         status: 'submitted',
         analysisStatus: 'pending_assignment'
       };
-      
+
       console.log('Unified incident report stored:', {
         id: incidentReport.id,
         title: incidentReport.title,
@@ -439,20 +442,20 @@ Ensure the JSON is valid and parseable.`;
         txHash: incidentReport.blockchainTxHash,
         submissionType: incidentReport.submissionType || 'manual_incident_report'
       });
-      
+
       // Trigger analyst notification for both types
       console.log('Notifying analysts of new case:', {
         type: incidentReport.submissionType,
         severity: incidentReport.severity,
         requiredAnalysts: incidentReport.requiredAnalysts
       });
-      
+
       res.json({ 
         success: true, 
         incidentId: incidentReport.id,
         message: 'Case submitted successfully to dSOC network' 
       });
-      
+
     } catch (error) {
       console.error('Error storing incident report:', error);
       res.status(500).json({ 
@@ -466,7 +469,7 @@ Ensure the JSON is valid and parseable.`;
   app.post('/api/ai/analyze-case', async (req, res) => {
     try {
       const { userInput, caseType, requestType } = req.body;
-      
+
       if (!userInput || !caseType) {
         return res.status(400).json({ error: 'User input and case type are required' });
       }
@@ -481,7 +484,7 @@ Ensure the JSON is valid and parseable.`;
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const prompt = `You are a cybersecurity expert analyzing a security incident for blockchain case submission. 
-      
+
 Case Type: ${caseType}
 User Description: ${userInput}
 
@@ -509,7 +512,7 @@ Respond in valid JSON format:
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const analysis = response.text();
-      
+
       // Try to parse as JSON, fallback to structured parsing
       let parsedResult;
       try {
@@ -532,9 +535,9 @@ Respond in valid JSON format:
           'compliance': 'low',
           'other': 'medium'
         };
-        
+
         const caseSeverity = severityMap[caseType] || 'medium';
-        
+
         parsedResult = {
           title: `${caseType.charAt(0).toUpperCase() + caseType.slice(1)} Security Case`,
           severity: caseSeverity,
@@ -578,7 +581,7 @@ Respond in valid JSON format:
       (global as any).aiCases.unshift(caseData);
 
       console.log(`New AI case uploaded: ${caseData.title} (Network: ${caseData.network})`);
-      
+
       res.json({ success: true, caseId: caseData.id });
     } catch (error: any) {
       console.error('AI case storage error:', error.message);

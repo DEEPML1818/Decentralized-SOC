@@ -6,6 +6,13 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
+import { createClient } from '@supabase/supabase-js';
+
+// Supabase configuration
+const supabaseUrl = process.env.SUPABASE_URL || 'https://sncziafbwxgjkvymkolp.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuY3ppYWZid3hnamt2eW1rb2xwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNTMyNTksImV4cCI6MjA2NjgyOTI1OX0.r8xYuUWST0Hx6ifGLuFLgxj0GlvMSY3MGgrf90u5x5o';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Interface for all CRUD operations
 export interface IStorage {
@@ -13,16 +20,17 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByWallet(walletAddress: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Incident Report operations
   createIncidentReport(report: InsertIncidentReport): Promise<IncidentReport>;
   getIncidentReports(): Promise<IncidentReport[]>;
   getIncidentReportById(id: number): Promise<IncidentReport | undefined>;
   updateIncidentReport(id: number, updates: Partial<IncidentReport>): Promise<IncidentReport>;
-  
+
   // Ticket operations
   createTicket(ticket: InsertTicket): Promise<Ticket>;
   getTickets(): Promise<Ticket[]>;
+  getTicketById(id: number): Promise<Ticket | null>;
   updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket>;
 }
 
@@ -100,7 +108,7 @@ export class MemoryStorage implements IStorage {
     if (!existing) {
       throw new Error(`Incident report with id ${id} not found`);
     }
-    
+
     const updated = { ...existing, ...updates, updated_at: new Date() };
     this.incidentReports.set(id, updated);
     return updated;
@@ -126,13 +134,17 @@ export class MemoryStorage implements IStorage {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }
+  
+  async getTicketById(id: number): Promise<Ticket | null> {
+    return this.tickets.get(id) || null;
+  }
 
   async updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket> {
     const existing = this.tickets.get(id);
     if (!existing) {
       throw new Error(`Ticket with id ${id} not found`);
     }
-    
+
     const updated = { ...existing, ...updates, updated_at: new Date() };
     this.tickets.set(id, updated);
     return updated;
@@ -202,6 +214,12 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(tickets).orderBy(desc(tickets.created_at));
   }
 
+  async getTicketById(id: number): Promise<Ticket | null> {
+    if (!db) throw new Error("Database not initialized");
+    const result = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
+    return result[0] || null;
+  }
+
   async updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket> {
     if (!db) throw new Error("Database not initialized");
     const result = await db.update(tickets)
@@ -228,7 +246,7 @@ async function initializeStorage(): Promise<IStorage> {
       console.warn("📝 To use real database: verify your DATABASE_URL from Supabase");
     }
   }
-  
+
   console.log("📝 Using in-memory storage for real-time dashboard demo");
   return new MemoryStorage();
 }
