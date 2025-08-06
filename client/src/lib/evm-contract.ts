@@ -15,21 +15,14 @@ export const SCROLL_TESTNET_CONFIG = {
 
 // Contract addresses from your deployment
 export const CONTRACT_ADDRESSES = {
-  CLT_REWARD: '0x7300c99742081cCDa629aDcD74E19F59A4E8aD83', // Updated CLT Token contract
-  CLT_STAKING_POOL: '0xB480FA23e8d586Af034aae3CA9a0D111E071a01e',
-  SOC_SERVICE: '0x284B4cE9027b8f81211efd19A3a5D40D8b232D60',
+  CLT_REWARD: '0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097', // Updated CLT Token contract
+  SOC_SERVICE: '0x7874f6b9f9547D0bb89493E9430d8ceC44CE8B41', // New SOCService with integrated staking pools
 };
 
-// CLT Reward Token ABI (ERC20 Token)
+// CLT Reward Token ABI (Simple ERC20 with mint)
 export const CLT_REWARD_ABI = [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "initialOwner",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -146,19 +139,6 @@ export const CLT_REWARD_ABI = [
   },
   {
     "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "symbol",
     "outputs": [
       {
@@ -238,7 +218,227 @@ export const CLT_REWARD_ABI = [
   }
 ];
 
-// CLT Staking Pool ABI
+// SOCService ABI - Updated to match your new contract
+export const SOC_SERVICE_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_rewardToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_initialOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_devFeePercentage",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "stakingPool",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "client",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "reward",
+        "type": "uint256"
+      }
+    ],
+    "name": "TicketCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "analyst",
+        "type": "address"
+      }
+    ],
+    "name": "TicketValidated",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_title",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_analyst",
+        "type": "address"
+      }
+    ],
+    "name": "createTicket",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "devFeePercentage",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "initialOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rewardToken",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ticketCounter",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "tickets",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "client",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "analyst",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rewardAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "stakingPool",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isValidated",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateDevFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "ticketId",
+        "type": "uint256"
+      }
+    ],
+    "name": "validateTicket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+
+// CLT Staking Pool ABI for individual pools created by SOCService
 export const CLT_STAKING_POOL_ABI = [
   {
     "inputs": [
@@ -249,7 +449,7 @@ export const CLT_STAKING_POOL_ABI = [
       },
       {
         "internalType": "address",
-        "name": "initialOwner",
+        "name": "_owner",
         "type": "address"
       }
     ],
@@ -380,577 +580,289 @@ export const CLT_STAKING_POOL_ABI = [
   }
 ];
 
-// SOC Service ABI
-export const SOC_SERVICE_ABI = [
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_rewardToken",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "initialOwner",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "analyst",
-        "type": "address"
-      }
-    ],
-    "name": "assignAnalyst",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "createTicket",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "nextTicketId",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "rewardToken",
-    "outputs": [
-      {
-        "internalType": "contract CLTReward",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "reportLink",
-        "type": "string"
-      }
-    ],
-    "name": "submitReport",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "tickets",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "reporter",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "analyst",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "validated",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "rewardClaimed",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "certifier",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "rewardAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "validateTicket",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
-];
-
-// EVM Contract Service
 class EVMContractService {
   private provider: BrowserProvider | null = null;
   private signer: any = null;
   private cltRewardContract: Contract | null = null;
-  private stakingPoolContract: Contract | null = null;
   private socServiceContract: Contract | null = null;
 
-  async connectWallet(): Promise<string | null> {
-    if (typeof window.ethereum === 'undefined') {
-      throw new Error('MetaMask is not installed');
+  async getProvider(): Promise<BrowserProvider> {
+    if (!window.ethereum) {
+      throw new Error('MetaMask not found');
     }
-
-    try {
-      // Request account access
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
-      // Initialize provider and signer
+    
+    if (!this.provider) {
       this.provider = new BrowserProvider(window.ethereum);
-      this.signer = await this.provider.getSigner();
-      
-      // Initialize contracts
+    }
+    return this.provider;
+  }
+
+  async getSigner() {
+    if (!this.signer) {
+      const provider = await this.getProvider();
+      this.signer = await provider.getSigner();
+    }
+    return this.signer;
+  }
+
+  async getCLTRewardContract(): Promise<Contract> {
+    if (!this.cltRewardContract) {
+      const signer = await this.getSigner();
       this.cltRewardContract = new Contract(
         CONTRACT_ADDRESSES.CLT_REWARD,
         CLT_REWARD_ABI,
-        this.signer
+        signer
       );
+    }
+    return this.cltRewardContract;
+  }
 
-      this.cltTokenContract = new Contract(
-        CONTRACT_ADDRESSES.CLT_REWARD,
-        CLT_REWARD_ABI,
-        this.signer
-      );
-      
-      this.stakingPoolContract = new Contract(
-        CONTRACT_ADDRESSES.CLT_STAKING_POOL,
-        CLT_STAKING_POOL_ABI,
-        this.signer
-      );
-      
+  async getSOCServiceContract(): Promise<Contract> {
+    if (!this.socServiceContract) {
+      const signer = await this.getSigner();
       this.socServiceContract = new Contract(
         CONTRACT_ADDRESSES.SOC_SERVICE,
         SOC_SERVICE_ABI,
-        this.signer
+        signer
       );
+    }
+    return this.socServiceContract;
+  }
 
-      const address = await this.signer.getAddress();
-      console.log('EVM Wallet connected:', address);
-      return address;
+  async getStakingPoolContract(poolAddress: string): Promise<Contract> {
+    const signer = await this.getSigner();
+    return new Contract(poolAddress, CLT_STAKING_POOL_ABI, signer);
+  }
+
+  // CLT Token functions
+  async getCLTBalance(address: string): Promise<string> {
+    try {
+      const provider = await this.getProvider();
+      const contract = new Contract(CONTRACT_ADDRESSES.CLT_REWARD, CLT_REWARD_ABI, provider);
+      const balance = await contract.balanceOf(address);
+      return formatUnits(balance, 18);
     } catch (error) {
-      console.error('Failed to connect EVM wallet:', error);
+      console.error('Error getting CLT balance:', error);
+      return "0";
+    }
+  }
+
+  async getETHBalance(address: string): Promise<string> {
+    try {
+      const provider = await this.getProvider();
+      const balance = await provider.getBalance(address);
+      return formatUnits(balance, 18);
+    } catch (error) {
+      console.error('Error getting ETH balance:', error);
+      return "0";
+    }
+  }
+
+  async mintCLTReward(to: string, amount: string): Promise<string> {
+    try {
+      const contract = await this.getCLTRewardContract();
+      const amountWei = parseUnits(amount, 18);
+      const tx = await contract.mint(to, amountWei);
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      console.error('Error minting CLT reward:', error);
       throw error;
     }
   }
 
-  async switchToScrollTestnet(): Promise<void> {
-    if (typeof window.ethereum === 'undefined') {
-      throw new Error('MetaMask is not installed');
-    }
-
+  // SOCService functions
+  async createTicket(title: string, analystAddress: string, rewardETH: string): Promise<{txHash: string, stakingPoolAddress?: string}> {
     try {
+      const contract = await this.getSOCServiceContract();
+      const rewardWei = parseUnits(rewardETH, 18);
+      
+      const tx = await contract.createTicket(title, analystAddress, {
+        value: rewardWei
+      });
+      
+      const receipt = await tx.wait();
+      
+      // Parse events to get staking pool address
+      let stakingPoolAddress;
+      for (const log of receipt.logs) {
+        try {
+          const parsedLog = contract.interface.parseLog(log);
+          if (parsedLog?.name === 'TicketCreated') {
+            stakingPoolAddress = parsedLog.args.stakingPool;
+            break;
+          }
+        } catch (e) {
+          // Ignore parsing errors for logs from other contracts
+        }
+      }
+      
+      return {
+        txHash: tx.hash,
+        stakingPoolAddress
+      };
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      throw error;
+    }
+  }
+
+  async validateTicket(ticketId: number): Promise<string> {
+    try {
+      const contract = await this.getSOCServiceContract();
+      const tx = await contract.validateTicket(ticketId);
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      console.error('Error validating ticket:', error);
+      throw error;
+    }
+  }
+
+  async getTicket(ticketId: number) {
+    try {
+      const contract = await this.getSOCServiceContract();
+      const ticket = await contract.tickets(ticketId);
+      return {
+        id: Number(ticket.id),
+        title: ticket.title,
+        client: ticket.client,
+        analyst: ticket.analyst,
+        rewardAmount: formatUnits(ticket.rewardAmount, 18),
+        stakingPool: ticket.stakingPool,
+        isValidated: ticket.isValidated
+      };
+    } catch (error) {
+      console.error('Error getting ticket:', error);
+      throw error;
+    }
+  }
+
+  async getTicketCounter(): Promise<number> {
+    try {
+      const contract = await this.getSOCServiceContract();
+      const counter = await contract.ticketCounter();
+      return Number(counter);
+    } catch (error) {
+      console.error('Error getting ticket counter:', error);
+      return 0;
+    }
+  }
+
+  // Staking Pool functions
+  async getStakeInfo(userAddress: string) {
+    try {
+      // For the main staking in this context, return mock data
+      // In a real implementation, this would query a specific staking pool
+      return {
+        amount: "0",
+        rewardDebt: "0"
+      };
+    } catch (error) {
+      console.error('Error getting stake info:', error);
+      return { amount: "0", rewardDebt: "0" };
+    }
+  }
+
+  async getStakeInfoForPool(stakingPoolAddress: string, userAddress: string) {
+    try {
+      const contract = await this.getStakingPoolContract(stakingPoolAddress);
+      const stakeInfo = await contract.stakes(userAddress);
+      return {
+        amount: formatUnits(stakeInfo.amount, 18),
+        rewardDebt: formatUnits(stakeInfo.rewardDebt, 18)
+      };
+    } catch (error) {
+      console.error('Error getting stake info:', error);
+      return { amount: "0", rewardDebt: "0" };
+    }
+  }
+
+  async stakeInPool(stakingPoolAddress: string, amount: string): Promise<string> {
+    try {
+      const cltContract = await this.getCLTRewardContract();
+      const stakingContract = await this.getStakingPoolContract(stakingPoolAddress);
+      
+      const amountWei = parseUnits(amount, 18);
+      
+      // First approve the staking pool to spend CLT tokens
+      const approveTx = await cltContract.approve(stakingPoolAddress, amountWei);
+      await approveTx.wait();
+      
+      // Then stake the tokens
+      const stakeTx = await stakingContract.stake(amountWei);
+      await stakeTx.wait();
+      
+      return stakeTx.hash;
+    } catch (error) {
+      console.error('Error staking in pool:', error);
+      throw error;
+    }
+  }
+
+  async withdrawFromPool(stakingPoolAddress: string, amount: string): Promise<string> {
+    try {
+      const contract = await this.getStakingPoolContract(stakingPoolAddress);
+      const amountWei = parseUnits(amount, 18);
+      
+      const tx = await contract.withdraw(amountWei);
+      await tx.wait();
+      
+      return tx.hash;
+    } catch (error) {
+      console.error('Error withdrawing from pool:', error);
+      throw error;
+    }
+  }
+
+  async claimFromPool(stakingPoolAddress: string): Promise<string> {
+    try {
+      const contract = await this.getStakingPoolContract(stakingPoolAddress);
+      const tx = await contract.claim();
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      console.error('Error claiming from pool:', error);
+      throw error;
+    }
+  }
+
+  // Utility functions
+  formatCLT(amount: string): string {
+    return formatUnits(amount, 18);
+  }
+
+  parseCLT(amount: string): string {
+    return parseUnits(amount, 18).toString();
+  }
+
+  async switchToScrollSepolia(): Promise<boolean> {
+    try {
+      if (!window.ethereum) return false;
+
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: SCROLL_TESTNET_CONFIG.chainId }],
       });
+      return true;
     } catch (switchError: any) {
-      // This error code indicates that the chain has not been added to MetaMask
       if (switchError.code === 4902) {
         try {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [SCROLL_TESTNET_CONFIG],
           });
+          return true;
         } catch (addError) {
-          throw addError;
+          console.error('Failed to add Scroll Sepolia network:', addError);
+          return false;
         }
       }
-      throw switchError;
-    }
-  }
-
-  async getCurrentNetwork(): Promise<string> {
-    if (!this.provider) {
-      throw new Error('Provider not initialized');
-    }
-    const network = await this.provider.getNetwork();
-    return network.chainId.toString();
-  }
-
-  async isConnectedToScrollTestnet(): Promise<boolean> {
-    try {
-      const currentChainId = await this.getCurrentNetwork();
-      return currentChainId === '534351'; // Scroll Sepolia chainId in decimal
-    } catch (error) {
-      console.error('Error checking network:', error);
+      console.error('Failed to switch to Scroll Sepolia network:', switchError);
       return false;
     }
   }
-
-  // Get ETH balance (wallet-based function using ethers.js)
-  async getETHBalance(address: string): Promise<string> {
-    try {
-      if (!this.provider) {
-        console.log('Provider not initialized, connecting wallet...');
-        await this.connectWallet();
-      }
-      
-      if (!this.provider) {
-        throw new Error('Failed to initialize provider');
-      }
-
-      console.log('Fetching ETH balance for address:', address);
-      const balance = await this.provider.getBalance(address);
-      const formattedBalance = formatUnits(balance, 18);
-      console.log('ETH balance fetched:', formattedBalance);
-      return formattedBalance;
-    } catch (error) {
-      console.error('Error getting ETH balance:', error);
-      throw error; // Re-throw to let calling code handle it
-    }
-  }
-
-  // Get contract addresses
-  getSocServiceAddress(): string {
-    return CONTRACT_ADDRESSES.SOC_SERVICE;
-  }
-
-  getCLTAddress(): string {
-    return CONTRACT_ADDRESSES.CLT_REWARD;
-  }
-
-  getStakingPoolAddress(): string {
-    return CONTRACT_ADDRESSES.CLT_STAKING_POOL;
-  }
-
-  // CLT Token functions
-  async getCLTBalance(address: string): Promise<bigint> {
-    if (!this.cltRewardContract) {
-      throw new Error('Contract not initialized');
-    }
-    return await this.cltRewardContract.balanceOf(address);
-  }
-
-  async approveCLT(spender: string, amount: string): Promise<any> {
-    if (!this.cltRewardContract) {
-      throw new Error('Contract not initialized');
-    }
-    const amountWei = parseUnits(amount, 18);
-    return await this.cltRewardContract.approve(spender, amountWei);
-  }
-
-  // Staking functions
-  async getStakeInfo(address: string): Promise<{ amount: bigint; rewardDebt: bigint }> {
-    if (!this.stakingPoolContract) {
-      throw new Error('Contract not initialized');
-    }
-    const result = await this.stakingPoolContract.stakes(address);
-    return {
-      amount: result.amount,
-      rewardDebt: result.rewardDebt
-    };
-  }
-
-  async stake(amount: string): Promise<any> {
-    if (!this.stakingPoolContract) {
-      throw new Error('Contract not initialized');
-    }
-    const amountWei = parseUnits(amount, 18);
-    
-    // First approve the staking pool to spend CLT tokens
-    await this.approveCLT(CONTRACT_ADDRESSES.CLT_STAKING_POOL, amount);
-    
-    // Then stake
-    return await this.stakingPoolContract.stake(amountWei);
-  }
-
-  async withdraw(amount: string): Promise<any> {
-    if (!this.stakingPoolContract) {
-      throw new Error('Contract not initialized');
-    }
-    const amountWei = parseUnits(amount, 18);
-    return await this.stakingPoolContract.withdraw(amountWei);
-  }
-
-
-
-  async getRewardRate(): Promise<bigint> {
-    if (!this.stakingPoolContract) {
-      throw new Error('Contract not initialized');
-    }
-    return await this.stakingPoolContract.rewardRate();
-  }
-
-  // SOC Service functions
-  async createTicket(): Promise<any> {
-    if (!this.socServiceContract) {
-      throw new Error('Contract not initialized');
-    }
-    return await this.socServiceContract.createTicket();
-  }
-
-  async getTicket(ticketId: number): Promise<{
-    reporter: string;
-    analyst: string;
-    validated: boolean;
-    rewardClaimed: boolean;
-  }> {
-    if (!this.socServiceContract) {
-      throw new Error('Contract not initialized');
-    }
-    const result = await this.socServiceContract.tickets(ticketId);
-    return {
-      reporter: result.reporter,
-      analyst: result.analyst,
-      validated: result.validated,
-      rewardClaimed: result.rewardClaimed
-    };
-  }
-
-  async assignAnalyst(ticketId: number, analyst: string): Promise<any> {
-    if (!this.socServiceContract) {
-      throw new Error('Contract not initialized');
-    }
-    return await this.socServiceContract.assignAnalyst(ticketId, analyst);
-  }
-
-  async submitReport(ticketId: number, reportLink: string): Promise<any> {
-    if (!this.socServiceContract) {
-      throw new Error('Contract not initialized');
-    }
-    return await this.socServiceContract.submitReport(ticketId, reportLink);
-  }
-
-  async validateTicket(ticketId: number, certifier: string, rewardAmount: string): Promise<any> {
-    if (!this.socServiceContract) {
-      throw new Error('Contract not initialized');
-    }
-    const rewardWei = parseUnits(rewardAmount, 18);
-    return await this.socServiceContract.validateTicket(ticketId, certifier, rewardWei);
-  }
-
-  async getNextTicketId(): Promise<bigint> {
-    if (!this.socServiceContract) {
-      throw new Error('Contract not initialized');
-    }
-    return await this.socServiceContract.nextTicketId();
-  }
-
-  // Utility functions
-  formatCLT(amount: bigint): string {
-    return formatUnits(amount, 18);
-  }
-
-  parseCLT(amount: string): bigint {
-    return parseUnits(amount, 18);
-  }
-
-  formatETH(amount: bigint): string {
-    return formatUnits(amount, 18);
-  }
-
-  parseETH(amount: string): bigint {
-    return parseUnits(amount, 18);
-  }
-
-  // Staking operations
-  async stakeTokens(amount: string): Promise<any> {
-    if (!this.stakingPoolContract) {
-      throw new Error('Staking contract not initialized');
-    }
-    const amountWei = parseUnits(amount, 18);
-    
-    // First approve the staking contract to spend tokens
-    if (this.cltTokenContract) {
-      const approveTx = await this.cltTokenContract.approve(CONTRACT_ADDRESSES.CLT_STAKING_POOL, amountWei);
-      await approveTx.wait();
-    }
-    
-    // Then stake the tokens
-    const stakeTx = await this.stakingPoolContract.stake(amountWei);
-    return await stakeTx.wait();
-  }
-
-  async withdrawTokens(amount: string): Promise<any> {
-    if (!this.stakingPoolContract) {
-      throw new Error('Staking contract not initialized');
-    }
-    const amountWei = parseUnits(amount, 18);
-    const withdrawTx = await this.stakingPoolContract.withdraw(amountWei);
-    return await withdrawTx.wait();
-  }
-
-  async claimRewards(): Promise<any> {
-    if (!this.stakingPoolContract) {
-      throw new Error('Staking contract not initialized');
-    }
-    const claimTx = await this.stakingPoolContract.claim();
-    return await claimTx.wait();
-  }
-
-  // CLT Token Reward Distribution Functions
-  async mintReward(recipientAddress: string, amount: string, rewardType: 'analyst' | 'certifier' | 'staker'): Promise<any> {
-    if (!this.cltTokenContract) {
-      throw new Error('CLT Token contract not initialized');
-    }
-    
-    console.log(`🎯 Minting ${amount} CLT reward tokens for ${rewardType}: ${recipientAddress}`);
-    
-    const amountWei = parseUnits(amount, 18);
-    const mintTx = await this.cltTokenContract.mint(recipientAddress, amountWei);
-    const receipt = await mintTx.wait();
-    
-    console.log(`✅ CLT reward minted successfully:`, {
-      recipient: recipientAddress,
-      amount: amount,
-      type: rewardType,
-      txHash: receipt.hash,
-      blockNumber: receipt.blockNumber
-    });
-    
-    return receipt;
-  }
-
-  async mintAnalystReward(analystAddress: string, ticketId: number): Promise<any> {
-    // Standard analyst reward: 50 CLT tokens
-    const rewardAmount = "50";
-    console.log(`💼 Minting analyst reward for ticket #${ticketId}`);
-    return await this.mintReward(analystAddress, rewardAmount, 'analyst');
-  }
-
-  async mintCertifierReward(certifierAddress: string, ticketId: number): Promise<any> {
-    // Standard certifier reward: 30 CLT tokens
-    const rewardAmount = "30";
-    console.log(`🛡️ Minting certifier reward for ticket #${ticketId}`);
-    return await this.mintReward(certifierAddress, rewardAmount, 'certifier');
-  }
-
-  async mintStakerReward(stakerAddress: string, stakeAmount: string): Promise<any> {
-    // Staker reward: 5% of staked amount as CLT tokens
-    const stakeAmountNum = parseFloat(stakeAmount);
-    const rewardAmount = (stakeAmountNum * 0.05).toString();
-    console.log(`💰 Minting staker reward: ${rewardAmount} CLT for ${stakeAmount} stake`);
-    return await this.mintReward(stakerAddress, rewardAmount, 'staker');
-  }
-
-  async batchMintRewards(rewards: Array<{address: string, amount: string, type: 'analyst' | 'certifier' | 'staker'}>): Promise<any[]> {
-    console.log(`🔄 Processing batch reward minting for ${rewards.length} recipients`);
-    const results = [];
-    
-    for (const reward of rewards) {
-      try {
-        const result = await this.mintReward(reward.address, reward.amount, reward.type);
-        results.push({ success: true, ...result });
-      } catch (error) {
-        console.error(`❌ Failed to mint reward for ${reward.address}:`, error);
-        results.push({ success: false, error: error.message, address: reward.address });
-      }
-    }
-    
-    return results;
-  }
-
-  async getClaimableReward(userAddress: string): Promise<string> {
-    if (!this.stakingPoolContract) {
-      throw new Error('Staking contract not initialized');
-    }
-    
-    try {
-      const pendingReward = await this.stakingPoolContract.pendingReward(userAddress);
-      return formatUnits(pendingReward, 18);
-    } catch (error) {
-      console.warn('Could not fetch pending reward:', error);
-      return "0";
-    }
-  }
-
-
-
-  // Event listeners
-  onTicketCreated(callback: (ticketId: number, reporter: string) => void) {
-    if (!this.socServiceContract) return;
-    this.socServiceContract.on('TicketCreated', callback);
-  }
-
-  onAnalystAssigned(callback: (ticketId: number, analyst: string) => void) {
-    if (!this.socServiceContract) return;
-    this.socServiceContract.on('AnalystAssigned', callback);
-  }
-
-  onReportSubmitted(callback: (ticketId: number, reportLink: string) => void) {
-    if (!this.socServiceContract) return;
-    this.socServiceContract.on('ReportSubmitted', callback);
-  }
-
-  onTicketValidated(callback: (ticketId: number, certifier: string, reward: bigint) => void) {
-    if (!this.socServiceContract) return;
-    this.socServiceContract.on('TicketValidated', callback);
-  }
 }
 
-// Export singleton instance
 export const evmContractService = new EVMContractService();
-
-// Type declarations for window.ethereum
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
+export default evmContractService;

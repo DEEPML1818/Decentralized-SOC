@@ -10,6 +10,7 @@ import CasesList from "./CasesList";
 import UnifiedStakingDashboard from "./UnifiedStakingDashboard";
 
 import StakingPoolsPage from "./StakingPoolsPage";
+import EnhancedStakingPools from "./EnhancedStakingPools";
 import CaseDetailModal from "./CaseDetailModal";
 import AIAssistant from "./AIAssistant";
 import SmartContractAudit from "./SmartContractAudit";
@@ -279,7 +280,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
 
         {activeTab === "pools" && isEVMConnected && (
           <div>
-            <StakingPoolsPage />
+            <EnhancedStakingPools />
           </div>
         )}
 

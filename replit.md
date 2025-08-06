@@ -21,7 +21,10 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - Real-time dashboard with role-specific views
 
 ## Recent Changes
-- **2025-08-06**: Updated CLT Token contract address to 0x7300c99742081cCDa629aDcD74E19F59A4E8aD83 for reward distribution
+- **2025-08-06**: Updated to new contract architecture - CLT Reward (0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097) and SOCService (0x7874f6b9f9547D0bb89493E9430d8ceC44CE8B41)
+- **2025-08-06**: SOCService now automatically creates individual staking pools for each ticket with IPFS metadata storage
+- **2025-08-06**: Enhanced staking pools display with pool-specific metadata, descriptions, and IPFS integration
+- **2025-08-06**: Added comprehensive CLT reward management system with automatic minting for analysts (50 CLT), certifiers (30 CLT), and stakers (5% of stake)
 - **2025-08-06**: Implemented comprehensive CLT reward minting system for analysts (50 CLT), certifiers (30 CLT), and stakers (5% of stake)
 - **2025-08-06**: Created CLTRewardManager component with reward history, statistics, and batch minting capabilities
 - **2025-08-06**: Added /rewards page with dedicated reward management interface

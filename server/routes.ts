@@ -230,6 +230,75 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
     }
   });
 
+  // Store staking pool metadata when creating tickets
+  app.post("/api/pools/metadata", async (req, res) => {
+    try {
+      const { poolAddress, title, description, category, riskLevel, estimatedAPY, minStake, maxStake } = req.body;
+      
+      if (!poolAddress || !title || !description) {
+        return res.status(400).json({ 
+          error: "Missing required fields: poolAddress, title, and description" 
+        });
+      }
+
+      const metadata = {
+        poolAddress,
+        title,
+        description,
+        category: category || "Security Analysis",
+        riskLevel: riskLevel || "Medium",
+        estimatedAPY: estimatedAPY || "12-18%",
+        minStake: minStake || "10",
+        maxStake: maxStake || "1000",
+        createdAt: new Date().toISOString(),
+        version: "1.0"
+      };
+
+      // Store metadata in IPFS
+      console.log(`🔗 Storing pool metadata in IPFS:`, {
+        poolAddress: poolAddress,
+        title: title,
+        description: description.substring(0, 100) + "..."
+      });
+
+      const ipfsHash = await storage.uploadJSON(metadata, `pool-${poolAddress}-metadata`);
+
+      res.json({
+        success: true,
+        ipfsHash: ipfsHash,
+        metadata: metadata,
+        message: `Pool metadata stored in IPFS with hash: ${ipfsHash}`
+      });
+
+    } catch (error) {
+      console.error("Pool metadata storage error:", error);
+      res.status(500).json({ 
+        error: "Failed to store pool metadata",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/pools/metadata/:hash", async (req, res) => {
+    try {
+      const { hash } = req.params;
+      
+      if (!hash) {
+        return res.status(400).json({ error: "IPFS hash parameter is required" });
+      }
+
+      const metadata = await storage.getJSON(hash);
+      res.json({ metadata });
+
+    } catch (error) {
+      console.error("Pool metadata retrieval error:", error);
+      res.status(500).json({ 
+        error: "Failed to retrieve pool metadata",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   app.post("/api/ai/security-news", async (req, res) => {
     try {
       if (!API_KEY) {

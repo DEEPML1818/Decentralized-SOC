@@ -1,0 +1,165 @@
+CLTReward.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract CLTReward is ERC20 {
+    constructor() ERC20("CyberLink Token", "CLT") {}
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+}
+
+CLTStakingPool.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract CLTStakingPool is Ownable {
+    IERC20 public clt;
+    uint256 public rewardRate = 100; // reward per block
+    uint256 public lastUpdateBlock;
+
+    struct StakeInfo {
+        uint256 amount;
+        uint256 rewardDebt;
+    }
+
+    mapping(address => StakeInfo) public stakes;
+
+    constructor(address _clt, address _owner) Ownable(_owner) {
+        clt = IERC20(_clt);
+        lastUpdateBlock = block.number;
+    }
+
+    function stake(uint256 amount) external {
+        StakeInfo storage user = stakes[msg.sender];
+        _updateReward(msg.sender);
+
+        require(clt.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+        user.amount += amount;
+    }
+
+    function withdraw(uint256 amount) external {
+        StakeInfo storage user = stakes[msg.sender];
+        require(user.amount >= amount, "Not enough staked");
+
+        _updateReward(msg.sender);
+        user.amount -= amount;
+        require(clt.transfer(msg.sender, amount), "Transfer failed");
+    }
+
+    function claim() external {
+        _updateReward(msg.sender);
+    }
+
+    function _updateReward(address userAddr) internal {
+        StakeInfo storage user = stakes[userAddr];
+        if (user.amount > 0) {
+            uint256 blocks = block.number - lastUpdateBlock;
+            uint256 reward = (blocks * rewardRate * user.amount) / 1e18;
+            if (reward > 0) {
+                clt.transfer(userAddr, reward);
+            }
+        }
+        lastUpdateBlock = block.number;
+    }
+
+    function setRewardRate(uint256 _rate) external onlyOwner {
+        rewardRate = _rate;
+    }
+}
+
+
+SOCService.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./CLTStakingPool.sol";
+import "./CLTReward.sol";
+
+contract SOCService {
+    address public rewardToken;
+    address public initialOwner;
+    uint256 public devFeePercentage; // e.g. 5 = 5%
+
+    uint256 public ticketCounter;
+    
+    struct Ticket {
+        uint256 id;
+        string title;
+        address client;
+        address analyst;
+        uint256 rewardAmount;
+        address stakingPool;
+        bool isValidated;
+    }
+
+    mapping(uint256 => Ticket) public tickets;
+
+    event TicketCreated(uint256 indexed id, address stakingPool, address client, uint256 reward);
+    event TicketValidated(uint256 indexed id, address analyst);
+
+    constructor(address _rewardToken, address _initialOwner, uint256 _devFeePercentage) {
+        rewardToken = _rewardToken;
+        initialOwner = _initialOwner;
+        devFeePercentage = _devFeePercentage;
+    }
+
+    function createTicket(string memory _title, address _analyst) external payable {
+        require(msg.value > 0, "Reward must be > 0");
+        require(_analyst != address(0), "Analyst address required");
+
+        uint256 devFee = (msg.value * devFeePercentage) / 100;
+        uint256 rewardValue = msg.value - devFee;
+
+        // Send dev fee
+        (bool success, ) = initialOwner.call{value: devFee}("");
+        require(success, "Dev fee transfer failed");
+
+        // Deploy new staking pool for the ticket
+        CLTStakingPool stakingPool = new CLTStakingPool(rewardToken, _analyst);
+
+        // Send remaining reward to staking pool
+        (bool sent, ) = address(stakingPool).call{value: rewardValue}("");
+        require(sent, "Reward transfer failed");
+
+        tickets[ticketCounter] = Ticket({
+            id: ticketCounter,
+            title: _title,
+            client: msg.sender,
+            analyst: _analyst,
+            rewardAmount: rewardValue,
+            stakingPool: address(stakingPool),
+            isValidated: false
+        });
+
+        emit TicketCreated(ticketCounter, address(stakingPool), msg.sender, rewardValue);
+        ticketCounter++;
+    }
+
+    function validateTicket(uint256 ticketId) external {
+        Ticket storage ticket = tickets[ticketId];
+        require(msg.sender == ticket.analyst, "Only assigned analyst can validate");
+        require(!ticket.isValidated, "Already validated");
+
+        // Mint reward token to analyst
+        CLTReward(rewardToken).mint(ticket.analyst, 100 * 10 ** 18); // Fixed reward for validation
+
+        ticket.isValidated = true;
+        emit TicketValidated(ticketId, msg.sender);
+    }
+
+    // Optional: Allow owner to update fee
+    function updateDevFee(uint256 newFee) external {
+        require(msg.sender == initialOwner, "Not owner");
+        require(newFee <= 20, "Too high"); // cap at 20%
+        devFeePercentage = newFee;
+    }
+}
+
