@@ -14,13 +14,16 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 
 ## Key Features
 - IOTA wallet integration for authentication
-- Role-based access (client, analyst, certifier)
-- Security ticket management system
-- Staking and rewards mechanism
-- Document notarization on IOTA
-- Real-time dashboard with role-specific views
+- MetaMask EVM wallet integration
+- Dual blockchain support (IOTA and Scroll Sepolia)
+- CLT token faucet for testing
+- Clean, minimal interface focused on core functionality
 
 ## Recent Changes
+- **2025-08-06**: Simplified application to only include Home and Faucet pages as requested
+- **2025-08-06**: Created comprehensive HomePage with platform overview and connection status
+- **2025-08-06**: Removed all complex features (pools, staking, rewards, guides) to focus on core functionality
+- **2025-08-06**: Updated navigation to only show Home and Faucet buttons in header
 - **2025-08-06**: Successfully completed migration from Replit Agent to standard Replit environment
 - **2025-08-06**: Fixed MetaMask wallet connection by adding missing connectWallet method to EVMContractService
 - **2025-08-06**: Added proper TypeScript support for window.ethereum interface

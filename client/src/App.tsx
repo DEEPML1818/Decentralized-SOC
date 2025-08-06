@@ -1,13 +1,8 @@
 import { useState, useEffect } from "react";
 import { Router, Route, Switch } from "wouter";
 import { Toaster } from "sonner";
-import Index from "./pages/Index";
+import HomePage from "./pages/HomePage";
 import NotFound from "./pages/NotFound";
-import PoolsPage from "./pages/PoolsPage";
-import GuidePage from "./pages/GuidePage";
-import IOTAPage from "./pages/IOTAPage";
-import EVMPage from "./pages/EVMPage";
-import RewardsPage from "./pages/RewardsPage";
 import FaucetPage from "./pages/FaucetPage";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
@@ -87,12 +82,7 @@ function App() {
         <Router>
           <div className="min-h-screen bg-background text-foreground">
             <Switch>
-              <Route path="/" component={Index} />
-              <Route path="/iota" component={IOTAPage} />
-              <Route path="/evm" component={EVMPage} />
-              <Route path="/guide" component={GuidePage} />
-              <Route path="/pools" component={PoolsPage} />
-              <Route path="/rewards" component={RewardsPage} />
+              <Route path="/" component={HomePage} />
               <Route path="/faucet" component={FaucetPage} />
               <Route component={NotFound} />
             </Switch>

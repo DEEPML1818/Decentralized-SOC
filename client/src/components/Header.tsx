@@ -2,7 +2,7 @@ import { ConnectButton, useCurrentAccount } from "@iota/dapp-kit";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
-import { Shield, Wallet, ChevronDown, Link, Coins, Network, FileText, DollarSign, Droplets } from "lucide-react";
+import { Shield, Wallet, ChevronDown, Link, Network, Droplets } from "lucide-react";
 import { useWallet } from './WalletProvider';
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -23,8 +23,7 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
     connectEVMWallet, 
     disconnectEVMWallet,
     isEVMConnected,
-    isIOTAConnected,
-    ethBalance
+    isIOTAConnected
   } = useWallet();
   const { toast } = useToast();
   const [showBlockchainSelector, setShowBlockchainSelector] = useState(false);
@@ -131,20 +130,11 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
             {/* Navigation Links */}
             <Button
               variant="ghost"
-              onClick={() => window.location.href = '/pools'}
-              className="text-gray-300 hover:bg-purple-500/20"
+              onClick={() => window.location.href = '/'}
+              className="text-gray-300 hover:bg-blue-500/20"
             >
-              <FileText className="h-4 w-4 mr-2" />
-              Security Pools
-            </Button>
-
-            <Button
-              variant="ghost"
-              onClick={() => window.location.href = '/staking'}
-              className="text-gray-300 hover:bg-purple-500/20"
-            >
-              <Coins className="h-4 w-4 mr-2" />
-              Staking
+              <Shield className="h-4 w-4 mr-2" />
+              Home
             </Button>
 
             <Button
@@ -168,11 +158,6 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
                   <Badge className="bg-red-500/20 text-red-400 border-red-500/30 font-mono">
                     🔗 EVM: {evmAddress?.slice(0, 6)}...{evmAddress?.slice(-4)}
                   </Badge>
-                  {ethBalance && (
-                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-mono">
-                      ⚡ {parseFloat(ethBalance).toFixed(4)} ETH
-                    </Badge>
-                  )}
                 </div>
               )}
             </div>
