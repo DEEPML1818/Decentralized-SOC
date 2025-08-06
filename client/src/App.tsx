@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import HomePage from "./pages/HomePage";
 import NotFound from "./pages/NotFound";
 import FaucetPage from "./pages/FaucetPage";
+import DAppPage from "./pages/DAppPage";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import EVMIncidentReport from "./components/EVMIncidentReport";
@@ -84,6 +85,7 @@ function App() {
             <Switch>
               <Route path="/" component={HomePage} />
               <Route path="/faucet" component={FaucetPage} />
+              <Route path="/dapp" component={DAppPage} />
               <Route component={NotFound} />
             </Switch>
             <Toaster />

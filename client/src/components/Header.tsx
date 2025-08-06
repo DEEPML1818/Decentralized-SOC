@@ -146,6 +146,15 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
               Faucet
             </Button>
 
+            <Button
+              variant="ghost"
+              onClick={() => window.location.href = '/dapp'}
+              className="text-gray-300 hover:bg-purple-500/20"
+            >
+              <Network className="h-4 w-4 mr-2" />
+              dApp
+            </Button>
+
             {/* Connection Status Display - Hide IOTA when EVM connected */}
             <div className="flex items-center space-x-2">
               {!isEVMConnected && isIOTAConnected && (

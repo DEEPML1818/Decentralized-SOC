@@ -54,6 +54,15 @@ export default function HomePage() {
                 Get Test Tokens
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
+              <Button
+                onClick={() => window.location.href = '/dapp'}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg"
+                data-testid="button-goto-dapp"
+              >
+                <Network className="h-5 w-5 mr-2" />
+                Launch dApp
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
             </div>
           </div>
 

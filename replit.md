@@ -17,13 +17,17 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - MetaMask EVM wallet integration
 - Dual blockchain support (IOTA and Scroll Sepolia)
 - CLT token faucet for testing
+- dApp interface for smart contract interactions
 - Clean, minimal interface focused on core functionality
 
 ## Recent Changes
+- **2025-08-06**: Added dApp page with smart contract interaction interface as requested
+- **2025-08-06**: Updated navigation to include Home, Faucet, and dApp routing buttons
+- **2025-08-06**: Created comprehensive dApp interface with blockchain status and quick actions
+- **2025-08-06**: Added "Launch dApp" button to HomePage for easy access
 - **2025-08-06**: Simplified application to only include Home and Faucet pages as requested
 - **2025-08-06**: Created comprehensive HomePage with platform overview and connection status
 - **2025-08-06**: Removed all complex features (pools, staking, rewards, guides) to focus on core functionality
-- **2025-08-06**: Updated navigation to only show Home and Faucet buttons in header
 - **2025-08-06**: Successfully completed migration from Replit Agent to standard Replit environment
 - **2025-08-06**: Fixed MetaMask wallet connection by adding missing connectWallet method to EVMContractService
 - **2025-08-06**: Added proper TypeScript support for window.ethereum interface
