@@ -16,7 +16,7 @@ export const SCROLL_TESTNET_CONFIG = {
 // Contract addresses from your deployment
 export const CONTRACT_ADDRESSES = {
   CLT_REWARD: '0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097', // Updated CLT Token contract
-  SOC_SERVICE: '0x7874f6b9f9547D0bb89493E9430d8ceC44CE8B41', // New SOCService with integrated staking pools
+  SOC_SERVICE: '0x6e310Be2F4D057bAd8435E30a0d45bCD49c9018E', // New SOCService with simplified ticket creation
 };
 
 // CLT Reward Token ABI (Simple ERC20 with mint)
@@ -292,11 +292,43 @@ export const SOC_SERVICE_ABI = [
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "analyst",
+        "type": "address"
+      }
+    ],
+    "name": "AnalystAssigned",
+    "type": "event"
+  },
+  {
     "inputs": [
       {
         "internalType": "string",
         "name": "_title",
         "type": "string"
+      }
+    ],
+    "name": "createTicket",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "ticketId",
+        "type": "uint256"
       },
       {
         "internalType": "address",
@@ -304,9 +336,35 @@ export const SOC_SERVICE_ABI = [
         "type": "address"
       }
     ],
-    "name": "createTicket",
+    "name": "setAnalyst",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateDevFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "ticketId",
+        "type": "uint256"
+      }
+    ],
+    "name": "validateTicket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -672,48 +730,100 @@ class EVMContractService {
   }
 
   // SOCService functions
-  async createTicket(title: string, analystAddress: string, rewardETH: string): Promise<{txHash: string, stakingPoolAddress?: string}> {
+  async createTicket(title: string, ethAmount: string) {
     try {
-      const contract = await this.getSOCServiceContract();
-      const rewardWei = parseUnits(rewardETH, 18);
-      
-      const tx = await contract.createTicket(title, analystAddress, {
-        value: rewardWei
+      console.log(`Creating ticket with params:`, {
+        title,
+        ethAmount
       });
-      
+
+      const contract = await this.getSOCServiceContract();
+      const ethValue = parseUnits(ethAmount, 18);
+
+      // Call the contract's createTicket function (only title parameter, analyst assigned later)
+      const tx = await contract.createTicket(title, { value: ethValue });
+      console.log('Transaction sent:', tx.hash);
+
       const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+
+      // Listen for TicketCreated event to get the staking pool address and ticket ID
+      let stakingPoolAddress = null;
+      let ticketId = null;
       
-      // Parse events to get staking pool address
-      let stakingPoolAddress;
-      for (const log of receipt.logs) {
-        try {
-          const parsedLog = contract.interface.parseLog(log);
-          if (parsedLog?.name === 'TicketCreated') {
-            stakingPoolAddress = parsedLog.args.stakingPool;
-            break;
+      if (receipt.logs) {
+        const contractInterface = new ethers.Interface(SOC_SERVICE_ABI);
+        for (const log of receipt.logs) {
+          try {
+            const parsedLog = contractInterface.parseLog(log);
+            if (parsedLog?.name === 'TicketCreated') {
+              stakingPoolAddress = parsedLog.args.stakingPool;
+              ticketId = parsedLog.args.id.toString();
+              console.log('Ticket created:', { ticketId, stakingPoolAddress });
+              break;
+            }
+          } catch (e) {
+            // Ignore logs that don't match our interface
           }
-        } catch (e) {
-          // Ignore parsing errors for logs from other contracts
         }
       }
-      
+
       return {
-        txHash: tx.hash,
-        stakingPoolAddress
+        txHash: receipt.transactionHash,
+        stakingPoolAddress: stakingPoolAddress,
+        ticketId: ticketId,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed?.toString()
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating ticket:', error);
       throw error;
     }
   }
 
-  async validateTicket(ticketId: number): Promise<string> {
+  async setAnalyst(ticketId: string, analystAddress: string) {
     try {
+      console.log(`Setting analyst for ticket ${ticketId}:`, analystAddress);
+
       const contract = await this.getSOCServiceContract();
+      
+      // Call the contract's setAnalyst function
+      const tx = await contract.setAnalyst(ticketId, analystAddress);
+      console.log('Transaction sent:', tx.hash);
+
+      const receipt = await tx.wait();
+      console.log('Analyst assigned:', receipt);
+
+      return {
+        txHash: receipt.transactionHash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed?.toString()
+      };
+    } catch (error: any) {
+      console.error('Error setting analyst:', error);
+      throw error;
+    }
+  }
+
+  async validateTicket(ticketId: string) {
+    try {
+      console.log(`Validating ticket ${ticketId}`);
+
+      const contract = await this.getSOCServiceContract();
+      
+      // Call the contract's validateTicket function
       const tx = await contract.validateTicket(ticketId);
-      await tx.wait();
-      return tx.hash;
-    } catch (error) {
+      console.log('Transaction sent:', tx.hash);
+
+      const receipt = await tx.wait();
+      console.log('Ticket validated:', receipt);
+
+      return {
+        txHash: receipt.transactionHash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed?.toString()
+      };
+    } catch (error: any) {
       console.error('Error validating ticket:', error);
       throw error;
     }

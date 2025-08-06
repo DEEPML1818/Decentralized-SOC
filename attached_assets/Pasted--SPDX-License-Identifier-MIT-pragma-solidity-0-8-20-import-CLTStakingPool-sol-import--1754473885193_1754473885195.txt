@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./CLTStakingPool.sol";
+import "./CLTReward.sol";
+
+contract SOCService {
+    address public rewardToken;
+    address public initialOwner;
+    uint256 public devFeePercentage;
+
+    uint256 public ticketCounter;
+
+    struct Ticket {
+        uint256 id;
+        string title;
+        address client;
+        address analyst;
+        uint256 rewardAmount;
+        address stakingPool;
+        bool isValidated;
+        bool analystAssigned;
+    }
+
+    mapping(uint256 => Ticket) public tickets;
+
+    event TicketCreated(uint256 indexed id, address stakingPool, address client, uint256 reward);
+    event AnalystAssigned(uint256 indexed id, address analyst);
+    event TicketValidated(uint256 indexed id, address analyst);
+
+    constructor(address _rewardToken, address _initialOwner, uint256 _devFeePercentage) {
+        rewardToken = _rewardToken;
+        initialOwner = _initialOwner;
+        devFeePercentage = _devFeePercentage;
+    }
+
+    function createTicket(string memory _title) external payable {
+        require(msg.value > 0, "Reward must be > 0");
+
+        uint256 devFee = (msg.value * devFeePercentage) / 100;
+        uint256 rewardValue = msg.value - devFee;
+
+        // Send dev fee to owner
+        (bool success, ) = initialOwner.call{value: devFee}("");
+        require(success, "Dev fee transfer failed");
+
+        // Create staking pool (analyst is unknown, so pass address(0))
+        CLTStakingPool stakingPool = new CLTStakingPool(rewardToken, address(0));
+
+        // Send reward to staking pool
+        (bool sent, ) = address(stakingPool).call{value: rewardValue}("");
+        require(sent, "Reward transfer failed");
+
+        tickets[ticketCounter] = Ticket({
+            id: ticketCounter,
+            title: _title,
+            client: msg.sender,
+            analyst: address(0),
+            rewardAmount: rewardValue,
+            stakingPool: address(stakingPool),
+            isValidated: false,
+            analystAssigned: false
+        });
+
+        emit TicketCreated(ticketCounter, address(stakingPool), msg.sender, rewardValue);
+        ticketCounter++;
+    }
+
+    function setAnalyst(uint256 ticketId, address _analyst) external {
+        Ticket storage ticket = tickets[ticketId];
+        require(msg.sender == ticket.client, "Only client can set analyst");
+        require(!ticket.analystAssigned, "Analyst already assigned");
+        require(_analyst != address(0), "Invalid analyst address");
+
+        ticket.analyst = _analyst;
+        ticket.analystAssigned = true;
+
+        emit AnalystAssigned(ticketId, _analyst);
+    }
+
+    function validateTicket(uint256 ticketId) external {
+        Ticket storage ticket = tickets[ticketId];
+        require(ticket.analystAssigned, "Analyst not assigned yet");
+        require(msg.sender == ticket.analyst, "Only assigned analyst can validate");
+        require(!ticket.isValidated, "Already validated");
+
+        // Mint reward to analyst
+        CLTReward(rewardToken).mint(ticket.analyst, 100 * 10 ** 18); // example amount
+
+        ticket.isValidated = true;
+        emit TicketValidated(ticketId, msg.sender);
+    }
+
+    function updateDevFee(uint256 newFee) external {
+        require(msg.sender == initialOwner, "Not owner");
+        require(newFee <= 20, "Too high"); // cap
+        devFeePercentage = newFee;
+    }
+}

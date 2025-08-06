@@ -112,16 +112,33 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
         });
         const tx = await evmContractService.createTicket(
           incidentData.title,
-          incidentData.analystAddress || evmAddress, // Use analyst address or current user
           incidentData.ethAmount || "0.01"
         );
-        // tx now contains both txHash and stakingPoolAddress
+        // tx now contains txHash, stakingPoolAddress, and ticketId
         const txHash = tx.txHash;
         const stakingPoolAddress = tx.stakingPoolAddress;
+        const ticketId = tx.ticketId;
+
+        // If analyst address is provided, assign analyst to the ticket
+        if (incidentData.analystAddress && ticketId) {
+          try {
+            console.log(`Assigning analyst ${incidentData.analystAddress} to ticket ${ticketId}`);
+            await evmContractService.setAnalyst(ticketId, incidentData.analystAddress);
+            console.log('Analyst assigned successfully');
+          } catch (analystError) {
+            console.error('Failed to assign analyst:', analystError);
+            // Continue even if analyst assignment fails
+          }
+        }
 
         submissionData.transaction_hash = txHash || '';
         submissionData.client_name = evmAddress || 'Anonymous';
         submissionData.contact_info = `EVM Wallet: ${evmAddress}`;
+        
+        // Add ticket ID if available
+        if (ticketId) {
+          submissionData.ticket_id = parseInt(ticketId);
+        }
 
         // Store staking pool metadata in IPFS
         if (stakingPoolAddress) {
@@ -315,17 +332,16 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
           {/* Analyst Address */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Analyst Address *
+              Analyst Address (Optional)
             </label>
             <Input
               value={incidentData.analystAddress}
               onChange={(e) => setIncidentData({ ...incidentData, analystAddress: e.target.value })}
-              placeholder="0x... (analyst wallet address who will handle this ticket)"
+              placeholder="0x... (optional - analyst can be assigned later)"
               className="bg-gray-800/50 border-orange-500/30 text-white font-mono"
-              required
             />
             <p className="text-gray-400 text-xs mt-1">
-              Wallet address of the security analyst who will investigate this incident
+              Optional: Analyst wallet address. If not provided, can be assigned later by the client.
             </p>
           </div>
 
