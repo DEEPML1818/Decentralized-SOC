@@ -16,7 +16,7 @@ export const SCROLL_TESTNET_CONFIG = {
 // Contract addresses from your deployment
 export const CONTRACT_ADDRESSES = {
   CLT_REWARD: '0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097', // Updated CLT Token contract
-  SOC_SERVICE: '0x6e310Be2F4D057bAd8435E30a0d45bCD49c9018E', // New SOCService with simplified ticket creation
+  SOC_SERVICE: '0xE87bFbFC9fC93b94756384e07cCa4B1e857bfC94', // New SOCService with CLT payment system
 };
 
 // CLT Reward Token ABI (Simple ERC20 with mint)
@@ -223,23 +223,47 @@ export const SOC_SERVICE_ABI = [
   {
     "inputs": [
       {
+        "internalType": "string",
+        "name": "_title",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "cltAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "createTicket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "_rewardToken",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "_initialOwner",
+        "name": "_owner",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_devFeePercentage",
-        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
   },
   {
     "anonymous": false,
@@ -251,13 +275,81 @@ export const SOC_SERVICE_ABI = [
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
-        "name": "stakingPool",
+        "name": "analyst",
+        "type": "address"
+      }
+    ],
+    "name": "AnalystAssigned",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "emergencyWithdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
         "type": "address"
       },
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "EmergencyWithdraw",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "ticketId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "analyst",
+        "type": "address"
+      }
+    ],
+    "name": "setAnalyst",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
         "internalType": "address",
         "name": "client",
         "type": "address"
@@ -265,8 +357,14 @@ export const SOC_SERVICE_ABI = [
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "reward",
+        "name": "rewardAmount",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "stakingPool",
+        "type": "address"
       }
     ],
     "name": "TicketCreated",
@@ -282,7 +380,7 @@ export const SOC_SERVICE_ABI = [
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "analyst",
         "type": "address"
@@ -290,69 +388,6 @@ export const SOC_SERVICE_ABI = [
     ],
     "name": "TicketValidated",
     "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "analyst",
-        "type": "address"
-      }
-    ],
-    "name": "AnalystAssigned",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_title",
-        "type": "string"
-      }
-    ],
-    "name": "createTicket",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_analyst",
-        "type": "address"
-      }
-    ],
-    "name": "setAnalyst",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "newFee",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateDevFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   },
   {
     "inputs": [
@@ -369,20 +404,7 @@ export const SOC_SERVICE_ABI = [
   },
   {
     "inputs": [],
-    "name": "devFeePercentage",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "initialOwner",
+    "name": "owner",
     "outputs": [
       {
         "internalType": "address",
@@ -466,32 +488,6 @@ export const SOC_SERVICE_ABI = [
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "newFee",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateDevFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      }
-    ],
-    "name": "validateTicket",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   }
 ];
@@ -730,18 +726,29 @@ class EVMContractService {
   }
 
   // SOCService functions
-  async createTicket(title: string, ethAmount: string) {
+  async createTicket(title: string, cltAmount: string) {
     try {
       console.log(`Creating ticket with params:`, {
         title,
-        ethAmount
+        cltAmount
       });
 
-      const contract = await this.getSOCServiceContract();
-      const ethValue = parseUnits(ethAmount, 18);
+      // First, get the current user's address
+      const signer = await this.getSigner();
+      const userAddress = await signer.getAddress();
 
-      // Call the contract's createTicket function (only title parameter, analyst assigned later)
-      const tx = await contract.createTicket(title, { value: ethValue });
+      // Approve the SOC contract to spend CLT tokens
+      const cltContract = await this.getCLTRewardContract();
+      const cltValue = parseUnits(cltAmount, 18);
+      
+      console.log('Approving CLT spend...');
+      const approveTx = await cltContract.approve(CONTRACT_ADDRESSES.SOC_SERVICE, cltValue);
+      await approveTx.wait();
+      console.log('CLT spend approved');
+
+      // Create the ticket
+      const contract = await this.getSOCServiceContract();
+      const tx = await contract.createTicket(title, cltValue);
       console.log('Transaction sent:', tx.hash);
 
       const receipt = await tx.wait();

@@ -351,11 +351,11 @@ export default function UserGuide() {
                       <h4 className="font-semibold">SOC Service</h4>
                       <p className="text-sm text-muted-foreground">Main dSOC operations contract</p>
                       <code className="text-xs bg-muted px-2 py-1 rounded mt-2 block">
-                        0x284B4cE9027b8f81211efd19A3a5D40D8b232D60
+                        0xE87bFbFC9fC93b94756384e07cCa4B1e857bfC94
                       </code>
                     </div>
                     <Button variant="outline" size="sm" asChild>
-                      <a href="https://sepolia.scrollscan.dev/address/0x284B4cE9027b8f81211efd19A3a5D40D8b232D60" target="_blank">
+                      <a href="https://sepolia.scrollscan.dev/address/0xE87bFbFC9fC93b94756384e07cCa4B1e857bfC94" target="_blank">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>
