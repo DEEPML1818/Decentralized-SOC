@@ -2,7 +2,7 @@ import { ConnectButton, useCurrentAccount } from "@iota/dapp-kit";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
-import { Shield, Wallet, ChevronDown, Link, Network, Droplets } from "lucide-react";
+import { Shield, Wallet, ChevronDown, Link, Network, Droplets, Zap } from "lucide-react";
 import { useWallet } from './WalletProvider';
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -153,6 +153,15 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
             >
               <Network className="h-4 w-4 mr-2" />
               dApp
+            </Button>
+
+            <Button
+              variant="ghost"
+              onClick={() => window.location.href = '/evm'}
+              className="text-gray-300 hover:bg-orange-500/20"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              EVM
             </Button>
 
             {/* Connection Status Display - Hide IOTA when EVM connected */}

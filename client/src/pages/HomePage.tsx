@@ -63,6 +63,15 @@ export default function HomePage() {
                 Launch dApp
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
+              <Button
+                onClick={() => window.location.href = '/evm'}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 text-lg"
+                data-testid="button-goto-evm"
+              >
+                <Zap className="h-5 w-5 mr-2" />
+                EVM Platform
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
             </div>
           </div>
 
