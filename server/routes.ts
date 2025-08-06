@@ -117,6 +117,119 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
     }
   });
 
+  // CLT Reward Management endpoints
+  app.post("/api/rewards/mint", async (req, res) => {
+    try {
+      const { recipientAddress, amount, rewardType, ticketId } = req.body;
+      
+      if (!recipientAddress || !amount || !rewardType) {
+        return res.status(400).json({ 
+          error: "Missing required fields: recipientAddress, amount, and rewardType" 
+        });
+      }
+
+      // In a real implementation, this would:
+      // 1. Validate the request (check permissions, verify recipient)
+      // 2. Call the CLT Token contract mint function
+      // 3. Store the transaction in database
+      // 4. Return transaction details
+
+      console.log(`🎯 Reward mint request:`, {
+        recipient: recipientAddress,
+        amount: amount,
+        type: rewardType,
+        ticketId: ticketId || 'N/A'
+      });
+
+      // Mock response - in real app, return actual transaction hash
+      const mockTransaction = {
+        txHash: `0x${Math.random().toString(16).substring(2, 66)}`,
+        blockNumber: Math.floor(Math.random() * 1000000) + 11000000,
+        status: 'completed',
+        timestamp: new Date().toISOString()
+      };
+
+      res.json({
+        success: true,
+        transaction: mockTransaction,
+        message: `Successfully minted ${amount} CLT tokens for ${rewardType}`
+      });
+
+    } catch (error) {
+      console.error("Reward minting error:", error);
+      res.status(500).json({ 
+        error: "Failed to mint reward",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/rewards/history/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      if (!address) {
+        return res.status(400).json({ error: "Address parameter is required" });
+      }
+
+      // Mock reward history - in real app, fetch from blockchain events
+      const mockHistory = [
+        {
+          id: 1,
+          recipient: address,
+          amount: "50",
+          type: 'analyst',
+          txHash: "0x123...abc",
+          timestamp: new Date().toISOString(),
+          status: 'completed',
+          ticketId: 1
+        },
+        {
+          id: 2,
+          recipient: address,
+          amount: "30",
+          type: 'certifier',
+          txHash: "0x456...def",
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          status: 'completed',
+          ticketId: 2
+        }
+      ];
+
+      res.json({ history: mockHistory });
+
+    } catch (error) {
+      console.error("Reward history error:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch reward history",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/rewards/stats", async (req, res) => {
+    try {
+      // Mock reward statistics - in real app, calculate from blockchain data
+      const mockStats = {
+        totalRewardsMinted: 12500,
+        analystRewards: 8000,
+        certifierRewards: 3000,
+        stakerRewards: 1500,
+        totalRecipients: 45,
+        lastMonthMinted: 2300
+      };
+
+      res.json({ stats: mockStats });
+
+    } catch (error) {
+      console.error("Reward stats error:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch reward statistics",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   app.post("/api/ai/security-news", async (req, res) => {
     try {
       if (!API_KEY) {

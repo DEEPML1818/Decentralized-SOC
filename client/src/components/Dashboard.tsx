@@ -102,6 +102,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
     { id: "tickets", label: "🛡️ Case Management", icon: Shield },
     { id: "pools", label: "💰 Security Pools", icon: Coins },
     { id: "staking", label: "📈 Staking Hub", icon: TrendingUp },
+    { id: "rewards", label: "🎯 Reward Center", icon: DollarSign },
     { id: "ai", label: "🤖 AI Analyst", icon: Brain },
     { id: "audit", label: "🔍 Smart Audit", icon: Code },
   ] : isIOTAConnected ? [
@@ -291,6 +292,31 @@ export default function Dashboard({ currentRole }: DashboardProps) {
         {activeTab === "ai" && (
           <div>
             <AIAssistant />
+          </div>
+        )}
+
+        {activeTab === "rewards" && isEVMConnected && (
+          <div>
+            <Card className="cyber-glass bg-red-500/10 border-red-500/30">
+              <CardHeader>
+                <CardTitle className="text-red-400 flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  CLT Reward Center
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Visit the dedicated Reward Manager to mint CLT tokens for analysts, certifiers, and stakers
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => window.open('/rewards', '_blank')}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Open Reward Manager
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 

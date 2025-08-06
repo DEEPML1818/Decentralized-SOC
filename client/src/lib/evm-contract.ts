@@ -15,7 +15,7 @@ export const SCROLL_TESTNET_CONFIG = {
 
 // Contract addresses from your deployment
 export const CONTRACT_ADDRESSES = {
-  CLT_REWARD: '0xBb647745eFfFD6a950d08cE6Dddc6D6c308D1403',
+  CLT_REWARD: '0x7300c99742081cCDa629aDcD74E19F59A4E8aD83', // Updated CLT Token contract
   CLT_STAKING_POOL: '0xB480FA23e8d586Af034aae3CA9a0D111E071a01e',
   SOC_SERVICE: '0x284B4cE9027b8f81211efd19A3a5D40D8b232D60',
 };
@@ -843,6 +843,82 @@ class EVMContractService {
     }
     const claimTx = await this.stakingPoolContract.claim();
     return await claimTx.wait();
+  }
+
+  // CLT Token Reward Distribution Functions
+  async mintReward(recipientAddress: string, amount: string, rewardType: 'analyst' | 'certifier' | 'staker'): Promise<any> {
+    if (!this.cltTokenContract) {
+      throw new Error('CLT Token contract not initialized');
+    }
+    
+    console.log(`🎯 Minting ${amount} CLT reward tokens for ${rewardType}: ${recipientAddress}`);
+    
+    const amountWei = parseUnits(amount, 18);
+    const mintTx = await this.cltTokenContract.mint(recipientAddress, amountWei);
+    const receipt = await mintTx.wait();
+    
+    console.log(`✅ CLT reward minted successfully:`, {
+      recipient: recipientAddress,
+      amount: amount,
+      type: rewardType,
+      txHash: receipt.hash,
+      blockNumber: receipt.blockNumber
+    });
+    
+    return receipt;
+  }
+
+  async mintAnalystReward(analystAddress: string, ticketId: number): Promise<any> {
+    // Standard analyst reward: 50 CLT tokens
+    const rewardAmount = "50";
+    console.log(`💼 Minting analyst reward for ticket #${ticketId}`);
+    return await this.mintReward(analystAddress, rewardAmount, 'analyst');
+  }
+
+  async mintCertifierReward(certifierAddress: string, ticketId: number): Promise<any> {
+    // Standard certifier reward: 30 CLT tokens
+    const rewardAmount = "30";
+    console.log(`🛡️ Minting certifier reward for ticket #${ticketId}`);
+    return await this.mintReward(certifierAddress, rewardAmount, 'certifier');
+  }
+
+  async mintStakerReward(stakerAddress: string, stakeAmount: string): Promise<any> {
+    // Staker reward: 5% of staked amount as CLT tokens
+    const stakeAmountNum = parseFloat(stakeAmount);
+    const rewardAmount = (stakeAmountNum * 0.05).toString();
+    console.log(`💰 Minting staker reward: ${rewardAmount} CLT for ${stakeAmount} stake`);
+    return await this.mintReward(stakerAddress, rewardAmount, 'staker');
+  }
+
+  async batchMintRewards(rewards: Array<{address: string, amount: string, type: 'analyst' | 'certifier' | 'staker'}>): Promise<any[]> {
+    console.log(`🔄 Processing batch reward minting for ${rewards.length} recipients`);
+    const results = [];
+    
+    for (const reward of rewards) {
+      try {
+        const result = await this.mintReward(reward.address, reward.amount, reward.type);
+        results.push({ success: true, ...result });
+      } catch (error) {
+        console.error(`❌ Failed to mint reward for ${reward.address}:`, error);
+        results.push({ success: false, error: error.message, address: reward.address });
+      }
+    }
+    
+    return results;
+  }
+
+  async getClaimableReward(userAddress: string): Promise<string> {
+    if (!this.stakingPoolContract) {
+      throw new Error('Staking contract not initialized');
+    }
+    
+    try {
+      const pendingReward = await this.stakingPoolContract.pendingReward(userAddress);
+      return formatUnits(pendingReward, 18);
+    } catch (error) {
+      console.warn('Could not fetch pending reward:', error);
+      return "0";
+    }
   }
 
 

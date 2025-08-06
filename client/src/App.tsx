@@ -7,6 +7,7 @@ import PoolsPage from "./pages/PoolsPage";
 import GuidePage from "./pages/GuidePage";
 import IOTAPage from "./pages/IOTAPage";
 import EVMPage from "./pages/EVMPage";
+import RewardsPage from "./pages/RewardsPage";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import EVMIncidentReport from "./components/EVMIncidentReport";
@@ -90,6 +91,7 @@ function App() {
               <Route path="/evm" component={EVMPage} />
               <Route path="/guide" component={GuidePage} />
               <Route path="/pools" component={PoolsPage} />
+              <Route path="/rewards" component={RewardsPage} />
               <Route component={NotFound} />
             </Switch>
             <Toaster />

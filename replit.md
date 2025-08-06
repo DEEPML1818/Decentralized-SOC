@@ -21,6 +21,12 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - Real-time dashboard with role-specific views
 
 ## Recent Changes
+- **2025-08-06**: Updated CLT Token contract address to 0x7300c99742081cCDa629aDcD74E19F59A4E8aD83 for reward distribution
+- **2025-08-06**: Implemented comprehensive CLT reward minting system for analysts (50 CLT), certifiers (30 CLT), and stakers (5% of stake)
+- **2025-08-06**: Created CLTRewardManager component with reward history, statistics, and batch minting capabilities
+- **2025-08-06**: Added /rewards page with dedicated reward management interface
+- **2025-08-06**: Enhanced server API with reward management endpoints (/api/rewards/mint, /history, /stats)
+- **2025-08-06**: Successfully completed migration from Replit Agent to standard Replit environment
 - **2025-08-05**: Successfully migrated from Supabase to lightweight Pinata Direct API implementation
 - **2025-08-05**: Pinata IPFS now serves as the complete decentralized database replacement
 - **2025-08-05**: Implemented direct Pinata API calls (removed heavy pinata-web3 SDK for lighter app)
