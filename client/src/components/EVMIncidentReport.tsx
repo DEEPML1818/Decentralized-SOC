@@ -28,7 +28,8 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
     category: "malware",
     location: "",
     priority: "medium",
-    ethAmount: "0.01" // ETH amount for transaction
+    ethAmount: "0.01", // ETH amount for transaction
+    analystAddress: "" // Analyst wallet address
   });
 
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
@@ -92,7 +93,9 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
         evidence_urls: evidenceFiles.map(file => file.name).join(', '), // Placeholder for evidence URLs
         status: 'pending', // Default status
         network: 'scroll', // Assuming Scroll network based on context
-        submissionType: 'evm_incident_report'
+        submissionType: 'evm_incident_report',
+        ipfs_metadata_hash: '',
+        staking_pool_address: ''
       };
 
       // Mocking the EVM transaction part as the original code did,
@@ -107,18 +110,60 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
           title: "Creating EVM Ticket",
           description: "Submitting to Scroll blockchain...",
         });
-        const tx = await evmContractService.createTicket(); // Assuming this returns a transaction object
-        const receipt = await tx.wait(); // Assuming this waits for transaction confirmation
+        const tx = await evmContractService.createTicket(
+          incidentData.title,
+          incidentData.analystAddress || evmAddress, // Use analyst address or current user
+          incidentData.ethAmount || "0.01"
+        );
+        // tx now contains both txHash and stakingPoolAddress
+        const txHash = tx.txHash;
+        const stakingPoolAddress = tx.stakingPoolAddress;
 
-        submissionData.transaction_hash = receipt.transactionHash || '';
-        submissionData.block_number = receipt.blockNumber || 0;
-        submissionData.gas_used = receipt.gasUsed?.toString() || '0';
-        submissionData.client_name = evmAddress || 'Anonymous'; // Set client name from wallet
-        submissionData.contact_info = `EVM Wallet: ${evmAddress}`; // Update contact info
+        submissionData.transaction_hash = txHash || '';
+        submissionData.client_name = evmAddress || 'Anonymous';
+        submissionData.contact_info = `EVM Wallet: ${evmAddress}`;
+
+        // Store staking pool metadata in IPFS
+        if (stakingPoolAddress) {
+          try {
+            console.log("Storing pool metadata in IPFS...", {
+              poolAddress: stakingPoolAddress,
+              title: incidentData.title
+            });
+
+            const poolMetadataResponse = await fetch('/api/pools/metadata', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                poolAddress: stakingPoolAddress,
+                title: incidentData.title,
+                description: `Security analysis pool for "${incidentData.title}". Analysts investigate ${incidentData.description}. Stake CLT tokens to support this security investigation and earn rewards.`,
+                category: "Security Analysis",
+                riskLevel: incidentData.priority === "critical" ? "High" : incidentData.priority === "high" ? "Medium-High" : "Medium",
+                estimatedAPY: "12-18%",
+                minStake: "10",
+                maxStake: "1000"
+              }),
+            });
+
+            if (poolMetadataResponse.ok) {
+              const poolResult = await poolMetadataResponse.json();
+              console.log("Pool metadata stored in IPFS:", poolResult.ipfsHash);
+              
+              // Add IPFS hash to submission data
+              submissionData.ipfs_metadata_hash = poolResult.ipfsHash;
+              submissionData.staking_pool_address = stakingPoolAddress;
+            }
+          } catch (error) {
+            console.error("Failed to store pool metadata:", error);
+          }
+        }
 
         toast({
           title: "Transaction successful",
-          description: `Transaction hash: ${receipt.transactionHash ? receipt.transactionHash.slice(0, 10) + '...' : 'Transaction completed'}`,
+          description: `Transaction hash: ${txHash ? txHash.slice(0, 10) + '...' : 'Transaction completed'}`,
         });
 
       } catch (evmError: any) {
@@ -172,7 +217,8 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
         category: "malware",
         location: "",
         priority: "medium",
-        ethAmount: "0.01"
+        ethAmount: "0.01",
+        analystAddress: ""
       });
       setEvidenceFiles([]);
 
@@ -264,6 +310,23 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
                 <option value="critical">Critical</option>
               </select>
             </div>
+          </div>
+
+          {/* Analyst Address */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Analyst Address *
+            </label>
+            <Input
+              value={incidentData.analystAddress}
+              onChange={(e) => setIncidentData({ ...incidentData, analystAddress: e.target.value })}
+              placeholder="0x... (analyst wallet address who will handle this ticket)"
+              className="bg-gray-800/50 border-orange-500/30 text-white font-mono"
+              required
+            />
+            <p className="text-gray-400 text-xs mt-1">
+              Wallet address of the security analyst who will investigate this incident
+            </p>
           </div>
 
           {/* ETH Amount */}

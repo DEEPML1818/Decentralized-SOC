@@ -79,6 +79,8 @@ export const incident_reports = pgTable("incident_reports", {
   gas_used: varchar("gas_used", { length: 50 }), // Gas used for transaction
   contract_address: varchar("contract_address", { length: 42 }), // Contract address used
   ticket_id: integer("ticket_id"), // On-chain ticket ID if created
+  ipfs_metadata_hash: varchar("ipfs_metadata_hash", { length: 255 }),
+  staking_pool_address: varchar("staking_pool_address", { length: 42 }),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
