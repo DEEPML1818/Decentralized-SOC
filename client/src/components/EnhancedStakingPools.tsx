@@ -69,6 +69,19 @@ export default function EnhancedStakingPools() {
           const stakeInfo = await evmContractService.getStakeInfoForPool(ticket.stakingPool, evmAddress);
           
           // Generate metadata based on ticket information
+          // Check if we have real IPFS data from the server
+          let ipfsHash;
+          try {
+            // Try to fetch real IPFS hash from server data
+            const response = await fetch('/api/tickets');
+            const serverTickets = await response.json();
+            const serverTicket = serverTickets.find((t: any) => t.title === ticket.title);
+            ipfsHash = serverTicket?.ipfs_metadata_hash || null;
+          } catch (error) {
+            console.log('Could not fetch server ticket data:', error);
+            ipfsHash = null;
+          }
+
           const metadata: PoolMetadata = {
             title: ticket.title,
             description: `Security analysis pool for "${ticket.title}". Stake CLT tokens to earn rewards while supporting blockchain security operations.`,
@@ -77,7 +90,7 @@ export default function EnhancedStakingPools() {
             estimatedAPY: "12-18%",
             minStake: "10",
             maxStake: "1000",
-            ipfsHash: `Qm${Math.random().toString(36).substring(2, 15)}`
+            ipfsHash: ipfsHash // Only show IPFS button if we have a real hash
           };
 
           poolsData.push({
@@ -378,12 +391,17 @@ export default function EnhancedStakingPools() {
                     <ExternalLink className="h-3 w-3 mr-1" />
                     Explorer
                   </Button>
-                  {pool.metadata?.ipfsHash && (
+                  {pool.metadata?.ipfsHash && pool.metadata.ipfsHash.startsWith('Qm') && pool.metadata.ipfsHash.length > 10 && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(`https://gateway.pinata.cloud/ipfs/${pool.metadata?.ipfsHash}`, '_blank')}
+                      onClick={() => {
+                        const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${pool.metadata?.ipfsHash}`;
+                        console.log('Opening IPFS URL:', ipfsUrl);
+                        window.open(ipfsUrl, '_blank');
+                      }}
                       className="border-purple-600 text-purple-300 hover:bg-purple-500/20"
+                      title={`View IPFS data: ${pool.metadata.ipfsHash}`}
                     >
                       <ExternalLink className="h-3 w-3 mr-1" />
                       IPFS
