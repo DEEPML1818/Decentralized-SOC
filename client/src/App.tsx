@@ -8,6 +8,7 @@ import GuidePage from "./pages/GuidePage";
 import IOTAPage from "./pages/IOTAPage";
 import EVMPage from "./pages/EVMPage";
 import RewardsPage from "./pages/RewardsPage";
+import FaucetPage from "./pages/FaucetPage";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import EVMIncidentReport from "./components/EVMIncidentReport";
@@ -92,6 +93,7 @@ function App() {
               <Route path="/guide" component={GuidePage} />
               <Route path="/pools" component={PoolsPage} />
               <Route path="/rewards" component={RewardsPage} />
+              <Route path="/faucet" component={FaucetPage} />
               <Route component={NotFound} />
             </Switch>
             <Toaster />

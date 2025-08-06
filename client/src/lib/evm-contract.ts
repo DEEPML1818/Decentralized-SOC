@@ -15,7 +15,7 @@ export const SCROLL_TESTNET_CONFIG = {
 
 // Contract addresses from your deployment
 export const CONTRACT_ADDRESSES = {
-  CLT_REWARD: '0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097', // Updated CLT Token contract
+    CLT_REWARD: '0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097', // Updated CLT Token contract
   SOC_SERVICE: '0xE87bFbFC9fC93b94756384e07cCa4B1e857bfC94', // New SOCService with CLT payment system
 };
 
