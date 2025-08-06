@@ -34,6 +34,9 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - **2025-08-06**: Added /rewards page with dedicated reward management interface
 - **2025-08-06**: Enhanced server API with reward management endpoints (/api/rewards/mint, /history, /stats)
 - **2025-08-06**: Successfully completed migration from Replit Agent to standard Replit environment
+- **2025-08-06**: Fixed MetaMask wallet connection by adding missing connectWallet method to EVMContractService
+- **2025-08-06**: Added proper TypeScript support for window.ethereum interface
+- **2025-08-06**: Enhanced EVM wallet connection with automatic network switching to Scroll Sepolia
 - **2025-08-05**: Successfully migrated from Supabase to lightweight Pinata Direct API implementation
 - **2025-08-05**: Pinata IPFS now serves as the complete decentralized database replacement
 - **2025-08-05**: Implemented direct Pinata API calls (removed heavy pinata-web3 SDK for lighter app)

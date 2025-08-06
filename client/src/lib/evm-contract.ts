@@ -953,6 +953,35 @@ class EVMContractService {
     return parseUnits(amount, 18).toString();
   }
 
+  async connectWallet(): Promise<string | null> {
+    if (typeof window.ethereum === 'undefined') {
+      throw new Error('MetaMask is not installed. Please install MetaMask to connect your wallet.');
+    }
+
+    try {
+      // Request account access
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      
+      // Switch to Scroll Sepolia network
+      const switched = await this.switchToScrollSepolia();
+      if (!switched) {
+        throw new Error('Failed to switch to Scroll Sepolia network');
+      }
+      
+      // Initialize provider and signer
+      this.provider = new BrowserProvider(window.ethereum);
+      this.signer = await this.provider.getSigner();
+      
+      // Get the connected address
+      const address = await this.signer.getAddress();
+      console.log('EVM Wallet connected:', address);
+      return address;
+    } catch (error: any) {
+      console.error('Failed to connect EVM wallet:', error);
+      throw error;
+    }
+  }
+
   async switchToScrollSepolia(): Promise<boolean> {
     try {
       if (!window.ethereum) return false;
@@ -965,6 +994,7 @@ class EVMContractService {
     } catch (switchError: any) {
       if (switchError.code === 4902) {
         try {
+          if (!window.ethereum) return false;
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [SCROLL_TESTNET_CONFIG],
