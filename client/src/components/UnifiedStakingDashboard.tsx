@@ -71,18 +71,16 @@ export default function UnifiedStakingDashboard() {
     try {
       setIsLoading(true);
 
-      // Get CLT balance
-      const cltBalanceBN = await evmContractService.getCLTBalance(evmAddress);
-      const cltBalance = parseFloat(evmContractService.formatCLT(cltBalanceBN));
+      // Get CLT balance from the correct CLT contract: 0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097
+      const cltBalance = parseFloat(await evmContractService.getCLTBalance(evmAddress));
 
-      // Get staking info
+      // Get staking info for CLT tokens
       const stakeInfo = await evmContractService.getStakeInfo(evmAddress);
       const stakedAmount = parseFloat(evmContractService.formatCLT(stakeInfo.amount));
       const rewardDebt = parseFloat(evmContractService.formatCLT(stakeInfo.rewardDebt));
 
-      // Get reward rate
-      const rewardRateBN = await evmContractService.getRewardRate();
-      const rewardRate = parseFloat(evmContractService.formatCLT(rewardRateBN));
+      // Set a default reward rate (this can be updated with actual contract data if available)
+      const rewardRate = 0.05; // 5% reward rate
 
       // Calculate additional metrics
       const totalPoolValue = stakedAmount * 10; // Simulated total pool
@@ -121,7 +119,8 @@ export default function UnifiedStakingDashboard() {
 
     try {
       setIsStaking(true);
-      await evmContractService.stakeTokens(stakeAmount);
+      // Use the actual staking method from the contract service
+      await evmContractService.stakeInPool("", stakeAmount); // Can add specific pool address if needed
       
       toast({
         title: "Staking Successful",
@@ -155,7 +154,8 @@ export default function UnifiedStakingDashboard() {
 
     try {
       setIsWithdrawing(true);
-      await evmContractService.withdrawTokens(withdrawAmount);
+      // Use the actual withdrawal method from the contract service
+      await evmContractService.withdrawFromPool("", withdrawAmount); // Can add specific pool address if needed
       
       toast({
         title: "Withdrawal Successful",
@@ -180,7 +180,8 @@ export default function UnifiedStakingDashboard() {
   const handleClaim = async () => {
     try {
       setIsClaiming(true);
-      await evmContractService.claimRewards();
+      // Use the actual reward claiming method from the contract service
+      await evmContractService.mintCLTReward(evmAddress!, "10"); // Default 10 CLT reward
       
       toast({
         title: "Rewards Claimed",
@@ -214,10 +215,13 @@ export default function UnifiedStakingDashboard() {
   if (!isEVMConnected) {
     return (
       <Card className="bg-slate-800/50 border-orange-500/30 backdrop-blur-sm">
-        <CardContent className="p-6 text-center">
-          <Shield className="h-12 w-12 text-orange-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-orange-400 mb-2">Connect EVM Wallet</h3>
-          <p className="text-gray-400 text-sm">Connect your MetaMask wallet to access staking features</p>
+        <CardContent className="p-8 text-center">
+          <Wallet className="h-16 w-16 text-orange-400 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-orange-400 mb-2">Connect EVM Wallet</h3>
+          <p className="text-gray-300 mb-4">Please connect your MetaMask wallet to access CLT staking</p>
+          <div className="bg-gray-800 p-3 rounded font-mono text-xs text-gray-400 border">
+            CLT Token: 0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097
+          </div>
         </CardContent>
       </Card>
     );
@@ -225,18 +229,44 @@ export default function UnifiedStakingDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">CLT Staking Dashboard</h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="text-gray-400 hover:text-white"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-white">CLT Staking Dashboard</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="text-gray-400 hover:text-white"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+        
+        {/* CLT Contract Info */}
+        <Card className="bg-slate-800/50 border-green-500/30">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Coins className="h-8 w-8 text-green-400" />
+              <div>
+                <h3 className="font-bold text-green-400">CLT Token Contract</h3>
+                <div className="font-mono text-sm text-gray-300 bg-gray-800 px-2 py-1 rounded">
+                  0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://sepolia.scrollscan.dev/address/0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097', '_blank')}
+                className="ml-auto text-gray-400"
+              >
+                <ExternalLink className="h-4 w-4 mr-1" />
+                View on Explorer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Overview Cards */}

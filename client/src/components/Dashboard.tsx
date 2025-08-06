@@ -9,8 +9,7 @@ import EVMIncidentReport from "./EVMIncidentReport";
 import CasesList from "./CasesList";
 import UnifiedStakingDashboard from "./UnifiedStakingDashboard";
 
-import StakingPoolsPage from "./StakingPoolsPage";
-import EnhancedStakingPools from "./EnhancedStakingPools";
+// Removed unused staking pool components - using only UnifiedStakingDashboard
 import CaseDetailModal from "./CaseDetailModal";
 import AIAssistant from "./AIAssistant";
 import SmartContractAudit from "./SmartContractAudit";
@@ -280,7 +279,26 @@ export default function Dashboard({ currentRole }: DashboardProps) {
 
         {activeTab === "pools" && isEVMConnected && (
           <div>
-            <EnhancedStakingPools />
+            <Card className="cyber-glass bg-green-500/10 border-green-500/30">
+              <CardHeader>
+                <CardTitle className="text-green-400 flex items-center gap-2">
+                  <Coins className="h-5 w-5" />
+                  Security Pools
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Use the CLT Staking Hub for all staking operations with CLT token: 0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => setActiveTab("staking")}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Coins className="h-4 w-4 mr-2" />
+                  Go to CLT Staking Hub
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 
