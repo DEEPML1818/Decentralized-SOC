@@ -149,19 +149,10 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
             <Button
               variant="ghost"
               onClick={() => window.location.href = '/dapp'}
-              className="text-gray-300 hover:bg-purple-500/20"
-            >
-              <Network className="h-4 w-4 mr-2" />
-              dApp
-            </Button>
-
-            <Button
-              variant="ghost"
-              onClick={() => window.location.href = '/evm'}
               className="text-gray-300 hover:bg-orange-500/20"
             >
               <Zap className="h-4 w-4 mr-2" />
-              EVM
+              dApp
             </Button>
 
             {/* Connection Status Display - Hide IOTA when EVM connected */}

@@ -21,11 +21,11 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - Clean, minimal interface focused on core functionality
 
 ## Recent Changes
-- **2025-08-06**: Restored EVM page (/evm) as requested - was previously removed during simplification
-- **2025-08-06**: Updated navigation to include Home, Faucet, dApp, and EVM routing buttons
-- **2025-08-06**: Added dApp page with smart contract interaction interface as requested
-- **2025-08-06**: Created comprehensive dApp interface with blockchain status and quick actions
-- **2025-08-06**: Added "Launch dApp" and "EVM Platform" buttons to HomePage for easy access
+- **2025-08-06**: Consolidated EVM functionality into dApp page as requested - removed separate EVM page
+- **2025-08-06**: dApp page now contains the full dSOC dashboard with wallet connection flow
+- **2025-08-06**: Updated navigation to only show Home, Faucet, and dApp buttons 
+- **2025-08-06**: Changed dApp button color to orange to match EVM theme
+- **2025-08-06**: Simplified to three core pages: Home, Faucet, and dApp (which includes all EVM functionality)
 - **2025-08-06**: Simplified application to only include Home and Faucet pages as requested
 - **2025-08-06**: Created comprehensive HomePage with platform overview and connection status
 - **2025-08-06**: Removed all complex features (pools, staking, rewards, guides) to focus on core functionality

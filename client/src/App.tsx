@@ -5,7 +5,6 @@ import HomePage from "./pages/HomePage";
 import NotFound from "./pages/NotFound";
 import FaucetPage from "./pages/FaucetPage";
 import DAppPage from "./pages/DAppPage";
-import EVMPage from "./pages/EVMPage";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import EVMIncidentReport from "./components/EVMIncidentReport";
@@ -87,7 +86,6 @@ function App() {
               <Route path="/" component={HomePage} />
               <Route path="/faucet" component={FaucetPage} />
               <Route path="/dapp" component={DAppPage} />
-              <Route path="/evm" component={EVMPage} />
               <Route component={NotFound} />
             </Switch>
             <Toaster />
