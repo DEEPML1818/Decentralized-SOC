@@ -215,7 +215,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                   <div className="flex items-center gap-2">
                     <span className="text-red-400 font-mono text-sm">PRIORITY:</span>
                     <Badge className={`${getPriorityColor(caseData.priority)} font-mono`}>
-                      {caseData.priority.toUpperCase()}
+                      {caseData.priority?.toUpperCase() || 'UNKNOWN'}
                     </Badge>
                   </div>
                 </div>
