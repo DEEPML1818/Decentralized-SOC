@@ -118,19 +118,19 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
 
   const autoAssignAnalyst = async () => {
     if (!evmAddress || !caseId || !caseData) return;
-    
+
     // Check if this is a client-created ticket and no analyst is assigned yet
     const isClientCreatedTicket = caseData.client_wallet === evmAddress;
     const hasAnalystAssigned = caseData.assigned_analyst && caseData.assigned_analyst !== "0x0000000000000000000000000000000000000000";
-    
+
     if (isClientCreatedTicket && !hasAnalystAssigned) {
       setIsAssigningAnalyst(true);
       try {
         console.log(`Auto-assigning analyst for ticket ${caseId} to ${evmAddress}`);
-        
+
         // Call the smart contract setAnalyst function
         await evmContractService.setAnalyst(caseId.toString(), evmAddress);
-        
+
         // Also update our API
         try {
           await fetch(`/api/incident-reports/${caseId}/assign-analyst`, {
@@ -145,15 +145,15 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
         } catch (apiError) {
           console.log('API assignment failed, but blockchain assignment succeeded');
         }
-        
+
         // Refresh case data to show the assignment
         await fetchCaseDetail();
-        
+
         toast({
           title: "Analyst Assigned",
           description: "You have been automatically assigned as the analyst for this ticket.",
         });
-        
+
       } catch (error: any) {
         console.error('Error auto-assigning analyst:', error);
         if (!error.message.includes('user rejected') && !error.message.includes('Analyst already assigned')) {
@@ -175,7 +175,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
       // Check if current user has joined the pool
       const hasJoined = evmAddress && caseData?.assigned_analyst === evmAddress;
       setHasJoinedPool(!!hasJoined);
-      
+
       // Mock pool data - replace with actual contract calls
       const mockPoolInfo: PoolInfo = {
         totalStaked: "1250.50",
@@ -218,7 +218,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
       }
 
       setHasJoinedPool(true);
-      
+
       // Refresh case data
       await fetchCaseDetail();
       await loadPoolInfo();
@@ -285,7 +285,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
 
       // Call the smart contract validateTicket function
       const txResult = await evmContractService.validateTicket(caseId.toString());
-      
+
       // Update the case with transaction details
       await fetch(`/api/incident-reports/${caseId}`, {
         method: 'PATCH',
@@ -301,19 +301,19 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
 
       // Refresh case data
       await fetchCaseDetail();
-      
+
       toast({
         title: "Case Closed Successfully! 🎉",
         description: `Your analysis has been validated on-chain. Transaction: ${txResult.txHash.slice(0, 8)}... You earned 100 CLT tokens!`,
       });
-      
+
       // Clear the report text
       setReportText("");
-      
+
     } catch (error) {
       console.error('Error submitting report:', error);
       let errorMessage = "Unable to submit analysis report.";
-      
+
       if (error instanceof Error) {
         if (error.message.includes('user rejected')) {
           errorMessage = "Transaction was cancelled by user.";
@@ -323,7 +323,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         title: "Failed to Submit Report",
         description: errorMessage,
@@ -390,6 +390,8 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
       default: return <AlertTriangle className="h-4 w-4" />;
     }
   };
+
+  const hasAnalystAssigned = caseData?.assigned_analyst && caseData.assigned_analyst !== "0x0000000000000000000000000000000000000000";
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -560,10 +562,10 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                         </p>
                       </div>
 
-                      <Button 
-                        className="w-full bg-red-600 hover:bg-red-700 text-white font-mono disabled:opacity-50"
+                      <Button
                         onClick={handleJoinSecurityPool}
                         disabled={isJoiningPool || hasJoinedPool}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-mono disabled:opacity-50"
                       >
                         {isJoiningPool ? (
                           <div className="flex items-center gap-2">
@@ -612,7 +614,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                           Min 50 characters required. Submitting will create a blockchain transaction to close the case.
                         </div>
                       </div>
-                      <Button 
+                      <Button
                         className="w-full bg-green-600 hover:bg-green-700 text-white font-mono disabled:opacity-50"
                         onClick={handleSubmitReport}
                         disabled={isSubmittingReport || reportText.length < 50}
@@ -634,28 +636,34 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                 )}
 
                 {/* Action Buttons */}
-                <Card className="bg-gray-900/50 border-red-500/30">
-                  <CardHeader>
-                    <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
-                      <Shield className="h-5 w-5" />
-                      ANALYST ACTIONS
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-mono">
-                      <Brain className="h-4 w-4 mr-2" />
-                      REQUEST AI ANALYSIS
-                    </Button>
-                    <Button variant="outline" className="w-full border-red-500/30 text-red-400 hover:bg-red-900/20 font-mono">
-                      <FileText className="h-4 w-4 mr-2" />
-                      VIEW THREAT INTEL
-                    </Button>
-                    <Button variant="outline" className="w-full border-red-500/30 text-red-400 hover:bg-red-900/20 font-mono">
-                      <Activity className="h-4 w-4 mr-2" />
-                      START DEEP SCAN
-                    </Button>
-                  </CardContent>
-                </Card>
+                {evmAddress && !hasAnalystAssigned && (
+                  <Button
+                    onClick={handleJoinSecurityPool}
+                    disabled={isJoiningPool}
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 font-mono"
+                  >
+                    {isJoiningPool ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ASSIGNING & JOINING...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        BECOME ANALYST & JOIN POOL
+                      </div>
+                    )}
+                  </Button>
+                )}
+
+                {hasAnalystAssigned && caseData.assigned_analyst === evmAddress && (
+                  <div className="text-center p-4 bg-green-900/20 border border-green-600 rounded-lg">
+                    <div className="flex items-center justify-center gap-2 text-green-400 font-mono">
+                      <CheckCircle className="h-5 w-5" />
+                      YOU ARE THE ASSIGNED ANALYST
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
