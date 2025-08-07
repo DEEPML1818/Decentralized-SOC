@@ -207,7 +207,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
 
     setIsSubmittingReport(true);
     try {
-      // Submit the analysis report
+      // First submit the analysis report to our API
       const response = await fetch(`/api/incident-reports/${caseId}/submit-report`, {
         method: 'PATCH',
         headers: {
@@ -224,12 +224,34 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
         throw new Error('Failed to submit report');
       }
 
+      // Now create the blockchain transaction to close the case
+      toast({
+        title: "Creating Blockchain Transaction",
+        description: "Please confirm the transaction in MetaMask to close the case on-chain.",
+      });
+
+      // Call the smart contract validateTicket function
+      const txResult = await evmContractService.validateTicket(parseInt(caseId));
+      
+      // Update the case with transaction details
+      await fetch(`/api/incident-reports/${caseId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transaction_hash: txResult.txHash,
+          block_number: txResult.blockNumber,
+          status: 'closed'
+        }),
+      });
+
       // Refresh case data
       await fetchCaseDetail();
       
       toast({
-        title: "Report Submitted Successfully",
-        description: "Your security analysis has been submitted and is awaiting certification.",
+        title: "Case Closed Successfully! 🎉",
+        description: `Your analysis has been validated on-chain. Transaction: ${txResult.txHash.slice(0, 8)}... You earned 100 CLT tokens!`,
       });
       
       // Clear the report text
@@ -237,9 +259,21 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
       
     } catch (error) {
       console.error('Error submitting report:', error);
+      let errorMessage = "Unable to submit analysis report.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('user rejected')) {
+          errorMessage = "Transaction was cancelled by user.";
+        } else if (error.message.includes('insufficient funds')) {
+          errorMessage = "Insufficient ETH balance for gas fees.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Failed to Submit Report",
-        description: error instanceof Error ? error.message : "Unable to submit analysis report.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -515,7 +549,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                           placeholder="Enter your detailed security analysis, findings, recommendations, and threat assessment..."
                         />
                         <div className="text-xs text-gray-400 font-mono mt-1">
-                          Min 50 characters required for submission
+                          Min 50 characters required. Submitting will create a blockchain transaction to close the case.
                         </div>
                       </div>
                       <Button 
@@ -531,7 +565,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                         ) : (
                           <div className="flex items-center gap-2">
                             <Send className="h-4 w-4" />
-                            SUBMIT ANALYSIS REPORT
+                            SUBMIT & CLOSE CASE ON-CHAIN
                           </div>
                         )}
                       </Button>
