@@ -16,9 +16,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Users,
-  DollarSign
+  DollarSign,
+  Target
 } from "lucide-react";
-import { Input } from "./ui/input";
 
 interface PoolMetadata {
   title: string;
