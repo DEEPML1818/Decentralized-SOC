@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,9 @@ import {
 
 interface CaseDetailModalProps {
   caseId: number;
-  children?: React.ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
+  walletType: 'evm' | 'iota';
 }
 
 interface TicketDetails {
@@ -39,13 +41,12 @@ interface TicketDetails {
   updated_at: string;
 }
 
-export default function CaseDetailModal({ caseId, children }: CaseDetailModalProps) {
+export default function CaseDetailModal({ caseId, isOpen, onClose, walletType }: CaseDetailModalProps) {
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
   const [analysisReport, setAnalysisReport] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<string>("");
-  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -178,7 +179,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
       });
 
       setAnalysisReport("");
-      setIsOpen(false);
+      onClose();
 
     } catch (error: any) {
       toast({
@@ -214,7 +215,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
 
   if (!ticketDetails && !isLoading) {
     return (
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
           <DialogHeader>
             <DialogTitle className="text-red-400">Error Loading Case</DialogTitle>
@@ -229,10 +230,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">

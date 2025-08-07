@@ -6,7 +6,6 @@ import NotFound from "./pages/NotFound";
 import FaucetPage from "./pages/FaucetPage";
 import DAppPage from "./pages/DAppPage";
 import AnalystValidation from "./pages/AnalystValidation";
-import MainDashboard from "./components/MainDashboard";
 import CertifierDashboard from "./pages/CertifierDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import AIAssistant from "./components/AIAssistant";
@@ -87,11 +86,12 @@ function App() {
         <Router>
           <div className="min-h-screen bg-background text-foreground">
             <Switch>
-              <Route path="/" component={MainDashboard} />
-              <Route path="/home" component={HomePage} />
+              <Route path="/" component={HomePage} />
               <Route path="/faucet" component={FaucetPage} />
               <Route path="/dapp" component={DAppPage} />
               <Route path="/analyst" component={AnalystValidation} />
+              <Route path="/certifier" component={CertifierDashboard} />
+              <Route path="/client" component={ClientDashboard} />
               <Route component={NotFound} />
             </Switch>
             <Toaster />
