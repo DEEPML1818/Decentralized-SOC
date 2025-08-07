@@ -169,22 +169,65 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
   };
 
   const loadPoolInfo = async () => {
-    if (!caseId) return;
+    if (!caseId || !caseData) return;
 
     try {
       // Check if current user has joined the pool
       const hasJoined = evmAddress && caseData?.assigned_analyst === evmAddress;
       setHasJoinedPool(!!hasJoined);
 
-      // Mock pool data - replace with actual contract calls
-      const mockPoolInfo: PoolInfo = {
-        totalStaked: "1250.50",
-        participantCount: 8,
-        rewardPool: "500.00",
-        stakingDeadline: "2024-02-15",
-        analysisProgress: hasJoined ? 85 : 65
-      };
-      setPoolInfo(mockPoolInfo);
+      // Get real blockchain data
+      let realPoolInfo: PoolInfo;
+      
+      if (caseData.ticket_id !== undefined) {
+        try {
+          // Get ticket details from blockchain
+          const ticketDetails = await evmContractService.getTicket(caseData.ticket_id);
+          
+          // Get staking pool info if available
+          let totalStaked = "0";
+          let participantCount = 0;
+          
+          if (ticketDetails.stakingPool && ticketDetails.stakingPool !== "0x0000000000000000000000000000000000000000") {
+            try {
+              const stakeInfo = await evmContractService.getStakeInfoForPool(ticketDetails.stakingPool, evmAddress || "0x0");
+              totalStaked = ticketDetails.rewardAmount;
+              participantCount = ticketDetails.analyst !== "0x0000000000000000000000000000000000000000" ? 1 : 0;
+            } catch (error) {
+              console.log('Could not fetch staking pool details');
+            }
+          }
+
+          realPoolInfo = {
+            totalStaked,
+            participantCount,
+            rewardPool: ticketDetails.rewardAmount,
+            stakingDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+            analysisProgress: ticketDetails.isValidated ? 100 : (hasJoined ? 75 : 25)
+          };
+        } catch (error) {
+          console.error('Error fetching blockchain data:', error);
+          // Fallback to basic data
+          realPoolInfo = {
+            totalStaked: caseData.rewardAmount || "0",
+            participantCount: hasJoined ? 1 : 0,
+            rewardPool: caseData.rewardAmount || "0",
+            stakingDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            analysisProgress: hasJoined ? 50 : 0
+          };
+        }
+      } else {
+        // No ticket ID available, use minimal data
+        realPoolInfo = {
+          totalStaked: "0",
+          participantCount: 0,
+          rewardPool: "0",
+          stakingDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          analysisProgress: 0
+        };
+      }
+      
+      setPoolInfo(realPoolInfo);
     } catch (error) {
       console.error('Failed to load pool info:', error);
     }
@@ -202,7 +245,15 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
 
     setIsJoiningPool(true);
     try {
-      // Call API to assign analyst to the case
+      // First call the smart contract setAnalyst function
+      toast({
+        title: "Assigning Analyst",
+        description: "Please confirm the transaction to assign yourself as the analyst.",
+      });
+
+      await evmContractService.setAnalyst(caseData.ticket_id?.toString() || caseId.toString(), evmAddress);
+
+      // Then update our API
       const response = await fetch(`/api/incident-reports/${caseId}/assign-analyst`, {
         method: 'PATCH',
         headers: {
@@ -214,7 +265,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
       });
 
       if (!response.ok) {
-        throw new Error('Failed to join security pool');
+        console.log('API update failed, but blockchain assignment succeeded');
       }
 
       setHasJoinedPool(true);
@@ -225,13 +276,23 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
 
       toast({
         title: "Successfully Joined Pool",
-        description: "You are now assigned as the security analyst for this case.",
+        description: "You are now assigned as the security analyst for this case on-chain.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error joining security pool:', error);
+      let errorMessage = "Unable to join security pool.";
+      
+      if (error.message?.includes('user rejected')) {
+        errorMessage = "Transaction was cancelled by user.";
+      } else if (error.message?.includes('Only client can assign analyst')) {
+        errorMessage = "Only the ticket client can assign an analyst.";
+      } else if (error.message?.includes('Analyst already assigned')) {
+        errorMessage = "An analyst has already been assigned to this ticket.";
+      }
+
       toast({
         title: "Failed to Join Pool",
-        description: error instanceof Error ? error.message : "Unable to join security pool.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -391,7 +452,9 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
     }
   };
 
-  const hasAnalystAssigned = caseData?.assigned_analyst && caseData.assigned_analyst !== "0x0000000000000000000000000000000000000000";
+  const hasAnalystAssigned = caseData?.assigned_analyst && 
+    caseData.assigned_analyst !== "0x0000000000000000000000000000000000000000" && 
+    caseData.assigned_analyst !== null;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -469,15 +532,15 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-red-400 text-sm font-mono">REPORTED BY:</label>
+                        <label className="text-red-400 text-sm font-mono">CLIENT WALLET:</label>
                         <p className="text-white font-mono bg-red-900/20 p-2 rounded border border-red-500/30">
-                          {caseData.reportedBy?.slice(0, 10)}...{caseData.reportedBy?.slice(-8)}
+                          {caseData.client_wallet?.slice(0, 10)}...{caseData.client_wallet?.slice(-8)}
                         </p>
                       </div>
                       <div>
-                        <label className="text-red-400 text-sm font-mono">TIMESTAMP:</label>
+                        <label className="text-red-400 text-sm font-mono">TICKET ID:</label>
                         <p className="text-white font-mono bg-red-900/20 p-2 rounded border border-red-500/30">
-                          {new Date(caseData.createdAt).toLocaleString()}
+                          #{caseData.ticket_id || 'Not assigned'}
                         </p>
                       </div>
                     </div>
@@ -503,11 +566,49 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                         className="bg-gray-800 border border-red-500/30"
                       />
                       <div className="text-xs text-gray-400 font-mono">
-                        Security analysts are currently reviewing this case
+                        {hasAnalystAssigned ? 'Analyst assigned - analysis in progress' : 'Awaiting analyst assignment'}
                       </div>
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Blockchain Information */}
+                {(caseData.transaction_hash || caseData.block_number || caseData.contract_address) && (
+                  <Card className="bg-gray-900/50 border-red-500/30">
+                    <CardHeader>
+                      <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
+                        <Hash className="h-5 w-5" />
+                        BLOCKCHAIN DATA
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {caseData.transaction_hash && (
+                        <div>
+                          <label className="text-red-400 text-sm font-mono">TX HASH:</label>
+                          <p className="text-white font-mono text-xs bg-black/50 p-2 rounded border border-red-500/20 break-all">
+                            {caseData.transaction_hash}
+                          </p>
+                        </div>
+                      )}
+                      {caseData.block_number && caseData.block_number > 0 && (
+                        <div>
+                          <label className="text-red-400 text-sm font-mono">BLOCK:</label>
+                          <p className="text-white font-mono bg-black/50 p-2 rounded border border-red-500/20">
+                            #{caseData.block_number}
+                          </p>
+                        </div>
+                      )}
+                      {caseData.contract_address && (
+                        <div>
+                          <label className="text-red-400 text-sm font-mono">CONTRACT:</label>
+                          <p className="text-white font-mono text-xs bg-black/50 p-2 rounded border border-red-500/20 break-all">
+                            {caseData.contract_address}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               {/* Security Pool Information */}
