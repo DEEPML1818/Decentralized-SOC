@@ -100,7 +100,6 @@ export default function Dashboard({ currentRole }: DashboardProps) {
   const tabs = isEVMConnected ? [
     { id: "incidents", label: "🚨 Security Incidents", icon: AlertTriangle },
     { id: "tickets", label: "🛡️ Case Management", icon: Shield },
-    { id: "pools", label: "💰 Security Pools", icon: Coins },
     { id: "staking", label: "📈 Staking Hub", icon: TrendingUp },
     { id: "rewards", label: "🎯 Reward Center", icon: DollarSign },
     { id: "ai", label: "🤖 AI Analyst", icon: Brain },
@@ -143,23 +142,23 @@ export default function Dashboard({ currentRole }: DashboardProps) {
     }
   ] : [
     {
-      title: "Active Tickets",
-      value: "12",
+      title: "Connected Address",
+      value: iotaAddress ? `${iotaAddress.slice(0, 8)}...${iotaAddress.slice(-6)}` : "Not Connected",
       icon: Shield,
       color: "text-blue-400",
       bgColor: "bg-blue-500/10 border-blue-500/30"
     },
     {
-      title: "Resolved Issues",
-      value: "156",
+      title: "Wallet Status",
+      value: isIOTAConnected ? "Connected" : "Disconnected",
       icon: Activity,
-      color: "text-green-400",
-      bgColor: "bg-green-500/10 border-green-500/30"
+      color: isIOTAConnected ? "text-green-400" : "text-red-400",
+      bgColor: isIOTAConnected ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"
     },
     {
-      title: "Total Rewards",
-      value: "2,450 IOTA",
-      icon: Coins,
+      title: "Current Role",
+      value: currentRole.charAt(0).toUpperCase() + currentRole.slice(1),
+      icon: Users,
       color: "text-yellow-400",
       bgColor: "bg-yellow-500/10 border-yellow-500/30"
     },
@@ -274,31 +273,6 @@ export default function Dashboard({ currentRole }: DashboardProps) {
         {activeTab === "tickets" && (
           <div>
             <CasesList walletType={walletType} />
-          </div>
-        )}
-
-        {activeTab === "pools" && isEVMConnected && (
-          <div>
-            <Card className="cyber-glass bg-green-500/10 border-green-500/30">
-              <CardHeader>
-                <CardTitle className="text-green-400 flex items-center gap-2">
-                  <Coins className="h-5 w-5" />
-                  Security Pools
-                </CardTitle>
-                <CardDescription className="text-gray-300">
-                  Use the CLT Staking Hub for all staking operations with CLT token: 0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={() => setActiveTab("staking")}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Coins className="h-4 w-4 mr-2" />
-                  Go to CLT Staking Hub
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         )}
 
