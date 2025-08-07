@@ -18,6 +18,7 @@ import {
   Users,
   DollarSign
 } from "lucide-react";
+import { Input } from "./ui/input";
 
 interface PoolMetadata {
   title: string;
@@ -45,9 +46,12 @@ interface StakingPool {
 
 export default function EnhancedStakingPools() {
   const [pools, setPools] = useState<StakingPool[]>([]);
+  const [filteredPools, setFilteredPools] = useState<StakingPool[]>([]);
   const [loading, setLoading] = useState(true);
   const [stakeAmounts, setStakeAmounts] = useState<{[key: string]: string}>({});
   const [withdrawAmounts, setWithdrawAmounts] = useState<{[key: string]: string}>({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "validated">("all");
   const { evmAddress, isEVMConnected } = useWallet();
   const { toast } = useToast();
 
@@ -111,6 +115,7 @@ export default function EnhancedStakingPools() {
       }
 
       setPools(poolsData);
+      setFilteredPools(poolsData);
     } catch (error) {
       console.error("Error loading staking pools:", error);
       toast({
@@ -123,19 +128,58 @@ export default function EnhancedStakingPools() {
     }
   };
 
+  // Filter pools based on search term and status
+  useEffect(() => {
+    let filtered = pools;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(pool => 
+        pool.metadata?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pool.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pool.ticketTitle.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (filterStatus === "active") {
+      filtered = filtered.filter(pool => !pool.isValidated);
+    } else if (filterStatus === "validated") {
+      filtered = filtered.filter(pool => pool.isValidated);
+    }
+
+    setFilteredPools(filtered);
+  }, [pools, searchTerm, filterStatus]);
+
   useEffect(() => {
     loadPools();
   }, [isEVMConnected, evmAddress]);
 
   const handleStake = async (poolAddress: string, amount: string) => {
-    if (!isEVMConnected || !amount || parseFloat(amount) <= 0) return;
+    if (!isEVMConnected || !amount || parseFloat(amount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid staking amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Find the pool for better user feedback
+    const pool = pools.find(p => p.address === poolAddress);
+    const poolName = pool?.metadata?.title || `Pool ${pool?.id || 'Unknown'}`;
 
     try {
+      toast({
+        title: "Staking in Progress",
+        description: `Staking ${amount} CLT tokens in ${poolName}...`,
+      });
+
       const txHash = await evmContractService.stakeInPool(poolAddress, amount);
       
       toast({
         title: "Stake Successful",
-        description: `Staked ${amount} CLT tokens. Transaction: ${txHash.slice(0, 8)}...`,
+        description: `Successfully staked ${amount} CLT tokens in ${poolName}. Transaction: ${txHash.slice(0, 8)}...`,
       });
 
       // Reset input and reload pools
@@ -144,7 +188,7 @@ export default function EnhancedStakingPools() {
     } catch (error: any) {
       toast({
         title: "Stake Failed",
-        description: error?.message || "Failed to stake CLT tokens",
+        description: `Failed to stake in ${poolName}: ${error?.message || "Unknown error"}`,
         variant: "destructive",
       });
     }
@@ -221,17 +265,42 @@ export default function EnhancedStakingPools() {
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-red-400 mb-2">Enhanced Staking Pools</h2>
-        <p className="text-gray-300">Stake CLT tokens in security analysis pools to earn rewards</p>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <p className="text-gray-300">Choose your desired staking pool and stake CLT tokens to earn rewards</p>
+        
+        {/* Search and Filter Controls */}
+        <div className="mt-6 flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
+          <Input
+            type="text"
+            placeholder="Search pools by name or address..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-slate-900 border-slate-700 text-white"
+          />
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as "all" | "active" | "validated")}
+            className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white"
+          >
+            <option value="all">All Pools</option>
+            <option value="active">Active Only</option>
+            <option value="validated">Validated Only</option>
+          </select>
+        </div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
             <Users className="h-6 w-6 text-green-400 mx-auto mb-2" />
             <p className="text-green-400 font-mono text-lg">{pools.length}</p>
-            <p className="text-xs text-gray-400">Active Pools</p>
+            <p className="text-xs text-gray-400">Total Pools</p>
           </div>
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
             <CheckCircle2 className="h-6 w-6 text-blue-400 mx-auto mb-2" />
             <p className="text-blue-400 font-mono text-lg">{pools.filter(p => p.isValidated).length}</p>
             <p className="text-xs text-gray-400">Validated Pools</p>
+          </div>
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+            <AlertCircle className="h-6 w-6 text-yellow-400 mx-auto mb-2" />
+            <p className="text-yellow-400 font-mono text-lg">{filteredPools.length}</p>
+            <p className="text-xs text-gray-400">Showing Pools</p>
           </div>
           <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
             <Coins className="h-6 w-6 text-purple-400 mx-auto mb-2" />
@@ -243,17 +312,23 @@ export default function EnhancedStakingPools() {
         </div>
       </div>
 
-      {pools.length === 0 ? (
+      {filteredPools.length === 0 ? (
         <Card className="cyber-glass bg-slate-800/50 border-slate-700">
           <CardContent className="p-8 text-center">
             <AlertCircle className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-yellow-400 mb-2">No Pools Available</h3>
-            <p className="text-gray-300">Create a security ticket first to generate staking pools</p>
+            <h3 className="text-xl font-semibold text-yellow-400 mb-2">
+              {pools.length === 0 ? "No Pools Available" : "No Matching Pools"}
+            </h3>
+            <p className="text-gray-300">
+              {pools.length === 0 
+                ? "Create a security ticket first to generate staking pools" 
+                : "Try adjusting your search or filter criteria"}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {pools.map((pool) => (
+          {filteredPools.map((pool) => (
             <Card key={pool.address} className="cyber-glass bg-slate-800/50 border-slate-700 hover:border-red-500/50 transition-colors">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -318,27 +393,48 @@ export default function EnhancedStakingPools() {
 
                 {/* Staking Actions */}
                 <div className="space-y-3">
+                  {/* Pool Selection Info */}
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Shield className="h-4 w-4 text-blue-400" />
+                      <span className="text-blue-400 font-semibold">Pool Selection</span>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      You are staking specifically in: <span className="text-white font-mono">{pool.metadata?.title}</span>
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Pool Address: <span className="text-gray-300 font-mono">{pool.address.slice(0, 10)}...{pool.address.slice(-8)}</span>
+                    </p>
+                  </div>
+
                   {/* Stake Section */}
                   <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <TrendingUp className="h-4 w-4 text-green-400" />
-                      <span className="text-green-400 font-semibold">Stake CLT</span>
+                      <span className="text-green-400 font-semibold">Stake CLT in This Pool</span>
                     </div>
-                    <div className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="Amount"
-                        value={stakeAmounts[pool.address] || ""}
-                        onChange={(e) => setStakeAmounts(prev => ({ ...prev, [pool.address]: e.target.value }))}
-                        className="bg-slate-900 border-slate-700 text-white"
-                      />
-                      <Button
-                        onClick={() => handleStake(pool.address, stakeAmounts[pool.address] || "")}
-                        disabled={!stakeAmounts[pool.address] || parseFloat(stakeAmounts[pool.address]) <= 0}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        Stake
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-400">
+                        Min: {pool.metadata?.minStake || "10"} CLT • Max: {pool.metadata?.maxStake || "1000"} CLT
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Amount"
+                          min={pool.metadata?.minStake || "10"}
+                          max={pool.metadata?.maxStake || "1000"}
+                          value={stakeAmounts[pool.address] || ""}
+                          onChange={(e) => setStakeAmounts(prev => ({ ...prev, [pool.address]: e.target.value }))}
+                          className="bg-slate-900 border-slate-700 text-white"
+                        />
+                        <Button
+                          onClick={() => handleStake(pool.address, stakeAmounts[pool.address] || "")}
+                          disabled={!stakeAmounts[pool.address] || parseFloat(stakeAmounts[pool.address]) <= 0}
+                          className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap"
+                        >
+                          Stake Here
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
