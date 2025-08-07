@@ -155,6 +155,15 @@ export default function Header({ onRoleChange, currentRole }: HeaderProps) {
               dApp
             </Button>
 
+            <Button
+              variant="ghost"
+              onClick={() => window.location.href = '/analyst'}
+              className="text-gray-300 hover:bg-green-500/20"
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Analyst
+            </Button>
+
             {/* Connection Status Display - Hide IOTA when EVM connected */}
             <div className="flex items-center space-x-2">
               {!isEVMConnected && isIOTAConnected && (

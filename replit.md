@@ -40,6 +40,9 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - **2025-08-07**: Implemented comprehensive analyst workflow: view case → join security pool → submit analysis report
 - **2025-08-07**: Integrated blockchain transaction to close cases using validateTicket smart contract function
 - **2025-08-07**: Submit button now creates MetaMask transaction to validate ticket on-chain and reward analyst with 100 CLT
+- **2025-08-07**: Created dedicated AnalystValidation page for proper analyst workflow management
+- **2025-08-07**: Fixed "Only analyst can validate" error by implementing setAnalyst function call before validation
+- **2025-08-07**: Added /analyst route with ticket lookup, analyst assignment, and validation functionality
 - **2025-08-06**: Fixed MetaMask wallet connection by adding missing connectWallet method to EVMContractService
 - **2025-08-06**: Added proper TypeScript support for window.ethereum interface
 - **2025-08-06**: Enhanced EVM wallet connection with automatic network switching to Scroll Sepolia

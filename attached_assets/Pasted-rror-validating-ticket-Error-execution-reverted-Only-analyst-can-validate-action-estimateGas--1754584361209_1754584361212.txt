@@ -1,0 +1,33 @@
+rror validating ticket: Error: execution reverted: "Only analyst can validate" (action="estimateGas", data="0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000194f6e6c7920616e616c7973742063616e2076616c696461746500000000000000", reason="Only analyst can validate", transaction={ "data": "0x054ae7df0000000000000000000000000000000000000000000000000000000000000004", "from": "0x30b3Ac6A000931C1826b4B5e2C6AFc73BE46f5C1", "to": "0xE87bFbFC9fC93b94756384e07cCa4B1e857bfC94" }, invocation=null, revert={ "args": [ "Only analyst can validate" ], "name": "Error", "signature": "Error(string)" }, code=CALL_EXCEPTION, version=6.15.0)
+    at makeError (ethers.js?v=fa7f867c:337:15)
+    at getBuiltinCallException (ethers.js?v=fa7f867c:12020:10)
+    at _AbiCoder.getBuiltinCallException (ethers.js?v=fa7f867c:12091:12)
+    at _BrowserProvider.getRpcError (ethers.js?v=fa7f867c:19294:26)
+    at _BrowserProvider.getRpcError (ethers.js?v=fa7f867c:21728:18)
+    at ethers.js?v=fa7f867c:19482:27
+validateTicket @ evm-contract.ts:834
+await in validateTicket
+handleSubmitReport @ CaseDetailModal.tsx:234
+await in handleSubmitReport
+callCallback2 @ chunk-NFC5BX5N.js?v=fa7f867c:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=fa7f867c:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=fa7f867c:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=fa7f867c:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=fa7f867c:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=fa7f867c:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=fa7f867c:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=fa7f867c:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=fa7f867c:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=fa7f867c:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=fa7f867c:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=fa7f867c:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=fa7f867c:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=fa7f867c:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=fa7f867c:5449
+CaseDetailModal.tsx:261 Error submitting report: Error: execution reverted: "Only analyst can validate" (action="estimateGas", data="0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000194f6e6c7920616e616c7973742063616e2076616c696461746500000000000000", reason="Only analyst can validate", transaction={ "data": "0x054ae7df0000000000000000000000000000000000000000000000000000000000000004", "from": "0x30b3Ac6A000931C1826b4B5e2C6AFc73BE46f5C1", "to": "0xE87bFbFC9fC93b94756384e07cCa4B1e857bfC94" }, invocation=null, revert={ "args": [ "Only analyst can validate" ], "name": "Error", "signature": "Error(string)" }, code=CALL_EXCEPTION, version=6.15.0)
+    at makeError (ethers.js?v=fa7f867c:337:15)
+    at getBuiltinCallException (ethers.js?v=fa7f867c:12020:10)
+    at _AbiCoder.getBuiltinCallException (ethers.js?v=fa7f867c:12091:12)
+    at _BrowserProvider.getRpcError (ethers.js?v=fa7f867c:19294:26)
+    at _BrowserProvider.getRpcError (ethers.js?v=fa7f867c:21728:18)
+    at ethers.js?v=fa7f867c:19482:27

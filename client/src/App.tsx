@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import NotFound from "./pages/NotFound";
 import FaucetPage from "./pages/FaucetPage";
 import DAppPage from "./pages/DAppPage";
+import AnalystValidation from "./pages/AnalystValidation";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import EVMIncidentReport from "./components/EVMIncidentReport";
@@ -86,6 +87,7 @@ function App() {
               <Route path="/" component={HomePage} />
               <Route path="/faucet" component={FaucetPage} />
               <Route path="/dapp" component={DAppPage} />
+              <Route path="/analyst" component={AnalystValidation} />
               <Route component={NotFound} />
             </Switch>
             <Toaster />
