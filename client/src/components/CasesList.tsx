@@ -316,9 +316,9 @@ export default function CasesList({ walletType }: CasesListProps) {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filteredCases.map((caseItem: Case) => (
+          {filteredCases.map((caseItem: Case, index: number) => (
             <Card
-              key={caseItem.uniqueKey} // Use the uniqueKey for the key prop
+              key={`${caseItem.sourceType}-${caseItem.id}-${index}`} // More unique key combining source, id, and index
               className="cyber-glass bg-red-900/10 border-red-500/30 hover:border-red-400/50 transition-colors"
             >
               <CardContent className="p-6">

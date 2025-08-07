@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 
 interface CaseDetailModalProps {
+  caseId: number;
   isOpen: boolean;
   onClose: () => void;
-  caseData: any;
-  userRole: string;
+  walletType: 'evm' | 'iota';
 }
 
 interface TicketDetails {
@@ -41,49 +41,101 @@ interface TicketDetails {
   updated_at: string;
 }
 
-export default function CaseDetailModal({ isOpen, onClose, caseData, userRole }: CaseDetailModalProps) {
+export default function CaseDetailModal({ caseId, isOpen, onClose, walletType }: CaseDetailModalProps) {
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
   const [analysisReport, setAnalysisReport] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isOpen && caseData?.id) {
+    if (isOpen && caseId) {
       loadTicketDetails();
+      getUserRole();
     }
-  }, [isOpen, caseData]);
+  }, [isOpen, caseId]);
+
+  const getUserRole = async () => {
+    try {
+      const walletAddress = localStorage.getItem('connectedWallet');
+      if (walletAddress) {
+        const response = await fetch(`/api/roles/${walletAddress}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUserRole(data.role || "");
+        }
+      }
+    } catch (error) {
+      console.error('Error getting user role:', error);
+    }
+  };
 
   const loadTicketDetails = async () => {
     setIsLoading(true);
     try {
-      // Use the caseData directly since it already contains the ticket information
-      if (caseData && caseData.id) {
-        const ticketData: TicketDetails = {
-          id: caseData.id,
-          title: caseData.title || 'Untitled Case',
-          description: caseData.description || 'No description provided',
-          severity: caseData.severity || 'medium',
-          category: caseData.category || 'Security Incident',
-          client_address: caseData.client_address || caseData.client_wallet || caseData.client_name || 'Unknown',
-          analyst_address: caseData.analyst_address || caseData.assigned_analyst,
-          transaction_hash: caseData.transaction_hash,
-          block_number: caseData.block_number || 0,
-          contract_address: caseData.contract_address,
-          stake_amount: caseData.stake_amount || caseData.reward_amount || 0,
-          status: caseData.status || 'open',
-          created_at: caseData.created_at || new Date().toISOString(),
-          updated_at: caseData.updated_at || new Date().toISOString()
-        };
-        setTicketDetails(ticketData);
-      } else {
-        throw new Error('Invalid case data provided');
+      // First try to get from tickets API
+      let response = await fetch(`/api/tickets`);
+      if (response.ok) {
+        const tickets = await response.json();
+        const ticket = tickets.find((t: any) => t.id === caseId);
+        
+        if (ticket) {
+          const ticketData: TicketDetails = {
+            id: ticket.id,
+            title: ticket.title || 'Untitled Case',
+            description: ticket.description || 'No description provided',
+            severity: ticket.severity || 'medium',
+            category: ticket.category || 'Security Incident',
+            client_address: ticket.client_address || ticket.client_wallet || ticket.client_name || 'Unknown',
+            analyst_address: ticket.analyst_address || ticket.assigned_analyst,
+            transaction_hash: ticket.transaction_hash,
+            block_number: ticket.block_number || 0,
+            contract_address: ticket.contract_address,
+            stake_amount: ticket.stake_amount || ticket.reward_amount || 0,
+            status: ticket.status || 'open',
+            created_at: ticket.created_at || new Date().toISOString(),
+            updated_at: ticket.updated_at || new Date().toISOString()
+          };
+          setTicketDetails(ticketData);
+          return;
+        }
       }
+
+      // If not found in tickets, try incident reports
+      response = await fetch(`/api/incident-reports`);
+      if (response.ok) {
+        const reports = await response.json();
+        const report = reports.find((r: any) => r.id === caseId);
+        
+        if (report) {
+          const ticketData: TicketDetails = {
+            id: report.id,
+            title: report.title || 'Untitled Case',
+            description: report.description || 'No description provided',
+            severity: report.severity || 'medium',
+            category: report.category || 'Security Incident',
+            client_address: report.client_address || report.client_wallet || report.client_name || 'Unknown',
+            analyst_address: report.analyst_address || report.assigned_analyst,
+            transaction_hash: report.transaction_hash,
+            block_number: report.block_number || 0,
+            contract_address: report.contract_address,
+            stake_amount: report.stake_amount || report.reward_amount || 0,
+            status: report.status || 'open',
+            created_at: report.created_at || new Date().toISOString(),
+            updated_at: report.updated_at || new Date().toISOString()
+          };
+          setTicketDetails(ticketData);
+          return;
+        }
+      }
+
+      throw new Error('Case not found');
     } catch (error) {
       console.error('Error loading ticket details:', error);
       toast({
         title: "Error",
-        description: "Failed to load ticket details",
+        description: "Failed to load case details",
         variant: "destructive"
       });
     } finally {
@@ -105,7 +157,7 @@ export default function CaseDetailModal({ isOpen, onClose, caseData, userRole }:
     try {
       const analystAddress = localStorage.getItem('connectedWallet');
 
-      const response = await fetch(`/api/tickets/${caseData.id}/submit-analysis`, {
+      const response = await fetch(`/api/tickets/${caseId}/submit-analysis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
