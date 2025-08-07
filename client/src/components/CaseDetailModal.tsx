@@ -1,6 +1,4 @@
-` tags as it represents a complete replacement.
 
-<replit_final_file>
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,7 +58,7 @@ export default function CaseDetailModal({ isOpen, onClose, caseData, userRole }:
     setIsLoading(true);
     try {
       // Load real ticket data from backend
-      const response = await fetch(`/api/tickets`);
+      const response = await fetch('/api/tickets');
       if (response.ok) {
         const tickets = await response.json();
         const ticket = tickets.find((t: any) => t.id === parseInt(caseData.id));
@@ -94,15 +92,15 @@ export default function CaseDetailModal({ isOpen, onClose, caseData, userRole }:
     try {
       const analystAddress = localStorage.getItem('connectedWallet');
 
-      const response = await fetch(`/api/incident-reports/${caseData.id}/submit-report`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/tickets/${caseData.id}/submit-analysis`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           analyst_address: analystAddress,
-          analysis_report: analysisReport,
-          status: 'analyzed'
+          analysis_text: analysisReport,
+          status: 'submitted'
         })
       });
 
