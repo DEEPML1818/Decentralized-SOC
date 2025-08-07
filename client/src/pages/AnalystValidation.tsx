@@ -1,193 +1,225 @@
 
 import { useState, useEffect } from "react";
-import { useWallet } from "@/components/WalletProvider";
-import { evmContractService } from "@/lib/evm-contract";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, Shield, AlertTriangle, Hash, Coins, Upload, Send, Users, Star } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  FileText, 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle,
+  User,
+  Send,
+  Shield,
+  Award,
+  Users,
+  Eye
+} from "lucide-react";
+
+interface AnalystProfile {
+  name: string;
+  expertise: string[];
+  experience: string;
+  certifications: string[];
+  walletAddress: string;
+  ipfsHash?: string;
+}
+
+interface TicketAnalysis {
+  ticketId: string;
+  title: string;
+  description: string;
+  severity: string;
+  category: string;
+  reward: number;
+  status: 'open' | 'submitted' | 'shortlisted' | 'assigned' | 'completed';
+}
+
+interface AnalysisSubmission {
+  id: string;
+  ticket_id: string;
+  analyst_address: string;
+  analysis_text: string;
+  ipfs_hash?: string;
+  status: 'submitted' | 'shortlisted' | 'selected';
+  submitted_at: string;
+  is_shortlisted: boolean;
+}
 
 export default function AnalystValidation() {
-  const [ticketId, setTicketId] = useState("");
-  const [ticketDetails, setTicketDetails] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [submittingAnalysis, setSubmittingAnalysis] = useState(false);
-  const [validating, setValidating] = useState(false);
-  const [registeringAnalyst, setRegisteringAnalyst] = useState(false);
-  const [analysisText, setAnalysisText] = useState("");
-  const [analystProfile, setAnalystProfile] = useState({
+  const [connectedAddress, setConnectedAddress] = useState<string>("");
+  const [analystProfile, setAnalystProfile] = useState<AnalystProfile>({
     name: "",
-    expertise: "",
+    expertise: [],
     experience: "",
-    certifications: ""
+    certifications: [],
+    walletAddress: ""
   });
-  const [submittedAnalyses, setSubmittedAnalyses] = useState<any[]>([]);
-  const [shortlistedAnalysts, setShortlistedAnalysts] = useState<any[]>([]);
-  const [isRegisteredAnalyst, setIsRegisteredAnalyst] = useState(false);
-  const { evmAddress, isEVMConnected } = useWallet();
+  const [availableTickets, setAvailableTickets] = useState<TicketAnalysis[]>([]);
+  const [mySubmissions, setMySubmissions] = useState<AnalysisSubmission[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<TicketAnalysis | null>(null);
+  const [analysisText, setAnalysisText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isProfileRegistered, setIsProfileRegistered] = useState(false);
+
   const { toast } = useToast();
 
   useEffect(() => {
-    checkAnalystRegistration();
-  }, [evmAddress]);
-
-  const checkAnalystRegistration = async () => {
-    if (!evmAddress) return;
+    // Get connected wallet address
+    const address = localStorage.getItem('connectedWallet') || "";
+    setConnectedAddress(address);
     
+    if (address) {
+      checkAnalystRegistration(address);
+      loadAvailableTickets();
+      loadMySubmissions(address);
+    }
+  }, []);
+
+  const checkAnalystRegistration = async (address: string) => {
     try {
-      const response = await fetch(`/api/analysts/${evmAddress}`);
+      const response = await fetch(`/api/analysts/${address}`);
       if (response.ok) {
-        const analystData = await response.json();
-        setIsRegisteredAnalyst(true);
-        setAnalystProfile(analystData);
+        const analyst = await response.json();
+        setAnalystProfile(analyst);
+        setIsProfileRegistered(true);
       }
     } catch (error) {
-      console.log('Analyst not registered yet');
+      console.log("Analyst not registered yet");
     }
   };
 
-  const registerAsAnalyst = async () => {
-    if (!evmAddress || !analystProfile.name.trim()) return;
-    
-    setRegisteringAnalyst(true);
+  const loadAvailableTickets = async () => {
     try {
-      // Store analyst profile in IPFS
+      const response = await fetch('/api/tickets');
+      if (response.ok) {
+        const tickets = await response.json();
+        // Convert to TicketAnalysis format and filter open tickets
+        const formattedTickets = tickets
+          .filter((ticket: any) => ticket.status === 'open')
+          .map((ticket: any) => ({
+            ticketId: ticket.id.toString(),
+            title: ticket.title,
+            description: ticket.description,
+            severity: ticket.severity || 'medium',
+            category: ticket.category || 'security',
+            reward: ticket.stake_amount || 100,
+            status: 'open' as const
+          }));
+        setAvailableTickets(formattedTickets);
+      }
+    } catch (error) {
+      console.error('Error loading tickets:', error);
+    }
+  };
+
+  const loadMySubmissions = async (address: string) => {
+    try {
+      // Load submissions from global state
+      const submissions = (globalThis as any).analysisSubmissions || [];
+      const mySubmissions = submissions.filter((s: any) => s.analyst_address === address);
+      setMySubmissions(mySubmissions);
+    } catch (error) {
+      console.error('Error loading submissions:', error);
+    }
+  };
+
+  const registerAnalyst = async () => {
+    if (!connectedAddress || !analystProfile.name || analystProfile.expertise.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsRegistering(true);
+    try {
+      // Store profile in IPFS
       const ipfsResponse = await fetch('/api/ipfs/store-analyst', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          address: evmAddress,
+          address: connectedAddress,
           profile: analystProfile,
           registrationDate: new Date().toISOString()
-        }),
+        })
       });
 
       if (!ipfsResponse.ok) {
-        throw new Error('Failed to store analyst profile in IPFS');
+        throw new Error('Failed to store profile in IPFS');
       }
 
       const ipfsData = await ipfsResponse.json();
 
-      // Register analyst in our database
+      // Register analyst with backend
       const registerResponse = await fetch('/api/analysts/register', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          address: evmAddress,
+          address: connectedAddress,
           ...analystProfile,
           ipfsHash: ipfsData.hash
-        }),
+        })
       });
 
       if (!registerResponse.ok) {
         throw new Error('Failed to register analyst');
       }
 
-      setIsRegisteredAnalyst(true);
+      setIsProfileRegistered(true);
       toast({
-        title: "Analyst Registration Successful",
-        description: "Your profile has been stored in IPFS and registered.",
+        title: "Success",
+        description: "Analyst profile registered successfully!"
       });
 
     } catch (error: any) {
-      console.error('Error registering analyst:', error);
-      toast({
-        title: "Registration Failed",
-        description: error.message || "Failed to register as analyst",
-        variant: "destructive",
-      });
-    } finally {
-      setRegisteringAnalyst(false);
-    }
-  };
-
-  const fetchTicketDetails = async (id: string) => {
-    if (!id || !isEVMConnected) return;
-    
-    setLoading(true);
-    try {
-      const ticket = await evmContractService.getTicket(parseInt(id));
-      setTicketDetails(ticket);
-      
-      // Fetch submitted analyses and shortlisted analysts
-      await Promise.all([
-        fetchSubmittedAnalyses(id),
-        fetchShortlistedAnalysts(id)
-      ]);
-      
-      // Also try to get details from our API
-      try {
-        const response = await fetch(`/api/incident-reports/${id}`);
-        if (response.ok) {
-          const apiData = await response.json();
-          setTicketDetails((prev: any) => ({ ...prev, ...apiData }));
-        }
-      } catch (error) {
-        console.log('API data not available for this ticket ID');
-      }
-    } catch (error) {
-      console.error('Error fetching ticket:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch ticket details. Please check the ticket ID.",
-        variant: "destructive",
+        description: error.message,
+        variant: "destructive"
       });
-      setTicketDetails(null);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchSubmittedAnalyses = async (ticketId: string) => {
-    try {
-      const response = await fetch(`/api/tickets/${ticketId}/analyses`);
-      if (response.ok) {
-        const analyses = await response.json();
-        setSubmittedAnalyses(analyses);
-      }
-    } catch (error) {
-      console.log('No analyses submitted yet');
-    }
-  };
-
-  const fetchShortlistedAnalysts = async (ticketId: string) => {
-    try {
-      const response = await fetch(`/api/tickets/${ticketId}/shortlisted`);
-      if (response.ok) {
-        const shortlisted = await response.json();
-        setShortlistedAnalysts(shortlisted);
-      }
-    } catch (error) {
-      console.log('No shortlisted analysts yet');
+      setIsRegistering(false);
     }
   };
 
   const submitAnalysis = async () => {
-    if (!ticketId || !evmAddress || !analysisText.trim() || !isRegisteredAnalyst) return;
-    
-    setSubmittingAnalysis(true);
+    if (!selectedTicket || !analysisText.trim()) {
+      toast({
+        title: "Error", 
+        description: "Please select a ticket and provide analysis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       // Store analysis in IPFS
       const ipfsResponse = await fetch('/api/ipfs/store-analysis', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          ticketId,
-          analystAddress: evmAddress,
+          ticketId: selectedTicket.ticketId,
+          analystAddress: connectedAddress,
           analysis: analysisText,
           submittedAt: new Date().toISOString(),
           analystProfile: analystProfile
-        }),
+        })
       });
 
       if (!ipfsResponse.ok) {
@@ -196,416 +228,340 @@ export default function AnalystValidation() {
 
       const ipfsData = await ipfsResponse.json();
 
-      // Submit analysis to our API
-      const submitResponse = await fetch(`/api/tickets/${ticketId}/submit-analysis`, {
+      // Submit analysis to backend
+      const submitResponse = await fetch(`/api/tickets/${selectedTicket.ticketId}/submit-analysis`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          analyst_address: evmAddress,
+          analyst_address: connectedAddress,
           analysis_text: analysisText,
           ipfs_hash: ipfsData.hash,
           status: 'submitted'
-        }),
+        })
       });
 
       if (!submitResponse.ok) {
         throw new Error('Failed to submit analysis');
       }
 
-      toast({
-        title: "Analysis Submitted Successfully! 📋",
-        description: "Your analysis has been stored in IPFS and submitted for review.",
-      });
-
-      // Clear the form and refresh data
       setAnalysisText("");
-      await fetchSubmittedAnalyses(ticketId);
-      
-    } catch (error: any) {
-      console.error('Error submitting analysis:', error);
+      setSelectedTicket(null);
+      loadMySubmissions(connectedAddress);
+
       toast({
-        title: "Submission Failed",
-        description: error.message || "Failed to submit analysis",
-        variant: "destructive",
+        title: "Success",
+        description: "Analysis submitted successfully! Awaiting certifier review."
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
       });
     } finally {
-      setSubmittingAnalysis(false);
+      setIsSubmitting(false);
     }
   };
 
-  const validateTicket = async () => {
-    if (!ticketId || !evmAddress) return;
-    
-    setValidating(true);
-    try {
-      toast({
-        title: "Validating Ticket",
-        description: "Please confirm the transaction to validate the ticket and claim your reward.",
-      });
-
-      const txResult = await evmContractService.validateTicket(ticketId);
-      
-      toast({
-        title: "Ticket Validated Successfully! 🎉",
-        description: `Transaction: ${txResult.txHash.slice(0, 8)}... You earned 100 CLT tokens!`,
-      });
-
-      // Refresh ticket details
-      await fetchTicketDetails(ticketId);
-      
-    } catch (error: any) {
-      console.error('Error validating ticket:', error);
-      let errorMessage = "Failed to validate ticket.";
-      
-      if (error.message.includes('user rejected')) {
-        errorMessage = "Transaction was cancelled by user.";
-      } else if (error.message.includes('Only analyst can validate')) {
-        errorMessage = "Only the assigned analyst can validate this ticket.";
-      } else if (error.message.includes('Ticket already validated')) {
-        errorMessage = "This ticket has already been validated.";
-      }
-      
-      toast({
-        title: "Validation Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setValidating(false);
+  const addExpertise = (expertise: string) => {
+    if (expertise && !analystProfile.expertise.includes(expertise)) {
+      setAnalystProfile(prev => ({
+        ...prev,
+        expertise: [...prev.expertise, expertise]
+      }));
     }
   };
 
-  const isAnalystAssigned = ticketDetails?.analyst && ticketDetails.analyst !== "0x0000000000000000000000000000000000000000";
-  const isCurrentUserAnalyst = isAnalystAssigned && ticketDetails?.analyst === evmAddress;
-  const isTicketValidated = ticketDetails?.isValidated;
-  const userHasSubmittedAnalysis = submittedAnalyses.some(analysis => analysis.analyst_address === evmAddress);
-  const isUserShortlisted = shortlistedAnalysts.some(analyst => analyst.address === evmAddress);
+  const removeExpertise = (expertise: string) => {
+    setAnalystProfile(prev => ({
+      ...prev,
+      expertise: prev.expertise.filter(e => e !== expertise)
+    }));
+  };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-red-400 font-mono mb-2">
-            ANALYST VALIDATION CENTER
-          </h1>
-          <p className="text-gray-400 font-mono">
-            Submit analysis, get shortlisted by certifiers, and validate completed tickets
-          </p>
-        </div>
-
-        {!isEVMConnected && (
-          <Card className="bg-red-900/20 border-red-500/30 mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-8 w-8 text-red-400" />
-                <div>
-                  <h3 className="text-red-400 font-mono font-bold">WALLET REQUIRED</h3>
-                  <p className="text-gray-400 font-mono">Please connect your EVM wallet to continue</p>
-                </div>
-              </div>
+  if (!connectedAddress) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card className="bg-slate-800/50 border-yellow-500/30">
+            <CardHeader>
+              <CardTitle className="text-yellow-400 flex items-center gap-2">
+                <Shield className="h-6 w-6" />
+                Wallet Connection Required
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-300">Please connect your wallet to access the analyst dashboard.</p>
             </CardContent>
           </Card>
-        )}
+        </div>
+      </div>
+    );
+  }
 
-        {isEVMConnected && (
-          <>
-            {/* Analyst Registration Section */}
-            {!isRegisteredAnalyst && (
-              <Card className="bg-blue-900/20 border-blue-500/30 mb-6">
+  if (!isProfileRegistered) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card className="bg-slate-800/50 border-blue-500/30">
+            <CardHeader>
+              <CardTitle className="text-blue-400 flex items-center gap-2">
+                <User className="h-6 w-6" />
+                Analyst Registration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={analystProfile.name}
+                  onChange={(e) => setAnalystProfile(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Your full name"
+                  className="bg-slate-900/50 border-gray-600"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="experience">Experience *</Label>
+                <Textarea
+                  id="experience"
+                  value={analystProfile.experience}
+                  onChange={(e) => setAnalystProfile(prev => ({ ...prev, experience: e.target.value }))}
+                  placeholder="Describe your cybersecurity experience..."
+                  className="bg-slate-900/50 border-gray-600"
+                />
+              </div>
+
+              <div>
+                <Label>Expertise Areas *</Label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    placeholder="Add expertise (e.g., Smart Contracts, DeFi, Web3)"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        addExpertise((e.target as HTMLInputElement).value);
+                        (e.target as HTMLInputElement).value = '';
+                      }
+                    }}
+                    className="bg-slate-900/50 border-gray-600"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {analystProfile.expertise.map((exp, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="bg-blue-500/20 text-blue-300 cursor-pointer"
+                      onClick={() => removeExpertise(exp)}
+                    >
+                      {exp} ×
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="certifications">Certifications</Label>
+                <Textarea
+                  id="certifications"
+                  value={analystProfile.certifications.join('\n')}
+                  onChange={(e) => setAnalystProfile(prev => ({ 
+                    ...prev, 
+                    certifications: e.target.value.split('\n').filter(c => c.trim())
+                  }))}
+                  placeholder="List your certifications (one per line)"
+                  className="bg-slate-900/50 border-gray-600"
+                />
+              </div>
+
+              <Button
+                onClick={registerAnalyst}
+                disabled={isRegistering}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {isRegistering ? "Registering..." : "Register as Analyst"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">Analyst Dashboard</h1>
+          <p className="text-gray-300">Welcome back, {analystProfile.name}</p>
+          <p className="text-sm text-gray-400">Address: {connectedAddress}</p>
+        </div>
+
+        <Tabs defaultValue="available" className="space-y-6">
+          <TabsList className="grid grid-cols-3 w-full">
+            <TabsTrigger value="available">Available Cases</TabsTrigger>
+            <TabsTrigger value="submissions">My Submissions</TabsTrigger>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="available" className="space-y-4">
+            <div className="grid gap-4">
+              {availableTickets.map((ticket) => (
+                <Card key={ticket.ticketId} className="bg-slate-800/50 border-gray-600">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-white">{ticket.title}</CardTitle>
+                        <div className="flex gap-2 mt-2">
+                          <Badge variant={ticket.severity === 'critical' ? 'destructive' : 'secondary'}>
+                            {ticket.severity}
+                          </Badge>
+                          <Badge variant="outline">{ticket.category}</Badge>
+                          <Badge className="bg-green-500/20 text-green-300">
+                            {ticket.reward} CLT
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => setSelectedTicket(ticket)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        Analyze
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-300 text-sm">{ticket.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {selectedTicket && (
+              <Card className="bg-slate-800/50 border-blue-500/30">
                 <CardHeader>
-                  <CardTitle className="text-blue-400 flex items-center gap-2 font-mono">
-                    <Users className="h-5 w-5" />
-                    ANALYST REGISTRATION
-                  </CardTitle>
-                  <CardDescription className="text-gray-400 font-mono">
-                    Register your profile to submit analysis reports
-                  </CardDescription>
+                  <CardTitle className="text-blue-400">Submit Analysis for: {selectedTicket.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name" className="text-blue-400 font-mono">NAME</Label>
-                      <Input
-                        id="name"
-                        value={analystProfile.name}
-                        onChange={(e) => setAnalystProfile(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Your full name"
-                        className="bg-black/50 border-blue-500/30 text-white font-mono"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="expertise" className="text-blue-400 font-mono">EXPERTISE</Label>
-                      <Input
-                        id="expertise"
-                        value={analystProfile.expertise}
-                        onChange={(e) => setAnalystProfile(prev => ({ ...prev, expertise: e.target.value }))}
-                        placeholder="Smart Contracts, DeFi, etc."
-                        className="bg-black/50 border-blue-500/30 text-white font-mono"
-                      />
-                    </div>
+                  <Textarea
+                    value={analysisText}
+                    onChange={(e) => setAnalysisText(e.target.value)}
+                    placeholder="Provide your detailed security analysis..."
+                    className="bg-slate-900/50 border-gray-600 min-h-[200px]"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={submitAnalysis}
+                      disabled={isSubmitting}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit Analysis"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedTicket(null)}
+                    >
+                      Cancel
+                    </Button>
                   </div>
-                  <div>
-                    <Label htmlFor="experience" className="text-blue-400 font-mono">EXPERIENCE</Label>
-                    <Input
-                      id="experience"
-                      value={analystProfile.experience}
-                      onChange={(e) => setAnalystProfile(prev => ({ ...prev, experience: e.target.value }))}
-                      placeholder="Years of experience in cybersecurity"
-                      className="bg-black/50 border-blue-500/30 text-white font-mono"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="certifications" className="text-blue-400 font-mono">CERTIFICATIONS</Label>
-                    <Textarea
-                      id="certifications"
-                      value={analystProfile.certifications}
-                      onChange={(e) => setAnalystProfile(prev => ({ ...prev, certifications: e.target.value }))}
-                      rows={3}
-                      className="bg-black/50 border-blue-500/30 text-white font-mono"
-                      placeholder="List your relevant certifications..."
-                    />
-                  </div>
-                  <Button
-                    onClick={registerAsAnalyst}
-                    disabled={registeringAnalyst || !analystProfile.name.trim()}
-                    className="w-full bg-blue-600 hover:bg-blue-700 font-mono"
-                  >
-                    {registeringAnalyst ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        REGISTERING...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
-                        REGISTER AS ANALYST
-                      </div>
-                    )}
-                  </Button>
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
 
-            {/* Ticket Lookup Section */}
-            <Card className="bg-gray-900/50 border-red-500/30 mb-6">
-              <CardHeader>
-                <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
-                  <Hash className="h-5 w-5" />
-                  TICKET LOOKUP
-                </CardTitle>
-                <CardDescription className="text-gray-400 font-mono">
-                  Enter the ticket ID to submit analysis or validate
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <Label htmlFor="ticketId" className="text-red-400 font-mono">TICKET ID</Label>
-                    <Input
-                      id="ticketId"
-                      value={ticketId}
-                      onChange={(e) => setTicketId(e.target.value)}
-                      placeholder="Enter ticket ID (e.g., 0, 1, 2...)"
-                      className="bg-black/50 border-red-500/30 text-white font-mono"
-                    />
-                  </div>
-                  <div className="pt-6">
-                    <Button
-                      onClick={() => fetchTicketDetails(ticketId)}
-                      disabled={!ticketId || loading}
-                      className="bg-red-600 hover:bg-red-700 font-mono"
-                    >
-                      {loading ? "LOADING..." : "FETCH TICKET"}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {ticketDetails && (
-              <>
-                {/* Ticket Details */}
-                <Card className="bg-gray-900/50 border-red-500/30 mb-6">
+          <TabsContent value="submissions" className="space-y-4">
+            <div className="grid gap-4">
+              {mySubmissions.map((submission) => (
+                <Card key={submission.id} className="bg-slate-800/50 border-gray-600">
                   <CardHeader>
-                    <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
-                      <Shield className="h-5 w-5" />
-                      TICKET DETAILS
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm font-mono">
+                    <div className="flex justify-between items-start">
                       <div>
-                        <span className="text-red-400">ID:</span>
-                        <span className="text-white ml-2">{ticketDetails.id}</span>
-                      </div>
-                      <div>
-                        <span className="text-red-400">TITLE:</span>
-                        <span className="text-white ml-2">{ticketDetails.title}</span>
-                      </div>
-                      <div>
-                        <span className="text-red-400">CLIENT:</span>
-                        <span className="text-white ml-2">{ticketDetails.client}</span>
-                      </div>
-                      <div>
-                        <span className="text-red-400">ASSIGNED ANALYST:</span>
-                        <span className="text-white ml-2">
-                          {isAnalystAssigned ? ticketDetails.analyst : "Not assigned"}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-red-400">REWARD:</span>
-                        <span className="text-white ml-2">{ticketDetails.rewardAmount} CLT</span>
-                      </div>
-                      <div>
-                        <span className="text-red-400">STATUS:</span>
-                        <span className={`ml-2 ${isTicketValidated ? 'text-green-400' : 'text-yellow-400'}`}>
-                          {isTicketValidated ? "VALIDATED" : "PENDING"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Analysis Submission Section */}
-                    {isRegisteredAnalyst && !isTicketValidated && !isAnalystAssigned && !userHasSubmittedAnalysis && (
-                      <div className="mt-6 space-y-4 border-t border-gray-700 pt-4">
-                        <h3 className="text-yellow-400 font-mono font-bold">SUBMIT YOUR ANALYSIS</h3>
-                        <div>
-                          <Label htmlFor="analysis" className="text-yellow-400 font-mono">
-                            SECURITY ANALYSIS REPORT
-                          </Label>
-                          <Textarea
-                            id="analysis"
-                            value={analysisText}
-                            onChange={(e) => setAnalysisText(e.target.value)}
-                            rows={6}
-                            className="bg-black/50 border-yellow-500/30 text-white font-mono mt-2"
-                            placeholder="Enter your detailed security analysis, findings, and recommendations..."
-                          />
-                        </div>
-                        
-                        <Button
-                          onClick={submitAnalysis}
-                          disabled={submittingAnalysis || !analysisText.trim()}
-                          className="w-full bg-yellow-600 hover:bg-yellow-700 font-mono"
-                        >
-                          {submittingAnalysis ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              SUBMITTING TO IPFS...
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Send className="h-4 w-4" />
-                              SUBMIT ANALYSIS FOR REVIEW
-                            </div>
-                          )}
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Analysis Status */}
-                    {userHasSubmittedAnalysis && (
-                      <div className="mt-6 bg-blue-900/20 border border-blue-500/30 rounded p-4">
-                        <div className="flex items-center gap-2 text-blue-400">
-                          <CheckCircle className="h-5 w-5" />
-                          <span className="font-mono font-bold">ANALYSIS SUBMITTED</span>
-                        </div>
-                        <p className="text-gray-400 font-mono mt-1">
-                          Your analysis is under review by certifiers.
-                          {isUserShortlisted ? " You've been shortlisted!" : " Waiting for shortlisting..."}
-                        </p>
-                        {isUserShortlisted && (
-                          <Badge className="mt-2 bg-green-600">
-                            <Star className="h-3 w-3 mr-1" />
-                            SHORTLISTED
+                        <CardTitle className="text-white">Ticket #{submission.ticket_id}</CardTitle>
+                        <div className="flex gap-2 mt-2">
+                          <Badge variant={
+                            submission.status === 'selected' ? 'default' :
+                            submission.is_shortlisted ? 'secondary' : 'outline'
+                          }>
+                            {submission.status === 'selected' ? 'Selected' :
+                             submission.is_shortlisted ? 'Shortlisted' : 'Submitted'}
                           </Badge>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Validation Section for Assigned Analyst */}
-                    {isCurrentUserAnalyst && !isTicketValidated && (
-                      <div className="mt-6 space-y-4 border-t border-green-700 pt-4">
-                        <div className="bg-green-900/20 border border-green-500/30 rounded p-4">
-                          <div className="flex items-center gap-2 text-green-400">
-                            <CheckCircle className="h-5 w-5" />
-                            <span className="font-mono font-bold">YOU ARE THE ASSIGNED ANALYST</span>
-                          </div>
-                          <p className="text-gray-400 font-mono mt-1">
-                            You can now validate this ticket and claim your reward.
-                          </p>
-                        </div>
-                        
-                        <Button
-                          onClick={validateTicket}
-                          disabled={validating}
-                          className="w-full bg-green-600 hover:bg-green-700 font-mono"
-                        >
-                          {validating ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              VALIDATING...
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Send className="h-4 w-4" />
-                              VALIDATE TICKET & CLAIM 100 CLT
-                            </div>
-                          )}
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Submitted Analyses Display */}
-                    {submittedAnalyses.length > 0 && (
-                      <div className="mt-6 border-t border-gray-700 pt-4">
-                        <h3 className="text-purple-400 font-mono font-bold mb-4">SUBMITTED ANALYSES ({submittedAnalyses.length})</h3>
-                        <div className="space-y-3">
-                          {submittedAnalyses.map((analysis, index) => (
-                            <div key={index} className="bg-purple-900/20 border border-purple-500/30 rounded p-3">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-purple-400 font-mono text-sm">
-                                  {analysis.analyst_address.slice(0, 8)}...{analysis.analyst_address.slice(-6)}
-                                </span>
-                                <div className="flex gap-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    {analysis.status}
-                                  </Badge>
-                                  {shortlistedAnalysts.some(a => a.address === analysis.analyst_address) && (
-                                    <Badge className="bg-green-600 text-xs">
-                                      <Star className="h-3 w-3 mr-1" />
-                                      SHORTLISTED
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              <p className="text-gray-300 text-sm font-mono">
-                                {analysis.analysis_text.substring(0, 100)}...
-                              </p>
-                            </div>
-                          ))}
                         </div>
                       </div>
-                    )}
-
-                    {isTicketValidated && (
-                      <div className="mt-6 bg-green-900/20 border border-green-500/30 rounded p-4">
-                        <div className="flex items-center gap-2 text-green-400">
-                          <CheckCircle className="h-5 w-5" />
-                          <span className="font-mono font-bold">TICKET VALIDATED SUCCESSFULLY</span>
-                        </div>
-                        <p className="text-gray-400 font-mono mt-1">
-                          This ticket has been completed and the analyst has claimed their reward.
-                        </p>
-                      </div>
-                    )}
+                      {submission.status === 'selected' && (
+                        <Badge className="bg-green-500/20 text-green-300">
+                          <Award className="h-4 w-4 mr-1" />
+                          Chosen
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-300 text-sm mb-2">
+                      Submitted: {new Date(submission.submitted_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      {submission.analysis_text.substring(0, 150)}...
+                    </p>
                   </CardContent>
                 </Card>
-              </>
-            )}
-          </>
-        )}
+              ))}
+              {mySubmissions.length === 0 && (
+                <Card className="bg-slate-800/50 border-gray-600">
+                  <CardContent className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                    <p className="text-gray-400">No submissions yet. Start analyzing cases to earn rewards!</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="profile" className="space-y-4">
+            <Card className="bg-slate-800/50 border-gray-600">
+              <CardHeader>
+                <CardTitle className="text-white">Analyst Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-gray-300">Name</Label>
+                  <p className="text-white">{analystProfile.name}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Experience</Label>
+                  <p className="text-gray-300">{analystProfile.experience}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Expertise</Label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {analystProfile.expertise.map((exp, index) => (
+                      <Badge key={index} variant="secondary" className="bg-blue-500/20 text-blue-300">
+                        {exp}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Certifications</Label>
+                  <ul className="text-gray-300 mt-1">
+                    {analystProfile.certifications.map((cert, index) => (
+                      <li key={index}>• {cert}</li>
+                    ))}
+                  </ul>
+                </div>
+                {analystProfile.ipfsHash && (
+                  <div>
+                    <Label className="text-gray-300">IPFS Hash</Label>
+                    <p className="text-gray-400 text-sm font-mono">{analystProfile.ipfsHash}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

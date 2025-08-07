@@ -1,43 +1,71 @@
 
 import { useState, useEffect } from "react";
-import { useWallet } from "@/components/WalletProvider";
-import { evmContractService } from "@/lib/evm-contract";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, Shield, AlertTriangle, Star, Users, UserCheck, Eye, ThumbsUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  User,
+  CheckCircle,
+  Clock,
+  Star,
+  Users,
+  Wallet,
+  Shield,
+  Eye
+} from "lucide-react";
+import { setAnalyst } from "@/lib/evm-contract";
+
+interface ClientTicket {
+  id: string;
+  title: string;
+  client_address: string;
+  assigned_analyst: string | null;
+  reward_amount: number;
+  shortlistCount: number;
+  status: string;
+}
+
+interface ShortlistedAnalyst {
+  address: string;
+  profile: {
+    name: string;
+    expertise: string[];
+    experience: string;
+  } | null;
+  analysis_preview: string | null;
+  shortlisted_at: string;
+  is_selected: boolean;
+}
 
 export default function ClientDashboard() {
-  const [clientTickets, setClientTickets] = useState<any[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
-  const [shortlistedAnalysts, setShortlistedAnalysts] = useState<any[]>([]);
-  const [assigningAnalyst, setAssigningAnalyst] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [connectedAddress, setConnectedAddress] = useState<string>("");
+  const [myTickets, setMyTickets] = useState<ClientTicket[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<ClientTicket | null>(null);
+  const [shortlistedAnalysts, setShortlistedAnalysts] = useState<ShortlistedAnalyst[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
 
-  const { evmAddress, isEVMConnected } = useWallet();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isEVMConnected && evmAddress) {
-      loadClientTickets();
-    }
-  }, [isEVMConnected, evmAddress]);
-
-  const loadClientTickets = async () => {
-    if (!evmAddress) return;
+    const address = localStorage.getItem('connectedWallet') || "";
+    setConnectedAddress(address);
     
-    setLoading(true);
+    if (address) {
+      loadMyTickets(address);
+    }
+  }, []);
+
+  const loadMyTickets = async (address: string) => {
     try {
-      const response = await fetch(`/api/tickets/client/${evmAddress}`);
+      const response = await fetch(`/api/tickets/client/${address}`);
       if (response.ok) {
         const tickets = await response.json();
-        setClientTickets(tickets);
+        setMyTickets(tickets);
       }
     } catch (error) {
-      console.error('Error loading client tickets:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading tickets:', error);
     }
   };
 
@@ -45,94 +73,92 @@ export default function ClientDashboard() {
     try {
       const response = await fetch(`/api/tickets/${ticketId}/shortlisted`);
       if (response.ok) {
-        const shortlisted = await response.json();
-        setShortlistedAnalysts(shortlisted);
+        const analysts = await response.json();
+        setShortlistedAnalysts(analysts);
       }
     } catch (error) {
       console.error('Error loading shortlisted analysts:', error);
     }
   };
 
-  const viewTicketDetails = async (ticket: any) => {
-    setSelectedTicket(ticket);
-    await loadShortlistedAnalysts(ticket.id.toString());
-  };
-
-  const selectAnalyst = async (analystAddress: string) => {
-    if (!selectedTicket) return;
-    
-    setAssigningAnalyst(true);
+  const selectAnalyst = async (analystAddress: string, ticketId: string) => {
+    setIsAssigning(true);
     try {
-      // Call smart contract to assign analyst
-      toast({
-        title: "Assigning Analyst",
-        description: "Please confirm the transaction to assign the selected analyst.",
-      });
-
-      await evmContractService.setAnalyst(selectedTicket.id.toString(), analystAddress);
-
-      // Update our API
-      const response = await fetch(`/api/tickets/${selectedTicket.id}/assign-analyst`, {
+      // First, assign in backend
+      const backendResponse = await fetch(`/api/tickets/${ticketId}/assign-analyst`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           analyst_address: analystAddress,
-          assigned_by: evmAddress,
+          assigned_by: connectedAddress,
           assigned_at: new Date().toISOString()
-        }),
+        })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update analyst assignment in database');
+      if (!backendResponse.ok) {
+        throw new Error('Failed to assign analyst in backend');
       }
 
-      toast({
-        title: "Analyst Assigned Successfully! 🎯",
-        description: "The selected analyst has been assigned to your ticket.",
-      });
+      // Then, call the smart contract setAnalyst function
+      try {
+        const txHash = await setAnalyst(parseInt(ticketId), analystAddress);
+        
+        toast({
+          title: "Success",
+          description: `Analyst assigned successfully! Transaction: ${txHash}`,
+        });
 
-      // Refresh tickets
-      await loadClientTickets();
-      if (selectedTicket) {
-        const updatedTicket = { ...selectedTicket, assigned_analyst: analystAddress };
-        setSelectedTicket(updatedTicket);
+        console.log(`🔗 Blockchain assignment complete:`, {
+          ticketId: ticketId,
+          analyst: analystAddress,
+          client: connectedAddress,
+          txHash: txHash
+        });
+
+      } catch (contractError: any) {
+        console.error('Contract call failed:', contractError);
+        toast({
+          title: "Warning", 
+          description: "Analyst assigned in system, but blockchain transaction failed. Please try again.",
+          variant: "destructive"
+        });
       }
+
+      // Reload data
+      loadMyTickets(connectedAddress);
+      setSelectedTicket(null);
 
     } catch (error: any) {
-      console.error('Error assigning analyst:', error);
-      let errorMessage = "Failed to assign analyst.";
-      
-      if (error.message.includes('user rejected')) {
-        errorMessage = "Transaction was cancelled by user.";
-      } else if (error.message.includes('Analyst already assigned')) {
-        errorMessage = "An analyst has already been assigned to this ticket.";
-      }
-      
       toast({
-        title: "Assignment Failed",
-        description: errorMessage,
-        variant: "destructive",
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
       });
     } finally {
-      setAssigningAnalyst(false);
+      setIsAssigning(false);
     }
   };
 
-  if (!isEVMConnected) {
+  const viewShortlistedAnalysts = (ticket: ClientTicket) => {
+    setSelectedTicket(ticket);
+    loadShortlistedAnalysts(ticket.id);
+  };
+
+  if (!connectedAddress) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-6">
         <div className="max-w-4xl mx-auto">
-          <Card className="bg-red-900/20 border-red-500/30">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-8 w-8 text-red-400" />
-                <div>
-                  <h3 className="text-red-400 font-mono font-bold">WALLET REQUIRED</h3>
-                  <p className="text-gray-400 font-mono">Please connect your EVM wallet to access client features</p>
-                </div>
-              </div>
+          <Card className="bg-slate-800/50 border-yellow-500/30">
+            <CardHeader>
+              <CardTitle className="text-yellow-400 flex items-center gap-2">
+                <Wallet className="h-6 w-6" />
+                Wallet Connection Required
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-300">Please connect your wallet to access the client dashboard.</p>
             </CardContent>
           </Card>
         </div>
@@ -141,214 +167,185 @@ export default function ClientDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-green-400 font-mono mb-2">
-            CLIENT DASHBOARD
-          </h1>
-          <p className="text-gray-400 font-mono">
-            Select qualified analysts from certified shortlists for your security tickets
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">Client Dashboard</h1>
+          <p className="text-gray-300">Manage your security cases and select analysts</p>
+          <p className="text-sm text-gray-400">Address: {connectedAddress}</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Client Tickets List */}
-          <div className="lg:col-span-1">
-            <Card className="bg-gray-900/50 border-green-500/30">
-              <CardHeader>
-                <CardTitle className="text-green-400 flex items-center gap-2 font-mono">
-                  <Shield className="h-5 w-5" />
-                  YOUR TICKETS
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-4">
-                    <div className="w-6 h-6 border-2 border-green-400/30 border-t-green-400 rounded-full animate-spin mx-auto" />
-                    <p className="text-gray-400 font-mono mt-2">Loading...</p>
-                  </div>
-                ) : clientTickets.length === 0 ? (
-                  <p className="text-gray-400 font-mono text-center py-4">No tickets found</p>
-                ) : (
-                  <div className="space-y-3">
-                    {clientTickets.map((ticket) => (
-                      <div
-                        key={ticket.id}
-                        className={`p-3 rounded border cursor-pointer transition-colors ${
-                          selectedTicket?.id === ticket.id
-                            ? 'bg-green-900/30 border-green-400'
-                            : 'bg-gray-800/50 border-gray-600 hover:border-green-500'
-                        }`}
-                        onClick={() => viewTicketDetails(ticket)}
+        <Tabs defaultValue="tickets" className="space-y-6">
+          <TabsList className="grid grid-cols-2 w-full">
+            <TabsTrigger value="tickets">My Tickets</TabsTrigger>
+            <TabsTrigger value="assigned">Assigned Cases</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="tickets" className="space-y-4">
+            <div className="grid gap-4">
+              {myTickets.filter(ticket => !ticket.assigned_analyst).map((ticket) => (
+                <Card key={ticket.id} className="bg-slate-800/50 border-gray-600">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-white">{ticket.title}</CardTitle>
+                        <div className="flex gap-2 mt-2">
+                          <Badge className="bg-green-500/20 text-green-300">
+                            {ticket.reward_amount} CLT Reward
+                          </Badge>
+                          <Badge variant="outline">
+                            {ticket.shortlistCount} Shortlisted
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => viewShortlistedAnalysts(ticket)}
+                        disabled={ticket.shortlistCount === 0}
+                        className="bg-green-600 hover:bg-green-700"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-white font-mono text-sm">#{ticket.id}</span>
-                          <div className="flex gap-1">
-                            {ticket.assigned_analyst ? (
-                              <Badge className="bg-green-600 text-xs">
-                                <UserCheck className="h-3 w-3 mr-1" />
-                                ASSIGNED
-                              </Badge>
-                            ) : ticket.shortlistCount > 0 ? (
-                              <Badge className="bg-yellow-600 text-xs">
-                                {ticket.shortlistCount} shortlisted
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">
-                                Pending
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-gray-300 text-sm font-mono truncate">
-                          {ticket.title}
-                        </p>
-                        <div className="text-xs text-gray-400 mt-1">
-                          Reward: {ticket.reward_amount || '100'} CLT
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                        <Users className="h-4 w-4 mr-2" />
+                        Select Analyst
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-300 text-sm">
+                      Status: Awaiting analyst selection
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-          {/* Analyst Selection */}
-          <div className="lg:col-span-2">
-            {selectedTicket ? (
-              <Card className="bg-gray-900/50 border-green-500/30">
+            {selectedTicket && (
+              <Card className="bg-slate-800/50 border-green-500/30">
                 <CardHeader>
-                  <CardTitle className="text-green-400 flex items-center gap-2 font-mono">
-                    <Users className="h-5 w-5" />
-                    SELECT ANALYST - TICKET #{selectedTicket.id}
+                  <CardTitle className="text-green-400">
+                    Select Analyst for: {selectedTicket.title}
                   </CardTitle>
-                  <CardDescription className="text-gray-300 font-mono">
-                    {selectedTicket.title}
-                  </CardDescription>
+                  <p className="text-gray-300">
+                    Choose from {shortlistedAnalysts.length} certified analysts
+                  </p>
                 </CardHeader>
-                <CardContent>
-                  {selectedTicket.assigned_analyst ? (
-                    <div className="bg-green-900/20 border border-green-500/30 rounded p-4">
-                      <div className="flex items-center gap-2 text-green-400">
-                        <CheckCircle className="h-5 w-5" />
-                        <span className="font-mono font-bold">ANALYST ASSIGNED</span>
-                      </div>
-                      <p className="text-gray-300 font-mono mt-2">
-                        Assigned Analyst: {selectedTicket.assigned_analyst.slice(0, 8)}...{selectedTicket.assigned_analyst.slice(-6)}
-                      </p>
-                      <p className="text-gray-400 font-mono text-sm mt-1">
-                        The analyst can now begin working on your security analysis.
-                      </p>
-                    </div>
-                  ) : shortlistedAnalysts.length === 0 ? (
-                    <div className="text-center py-8">
-                      <AlertTriangle className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-                      <p className="text-gray-400 font-mono text-center">
-                        No analysts have been shortlisted yet. Please wait for certifiers to review submissions.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Star className="h-5 w-5 text-yellow-400" />
-                        <span className="text-yellow-400 font-mono font-bold">
-                          SHORTLISTED ANALYSTS ({shortlistedAnalysts.length})
-                        </span>
-                      </div>
-                      
-                      {shortlistedAnalysts.map((analyst, index) => (
-                        <div key={index} className="bg-gray-800/50 border border-gray-600 rounded p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <span className="text-blue-400 font-mono text-sm">
-                                {analyst.address.slice(0, 8)}...{analyst.address.slice(-6)}
-                              </span>
-                              <div className="text-xs text-gray-400 mt-1">
-                                Shortlisted by certified reviewer
+                <CardContent className="space-y-4">
+                  {shortlistedAnalysts.map((analyst) => (
+                    <Card key={analyst.address} className="bg-slate-900/50 border-gray-600">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="text-white font-medium">
+                              {analyst.profile?.name || `Analyst ${analyst.address.slice(0, 8)}...`}
+                            </h4>
+                            <p className="text-gray-400 text-sm">
+                              Address: {analyst.address}
+                            </p>
+                            {analyst.profile?.expertise && (
+                              <div className="flex gap-1 mt-2">
+                                {analyst.profile.expertise.slice(0, 4).map((exp, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    {exp}
+                                  </Badge>
+                                ))}
                               </div>
-                            </div>
-                            <Badge className="bg-green-600">
-                              <Star className="h-3 w-3 mr-1" />
-                              VERIFIED
-                            </Badge>
-                          </div>
-                          
-                          {analyst.profile && (
-                            <div className="bg-black/30 rounded p-3 mb-3">
-                              <div className="grid grid-cols-2 gap-2 text-sm">
-                                <div>
-                                  <span className="text-gray-400">Name:</span>
-                                  <span className="text-white ml-2">{analyst.profile.name}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Expertise:</span>
-                                  <span className="text-white ml-2">{analyst.profile.expertise}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Experience:</span>
-                                  <span className="text-white ml-2">{analyst.profile.experience}</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => selectAnalyst(analyst.address)}
-                              disabled={assigningAnalyst}
-                              className="bg-green-600 hover:bg-green-700 font-mono"
-                            >
-                              {assigningAnalyst ? (
-                                <div className="flex items-center gap-2">
-                                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                  ASSIGNING...
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <ThumbsUp className="h-4 w-4" />
-                                  SELECT THIS ANALYST
-                                </div>
-                              )}
-                            </Button>
-                            
-                            {analyst.analysis_preview && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="font-mono"
-                                onClick={() => {
-                                  // Show analysis preview modal
-                                  toast({
-                                    title: "Analysis Preview",
-                                    description: analyst.analysis_preview.substring(0, 100) + "...",
-                                  });
-                                }}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                PREVIEW ANALYSIS
-                              </Button>
                             )}
+                            <p className="text-gray-400 text-sm mt-2">
+                              Shortlisted: {new Date(analyst.shortlisted_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              onClick={() => selectAnalyst(analyst.address, selectedTicket.id)}
+                              disabled={isAssigning}
+                              className="bg-green-600 hover:bg-green-700"
+                              size="sm"
+                            >
+                              {isAssigning ? "Assigning..." : "Select Analyst"}
+                            </Button>
                           </div>
                         </div>
-                      ))}
+                      </CardHeader>
+                      {analyst.analysis_preview && (
+                        <CardContent>
+                          <div className="bg-slate-800/50 p-3 rounded">
+                            <h5 className="text-gray-300 text-sm font-medium mb-2">Analysis Preview:</h5>
+                            <p className="text-gray-400 text-sm">
+                              {analyst.analysis_preview}
+                            </p>
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  ))}
+                  
+                  {shortlistedAnalysts.length === 0 && (
+                    <div className="text-center py-8">
+                      <Clock className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-300 mb-2">
+                        No Analysts Shortlisted Yet
+                      </h3>
+                      <p className="text-gray-400">
+                        Please wait for certifiers to review and shortlist qualified analysts.
+                      </p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="bg-gray-900/50 border-green-500/30">
-                <CardContent className="p-8 text-center">
-                  <Shield className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400 font-mono">
-                    Select a ticket from the list to view shortlisted analysts and make your selection
-                  </p>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedTicket(null)}
+                    className="w-full"
+                  >
+                    Back to My Tickets
+                  </Button>
                 </CardContent>
               </Card>
             )}
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="assigned" className="space-y-4">
+            <div className="grid gap-4">
+              {myTickets.filter(ticket => ticket.assigned_analyst).map((ticket) => (
+                <Card key={ticket.id} className="bg-slate-800/50 border-green-600">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-white">{ticket.title}</CardTitle>
+                        <p className="text-gray-300 text-sm mt-1">
+                          Assigned to: {ticket.assigned_analyst}
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <Badge className="bg-green-500/20 text-green-300">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Analyst Assigned
+                          </Badge>
+                          <Badge variant="outline">
+                            {ticket.reward_amount} CLT
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-300 text-sm">
+                      Status: Work in progress - analyst is analyzing your case
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {myTickets.filter(ticket => ticket.assigned_analyst).length === 0 && (
+              <div className="text-center py-8">
+                <Shield className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-300 mb-2">
+                  No Assigned Cases
+                </h3>
+                <p className="text-gray-400">
+                  Cases you assign to analysts will appear here.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

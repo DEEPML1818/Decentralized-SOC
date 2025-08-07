@@ -1,804 +1,332 @@
+` tags as it represents a complete replacement.
+
+<replit_final_file>
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Separator } from "./ui/separator";
-import { Progress } from "./ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet } from "./WalletProvider";
-import { evmContractService } from "@/lib/evm-contract";
-import {
-  Eye,
-  Shield,
-  AlertTriangle,
+import { 
   Clock,
   User,
-  Hash,
-  ExternalLink,
-  Coins,
+  Shield,
   FileText,
-  Activity,
+  AlertTriangle,
   CheckCircle,
-  XCircle,
-  Brain,
-  TrendingUp,
-  Users,
-  Target,
-  Upload,
-  Send
+  ExternalLink,
+  Wallet
 } from "lucide-react";
-import { Textarea } from "./ui/textarea";
-import { Label } from "./ui/label";
 
 interface CaseDetailModalProps {
-  caseId: number;
-  children?: React.ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
+  caseData: any;
+  userRole: string;
 }
 
-interface CaseDetail {
+interface TicketDetails {
   id: number;
   title: string;
   description: string;
   severity: string;
-  status: string;
-  client_name: string;
-  contact_info: string;
-  affected_systems?: string;
-  attack_vectors?: string;
-  evidence_urls?: string;
-  ai_analysis?: string;
-  assigned_analyst?: string;
-  assigned_certifier?: string;
+  category: string;
+  client_address: string;
+  analyst_address?: string;
   transaction_hash?: string;
   block_number?: number;
-  gas_used?: string;
   contract_address?: string;
-  ticket_id?: number;
-  client_wallet?: string;
+  stake_amount: number;
+  status: string;
   created_at: string;
   updated_at: string;
-  priority: string;
-  reportedBy?: string;
-  createdAt: string;
-  client_address?: string; // Added for client wallet
-  analysts?: string[]; // Added for shortlisted analysts
-  shortlisted_analysts?: string[]; // Added for shortlisted analysts
-  certifier_address?: string; // Added for certifier wallet
-  certifier_decision?: string; // Added for certifier decision
 }
 
-interface PoolInfo {
-  totalStaked: string;
-  participantCount: number;
-  rewardPool: string;
-  stakingDeadline: string;
-  analysisProgress: number;
-}
-
-export default function CaseDetailModal({ caseId, children }: CaseDetailModalProps) {
-  const [caseData, setCaseData] = useState<CaseDetail | null>(null);
-  const [poolInfo, setPoolInfo] = useState<PoolInfo | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isJoiningPool, setIsJoiningPool] = useState(false);
-  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const [reportText, setReportText] = useState("");
-  const [hasJoinedPool, setHasJoinedPool] = useState(false);
-  const [isAssigningAnalyst, setIsAssigningAnalyst] = useState(false);
+export default function CaseDetailModal({ isOpen, onClose, caseData, userRole }: CaseDetailModalProps) {
+  const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
+  const [analysisReport, setAnalysisReport] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { evmAddress, isEVMConnected } = useWallet();
 
-  const fetchCaseDetail = async () => {
-    if (!caseId) return;
-
-    setLoading(true);
-    try {
-      // Try incident reports first, then tickets as fallback
-      let response = await fetch(`/api/incident-reports/${caseId}`);
-
-      if (!response.ok && response.status === 404) {
-        // Fallback to tickets endpoint
-        response = await fetch(`/api/tickets/${caseId}`);
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `Failed to fetch case details: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setCaseData(data);
-    } catch (error) {
-      console.error('Error fetching case details:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load case details.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (isOpen && caseData?.id) {
+      loadTicketDetails();
     }
-  };
+  }, [isOpen, caseData]);
 
-  // Function to fetch shortlisted analysts (newly added)
-  const loadShortlistedAnalysts = async () => {
-    if (!caseId || !caseData || !evmAddress || caseData.client_address !== evmAddress) return;
-
+  const loadTicketDetails = async () => {
+    setIsLoading(true);
     try {
-      const response = await fetch(`/api/incident-reports/${caseId}/shortlisted-analysts`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch shortlisted analysts');
-      }
-      const data = await response.json();
-      setCaseData(prev => prev ? { ...prev, shortlisted_analysts: data.shortlisted_analysts } : null);
-    } catch (error) {
-      console.error('Error loading shortlisted analysts:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load shortlisted analysts.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const loadPoolInfo = async () => {
-    if (!caseId || !caseData) return;
-
-    try {
-      // Check if current user has joined the pool
-      const hasJoined = evmAddress && caseData?.assigned_analyst === evmAddress;
-      setHasJoinedPool(!!hasJoined);
-
-      // Get real blockchain data
-      let realPoolInfo: PoolInfo;
-
-      if (caseData.ticket_id !== undefined) {
-        try {
-          // Get ticket details from blockchain
-          const ticketDetails = await evmContractService.getTicket(caseData.ticket_id);
-
-          // Get staking pool info if available
-          let totalStaked = "0";
-          let participantCount = 0;
-
-          if (ticketDetails.stakingPool && ticketDetails.stakingPool !== "0x0000000000000000000000000000000000000000") {
-            try {
-              const stakeInfo = await evmContractService.getStakeInfoForPool(ticketDetails.stakingPool, evmAddress || "0x0");
-              totalStaked = ticketDetails.rewardAmount;
-              participantCount = ticketDetails.analyst !== "0x0000000000000000000000000000000000000000" ? 1 : 0;
-            } catch (error) {
-              console.log('Could not fetch staking pool details');
-            }
-          }
-
-          realPoolInfo = {
-            totalStaked,
-            participantCount,
-            rewardPool: ticketDetails.rewardAmount,
-            stakingDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
-            analysisProgress: ticketDetails.isValidated ? 100 : (hasJoined ? 75 : 25)
-          };
-        } catch (error) {
-          console.error('Error fetching blockchain data:', error);
-          // Fallback to basic data
-          realPoolInfo = {
-            totalStaked: caseData.rewardAmount || "0",
-            participantCount: hasJoined ? 1 : 0,
-            rewardPool: caseData.rewardAmount || "0",
-            stakingDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            analysisProgress: hasJoined ? 50 : 0
-          };
+      // Load real ticket data from backend
+      const response = await fetch(`/api/tickets`);
+      if (response.ok) {
+        const tickets = await response.json();
+        const ticket = tickets.find((t: any) => t.id === parseInt(caseData.id));
+        if (ticket) {
+          setTicketDetails(ticket);
         }
-      } else {
-        // No ticket ID available, use minimal data
-        realPoolInfo = {
-          totalStaked: "0",
-          participantCount: 0,
-          rewardPool: "0",
-          stakingDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          analysisProgress: 0
-        };
       }
-
-      setPoolInfo(realPoolInfo);
     } catch (error) {
-      console.error('Failed to load pool info:', error);
-    }
-  };
-
-  const handleJoinSecurityPool = async () => {
-    if (!evmAddress || !caseId) {
+      console.error('Error loading ticket details:', error);
       toast({
-        title: "Authentication Required",
-        description: "Please connect your EVM wallet to join the security pool.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsJoiningPool(true);
-    try {
-      // First call the smart contract setAnalyst function
-      toast({
-        title: "Assigning Analyst",
-        description: "Please confirm the transaction to assign yourself as the analyst.",
-      });
-
-      await evmContractService.setAnalyst(caseData.ticket_id?.toString() || caseId.toString(), evmAddress);
-
-      // Then update our API
-      const response = await fetch(`/api/incident-reports/${caseId}/assign-analyst`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          analyst_address: evmAddress
-        }),
-      });
-
-      if (!response.ok) {
-        console.log('API update failed, but blockchain assignment succeeded');
-      }
-
-      setHasJoinedPool(true);
-
-      // Refresh case data
-      await fetchCaseDetail();
-      await loadPoolInfo();
-
-      toast({
-        title: "Successfully Joined Pool",
-        description: "You are now assigned as the security analyst for this case on-chain.",
-      });
-    } catch (error: any) {
-      console.error('Error joining security pool:', error);
-      let errorMessage = "Unable to join security pool.";
-
-      if (error.message?.includes('user rejected')) {
-        errorMessage = "Transaction was cancelled by user.";
-      } else if (error.message?.includes('Only client can assign analyst')) {
-        errorMessage = "Only the ticket client can assign an analyst.";
-      } else if (error.message?.includes('Analyst already assigned')) {
-        errorMessage = "An analyst has already been assigned to this ticket.";
-      }
-
-      toast({
-        title: "Failed to Join Pool",
-        description: errorMessage,
-        variant: "destructive",
+        title: "Error",
+        description: "Failed to load ticket details",
+        variant: "destructive"
       });
     } finally {
-      setIsJoiningPool(false);
+      setIsLoading(false);
     }
   };
 
-  const handleSubmitReport = async () => {
-    if (!reportText.trim()) {
+  const submitAnalysisReport = async () => {
+    if (!analysisReport.trim()) {
       toast({
-        title: "Report Required",
-        description: "Please enter your analysis report before submitting.",
-        variant: "destructive",
+        title: "Error",
+        description: "Please provide an analysis report",
+        variant: "destructive"
       });
       return;
     }
 
-    if (!evmAddress || !caseId) {
-      toast({
-        title: "Authentication Required",
-        description: "Please connect your EVM wallet to submit the report.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmittingReport(true);
+    setIsSubmitting(true);
     try {
-      // First submit the analysis report to our API
-      const response = await fetch(`/api/incident-reports/${caseId}/submit-report`, {
+      const analystAddress = localStorage.getItem('connectedWallet');
+
+      const response = await fetch(`/api/incident-reports/${caseData.id}/submit-report`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          analyst_address: evmAddress,
-          analysis_report: reportText,
+          analyst_address: analystAddress,
+          analysis_report: analysisReport,
           status: 'analyzed'
-        }),
+        })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit report');
-      }
-
-      // Now create the blockchain transaction to close the case
-      toast({
-        title: "Creating Blockchain Transaction",
-        description: "Please confirm the transaction in MetaMask to close the case on-chain.",
-      });
-
-      // Call the smart contract validateTicket function
-      const txResult = await evmContractService.validateTicket(caseId.toString());
-
-      // Update the case with transaction details
-      await fetch(`/api/incident-reports/${caseId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          transaction_hash: txResult.txHash,
-          block_number: txResult.blockNumber,
-          status: 'closed'
-        }),
-      });
-
-      // Refresh case data
-      await fetchCaseDetail();
-
-      toast({
-        title: "Case Closed Successfully! 🎉",
-        description: `Your analysis has been validated on-chain. Transaction: ${txResult.txHash.slice(0, 8)}... You earned 100 CLT tokens!`,
-      });
-
-      // Clear the report text
-      setReportText("");
-
-    } catch (error) {
-      console.error('Error submitting report:', error);
-      let errorMessage = "Unable to submit analysis report.";
-
-      if (error instanceof Error) {
-        if (error.message.includes('user rejected')) {
-          errorMessage = "Transaction was cancelled by user.";
-        } else if (error.message.includes('insufficient funds')) {
-          errorMessage = "Insufficient ETH balance for gas fees.";
-        } else {
-          errorMessage = error.message;
-        }
+        throw new Error('Failed to submit analysis report');
       }
 
       toast({
-        title: "Failed to Submit Report",
-        description: errorMessage,
-        variant: "destructive",
+        title: "Success",
+        description: "Analysis report submitted successfully!"
+      });
+
+      setAnalysisReport("");
+      onClose();
+
+    } catch (error: any) {
+      toast({
+        title: "Error", 
+        description: error.message,
+        variant: "destructive"
       });
     } finally {
-      setIsSubmittingReport(false);
+      setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    if (isOpen && caseId) {
-      fetchCaseDetail();
-      if (isEVMConnected) { // Only load pool info if EVM is connected
-        loadPoolInfo();
-      }
-    }
-  }, [isOpen, caseId, isEVMConnected]);
-
-  // Load shortlisted analysts if the current user is the client
-  useEffect(() => {
-    if (caseData && evmAddress && isEVMConnected && caseData?.client_address === evmAddress) {
-      loadShortlistedAnalysts();
-    }
-  }, [caseData, evmAddress, isEVMConnected]);
 
   const getSeverityColor = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/50';
-      case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/50';
-      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
-      case 'low': return 'bg-green-500/20 text-green-400 border-green-500/50';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
-    }
-  };
-
-  const getPriorityColor = (priority: string | undefined) => {
-    if (!priority) return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
-    switch (priority.toLowerCase()) {
-      case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/50';
-      case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/50';
-      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
-      case 'low': return 'bg-green-500/20 text-green-400 border-green-500/50';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+    switch (severity?.toLowerCase()) {
+      case 'critical': return 'bg-red-500/20 text-red-300 border-red-500/30';
+      case 'high': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+      case 'medium': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+      case 'low': return 'bg-green-500/20 text-green-300 border-green-500/30';
+      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return 'bg-yellow-500/20 text-yellow-400';
-      case 'in_progress': return 'bg-blue-500/20 text-blue-400';
-      case 'resolved': return 'bg-green-500/20 text-green-400';
-      case 'closed': return 'bg-gray-500/20 text-gray-400';
-      default: return 'bg-gray-500/20 text-gray-400';
+    switch (status?.toLowerCase()) {
+      case 'open': return 'bg-blue-500/20 text-blue-300';
+      case 'assigned': return 'bg-yellow-500/20 text-yellow-300';
+      case 'in_progress': return 'bg-purple-500/20 text-purple-300';
+      case 'completed': return 'bg-green-500/20 text-green-300';
+      case 'validated': return 'bg-green-600/20 text-green-400';
+      default: return 'bg-gray-500/20 text-gray-300';
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return <Clock className="h-4 w-4" />;
-      case 'in_progress': return <Activity className="h-4 w-4" />;
-      case 'resolved': return <CheckCircle className="h-4 w-4" />;
-      case 'closed': return <XCircle className="h-4 w-4" />;
-      default: return <AlertTriangle className="h-4 w-4" />;
-    }
-  };
-
-  const hasAnalystAssigned = caseData?.assigned_analyst &&
-    caseData.assigned_analyst !== "0x0000000000000000000000000000000000000000" &&
-    caseData.assigned_analyst !== null;
-
-  // Check if the current user is the client and has the ability to choose an analyst
-  const canChooseAnalyst = caseData?.client_address === evmAddress && !hasAnalystAssigned;
+  if (!ticketDetails && !isLoading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Error Loading Case</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-8">
+            <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <p className="text-gray-300">Failed to load case details. Please try again.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button variant="outline" size="sm" className="cyber-glass border-red-500/30">
-            <Eye className="h-4 w-4 mr-2" />
-            View Details
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto bg-black border-red-500/30 backdrop-blur-sm">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-red-400 flex items-center gap-3 font-mono">
-            <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
-              <Shield className="h-6 w-6 text-red-400 cyber-pulse" />
-            </div>
-            SECURITY CASE #{caseId} - CLASSIFIED
+          <DialogTitle className="text-white flex items-center gap-2">
+            <Shield className="h-5 w-5 text-blue-400" />
+            Case Details {ticketDetails && `#${ticketDetails.id}`}
           </DialogTitle>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-red-400"></div>
-            <span className="ml-4 text-red-400 font-mono text-lg">ACCESSING CLASSIFIED DATA...</span>
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
+            <p className="text-gray-300 mt-4">Loading case details...</p>
           </div>
-        ) : caseData ? (
+        ) : ticketDetails ? (
           <div className="space-y-6">
-            {/* Case Status Banner */}
-            <div className="bg-gradient-to-r from-red-900/50 to-black border border-red-500/30 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-red-400 font-mono text-sm">STATUS:</span>
-                    <Badge className={`${getStatusColor(caseData.status)} font-mono`}>
-                      {caseData.status.toUpperCase()}
-                    </Badge>
+            {/* Case Overview */}
+            <Card className="bg-slate-800/50 border-slate-600">
+              <CardHeader>
+                <CardTitle className="text-white">{ticketDetails.title}</CardTitle>
+                <div className="flex gap-2 flex-wrap">
+                  <Badge className={getSeverityColor(ticketDetails.severity)}>
+                    {ticketDetails.severity}
+                  </Badge>
+                  <Badge className={getStatusColor(ticketDetails.status)}>
+                    {ticketDetails.status}
+                  </Badge>
+                  <Badge variant="outline" className="text-blue-300 border-blue-500/30">
+                    {ticketDetails.category}
+                  </Badge>
+                  <Badge className="bg-green-500/20 text-green-300">
+                    {ticketDetails.stake_amount} CLT
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-300 mb-4">{ticketDetails.description}</p>
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-400">Client:</span>
+                    <p className="text-white font-mono">{ticketDetails.client_address}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-red-400 font-mono text-sm">PRIORITY:</span>
-                    <Badge className={`${getPriorityColor(caseData.priority)} font-mono`}>
-                      {caseData.priority?.toUpperCase() || 'UNKNOWN'}
-                    </Badge>
+                  <div>
+                    <span className="text-gray-400">Created:</span>
+                    <p className="text-white">{new Date(ticketDetails.created_at).toLocaleString()}</p>
+                  </div>
+                  {ticketDetails.analyst_address && (
+                    <div>
+                      <span className="text-gray-400">Assigned Analyst:</span>
+                      <p className="text-white font-mono">{ticketDetails.analyst_address}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-gray-400">Last Updated:</span>
+                    <p className="text-white">{new Date(ticketDetails.updated_at).toLocaleString()}</p>
                   </div>
                 </div>
-                <div className="text-red-400 font-mono text-sm">
-                  CASE ID: #{caseId}
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Case Details */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Case Overview */}
-                <Card className="bg-gray-900/50 border-red-500/30">
-                  <CardHeader>
-                    <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
-                      <FileText className="h-5 w-5" />
-                      INCIDENT DETAILS
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+            {/* Blockchain Data */}
+            {(ticketDetails.transaction_hash || ticketDetails.contract_address || ticketDetails.block_number) && (
+              <Card className="bg-slate-800/50 border-blue-500/30">
+                <CardHeader>
+                  <CardTitle className="text-blue-400 flex items-center gap-2">
+                    <ExternalLink className="h-5 w-5" />
+                    Blockchain Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {ticketDetails.transaction_hash && (
                     <div>
-                      <label className="text-red-400 text-sm font-mono">THREAT TYPE:</label>
-                      <p className="text-white mt-1 bg-red-900/20 p-2 rounded border border-red-500/30">
-                        {caseData.title}
-                      </p>
+                      <span className="text-gray-400">Transaction Hash:</span>
+                      <p className="text-white font-mono text-sm break-all">{ticketDetails.transaction_hash}</p>
                     </div>
+                  )}
+                  {ticketDetails.contract_address && (
                     <div>
-                      <label className="text-red-400 text-sm font-mono">DESCRIPTION:</label>
-                      <p className="text-gray-300 mt-1 bg-gray-900/50 p-3 rounded border border-red-500/20">
-                        {caseData.description}
-                      </p>
+                      <span className="text-gray-400">Contract Address:</span>
+                      <p className="text-white font-mono text-sm">{ticketDetails.contract_address}</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-red-400 text-sm font-mono">CLIENT WALLET:</label>
-                        <p className="text-white font-mono bg-red-900/20 p-2 rounded border border-red-500/30">
-                          {caseData.client_wallet?.slice(0, 10)}...{caseData.client_wallet?.slice(-8)}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-red-400 text-sm font-mono">TICKET ID:</label>
-                        <p className="text-white font-mono bg-red-900/20 p-2 rounded border border-red-500/30">
-                          #{caseData.ticket_id || 'Not assigned'}
-                        </p>
-                      </div>
+                  )}
+                  {ticketDetails.block_number && (
+                    <div>
+                      <span className="text-gray-400">Block Number:</span>
+                      <p className="text-white">{ticketDetails.block_number}</p>
                     </div>
-                  </CardContent>
-                </Card>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-                {/* Analysis Progress */}
-                <Card className="bg-gray-900/50 border-red-500/30">
-                  <CardHeader>
-                    <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
-                      <Activity className="h-5 w-5" />
-                      ANALYSIS PROGRESS
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-300 font-mono">Analysis Completion</span>
-                        <span className="text-red-400 font-mono">{poolInfo?.analysisProgress || 0}%</span>
-                      </div>
-                      <Progress
-                        value={poolInfo?.analysisProgress || 0}
-                        className="bg-gray-800 border border-red-500/30"
-                      />
-                      <div className="text-xs text-gray-400 font-mono">
-                        {hasAnalystAssigned ? 'Analyst assigned - analysis in progress' : 'Awaiting analyst assignment'}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Blockchain Information */}
-                {(caseData.transaction_hash || caseData.block_number || caseData.contract_address) && (
-                  <Card className="bg-gray-900/50 border-red-500/30">
-                    <CardHeader>
-                      <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
-                        <Hash className="h-5 w-5" />
-                        BLOCKCHAIN DATA
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {caseData.transaction_hash && (
-                        <div>
-                          <label className="text-red-400 text-sm font-mono">TX HASH:</label>
-                          <p className="text-white font-mono text-xs bg-black/50 p-2 rounded border border-red-500/20 break-all">
-                            {caseData.transaction_hash}
-                          </p>
-                        </div>
-                      )}
-                      {caseData.block_number && caseData.block_number > 0 && (
-                        <div>
-                          <label className="text-red-400 text-sm font-mono">BLOCK:</label>
-                          <p className="text-white font-mono bg-black/50 p-2 rounded border border-red-500/20">
-                            #{caseData.block_number}
-                          </p>
-                        </div>
-                      )}
-                      {caseData.contract_address && (
-                        <div>
-                          <label className="text-red-400 text-sm font-mono">CONTRACT:</label>
-                          <p className="text-white font-mono text-xs bg-black/50 p-2 rounded border border-red-500/20 break-all">
-                            {caseData.contract_address}
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-
-              {/* Security Pool Information */}
-              <div className="space-y-6">
-                {isEVMConnected && poolInfo && (
-                  <Card className="bg-red-900/20 border-red-500/30">
-                    <CardHeader>
-                      <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
-                        <Coins className="h-5 w-5" />
-                        SECURITY POOL
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 gap-3">
-                        <div className="bg-black/50 p-3 rounded border border-red-500/20">
-                          <div className="flex items-center gap-2 mb-1">
-                            <TrendingUp className="h-4 w-4 text-red-400" />
-                            <span className="text-red-400 text-sm font-mono">TOTAL STAKED</span>
-                          </div>
-                          <p className="text-white text-xl font-mono font-bold">
-                            {poolInfo.totalStaked} CLT
-                          </p>
-                        </div>
-
-                        <div className="bg-black/50 p-3 rounded border border-red-500/20">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Users className="h-4 w-4 text-red-400" />
-                            <span className="text-red-400 text-sm font-mono">PARTICIPANTS</span>
-                          </div>
-                          <p className="text-white text-xl font-mono font-bold">
-                            {poolInfo.participantCount} Analysts
-                          </p>
-                        </div>
-
-                        <div className="bg-black/50 p-3 rounded border border-red-500/20">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Target className="h-4 w-4 text-red-400" />
-                            <span className="text-red-400 text-sm font-mono">REWARD POOL</span>
-                          </div>
-                          <p className="text-white text-xl font-mono font-bold">
-                            {poolInfo.rewardPool} CLT
-                          </p>
-                        </div>
-                      </div>
-
-                      <Separator className="bg-red-500/30" />
-
-                      <div>
-                        <span className="text-red-400 text-sm font-mono">DEADLINE:</span>
-                        <p className="text-white font-mono">
-                          {new Date(poolInfo.stakingDeadline).toLocaleDateString()}
-                        </p>
-                      </div>
-
-                      <Button
-                        onClick={handleJoinSecurityPool}
-                        disabled={isJoiningPool || hasJoinedPool}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white font-mono disabled:opacity-50"
-                      >
-                        {isJoiningPool ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            JOINING...
-                          </div>
-                        ) : hasJoinedPool ? (
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4" />
-                            JOINED POOL
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Upload className="h-4 w-4" />
-                            JOIN SECURITY POOL
-                          </div>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Report Submission Section - Only show if analyst has joined */}
-                {hasJoinedPool && isEVMConnected && (
-                  <Card className="bg-red-900/20 border-red-500/30">
-                    <CardHeader>
-                      <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
-                        <FileText className="h-5 w-5" />
-                        SUBMIT ANALYSIS
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="analysis-report" className="text-red-400 font-mono text-sm">
-                          SECURITY ANALYSIS REPORT
-                        </Label>
-                        <Textarea
-                          id="analysis-report"
-                          value={reportText}
-                          onChange={(e) => setReportText(e.target.value)}
-                          rows={6}
-                          className="bg-black/50 border-red-500/30 text-white focus:border-red-400 font-mono text-sm mt-2"
-                          placeholder="Enter your detailed security analysis, findings, recommendations, and threat assessment..."
-                        />
-                        <div className="text-xs text-gray-400 font-mono mt-1">
-                          Min 50 characters required. Submitting will create a blockchain transaction to close the case.
-                        </div>
-                      </div>
-                      <Button
-                        className="w-full bg-green-600 hover:bg-green-700 text-white font-mono disabled:opacity-50"
-                        onClick={handleSubmitReport}
-                        disabled={isSubmittingReport || reportText.length < 50}
-                      >
-                        {isSubmittingReport ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            SUBMITTING REPORT...
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Send className="h-4 w-4" />
-                            SUBMIT & CLOSE CASE ON-CHAIN
-                          </div>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Action Buttons */}
-                {evmAddress && !hasAnalystAssigned && !canChooseAnalyst && (
+            {/* Analysis Section for Analysts */}
+            {userRole === "analyst" && ticketDetails.status === "open" && (
+              <Card className="bg-slate-800/50 border-green-500/30">
+                <CardHeader>
+                  <CardTitle className="text-green-400 flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Submit Analysis Report
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Textarea
+                    value={analysisReport}
+                    onChange={(e) => setAnalysisReport(e.target.value)}
+                    placeholder="Provide your detailed security analysis and recommendations..."
+                    className="bg-slate-900/50 border-gray-600 min-h-[200px]"
+                  />
                   <Button
-                    onClick={handleJoinSecurityPool}
-                    disabled={isJoiningPool}
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 font-mono"
+                    onClick={submitAnalysisReport}
+                    disabled={isSubmitting}
+                    className="bg-green-600 hover:bg-green-700"
                   >
-                    {isJoiningPool ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ASSIGNING & JOINING...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        BECOME ANALYST & JOIN POOL
-                      </div>
-                    )}
+                    {isSubmitting ? "Submitting..." : "Submit Analysis"}
                   </Button>
-                )}
+                </CardContent>
+              </Card>
+            )}
 
-                {/* Client choosing analyst section */}
-                {canChooseAnalyst && caseData.shortlisted_analysts && caseData.shortlisted_analysts.length > 0 && (
-                  <Card className="bg-red-900/20 border-red-500/30">
-                    <CardHeader>
-                      <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
-                        <Users className="h-5 w-5" />
-                        CHOOSE YOUR ANALYST
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="text-gray-400 font-mono text-sm">
-                        Shortlisted analysts for your review:
-                      </div>
-                      {caseData.shortlisted_analysts.map((analystAddress, index) => (
-                        <div key={index} className="flex items-center justify-between bg-black/50 p-3 rounded border border-red-500/20">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-red-400" />
-                            <span className="text-white font-mono text-sm">{analystAddress.slice(0, 10)}...{analystAddress.slice(-8)}</span>
-                          </div>
-                          <Button
-                            className="bg-green-600 hover:bg-green-700 text-white font-mono text-xs h-8 px-3"
-                            onClick={async () => {
-                              try {
-                                // Call contract to assign chosen analyst
-                                await evmContractService.assignAnalyst(caseId.toString(), analystAddress);
-                                // Update API
-                                await fetch(`/api/incident-reports/${caseId}/assign-analyst`, {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ analyst_address: analystAddress }),
-                                });
-                                await fetchCaseDetail();
-                                toast({ title: "Analyst Assigned", description: "You have successfully chosen an analyst." });
-                              } catch (error) {
-                                console.error("Error assigning analyst:", error);
-                                toast({ title: "Assignment Failed", description: "Could not assign analyst.", variant: "destructive" });
-                              }
-                            }}
-                          >
-                            CHOOSE
-                          </Button>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {hasAnalystAssigned && caseData.assigned_analyst === evmAddress && (
-                  <div className="text-center p-4 bg-green-900/20 border border-green-600 rounded-lg">
-                    <div className="flex items-center justify-center gap-2 text-green-400 font-mono">
-                      <CheckCircle className="h-5 w-5" />
-                      YOU ARE THE ASSIGNED ANALYST
-                    </div>
+            {/* Status Information */}
+            <Card className="bg-slate-800/50 border-gray-600">
+              <CardHeader>
+                <CardTitle className="text-gray-300 flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Case Timeline
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span className="text-white">Case Created</span>
+                    <span className="text-gray-400 text-sm ml-auto">
+                      {new Date(ticketDetails.created_at).toLocaleString()}
+                    </span>
                   </div>
-                )}
-              </div>
-            </div>
+
+                  {ticketDetails.analyst_address && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                      <span className="text-white">Analyst Assigned</span>
+                      <span className="text-gray-400 text-sm ml-auto">
+                        {ticketDetails.analyst_address.slice(0, 8)}...
+                      </span>
+                    </div>
+                  )}
+
+                  {ticketDetails.status === "completed" && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span className="text-white">Analysis Complete</span>
+                      <CheckCircle className="h-4 w-4 text-green-400 ml-auto" />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <AlertTriangle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-red-400 font-mono mb-2">ACCESS DENIED</h3>
-            <p className="text-gray-400 font-mono">Security case data is classified</p>
-          </div>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );
