@@ -264,8 +264,28 @@ export default function EnhancedStakingPools() {
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-red-400 mb-2">Enhanced Staking Pools</h2>
-        <p className="text-gray-300">Choose your desired staking pool and stake CLT tokens to earn rewards</p>
+        <h2 className="text-3xl font-bold text-red-400 mb-2">CLT Security Staking Pools</h2>
+        <p className="text-gray-300">Each security case creates its own staking pool. Choose which case to support and earn CLT rewards.</p>
+        <div className="mt-4 bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 max-w-3xl mx-auto">
+          <h3 className="text-orange-300 font-semibold mb-2">How CLT Rewards Work:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-300">
+            <div className="text-center">
+              <Target className="h-6 w-6 text-orange-400 mx-auto mb-1" />
+              <p className="font-medium">1. Choose Pool</p>
+              <p className="text-xs">Select a security case pool to support</p>
+            </div>
+            <div className="text-center">
+              <TrendingUp className="h-6 w-6 text-orange-400 mx-auto mb-1" />
+              <p className="font-medium">2. Stake CLT</p>
+              <p className="text-xs">Lock your CLT tokens in the chosen pool</p>
+            </div>
+            <div className="text-center">
+              <Coins className="h-6 w-6 text-orange-400 mx-auto mb-1" />
+              <p className="font-medium">3. Earn Rewards</p>
+              <p className="text-xs">Get CLT rewards when case is validated</p>
+            </div>
+          </div>
+        </div>
         
         {/* Search and Filter Controls */}
         <div className="mt-6 flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
@@ -393,34 +413,41 @@ export default function EnhancedStakingPools() {
 
                 {/* Staking Actions */}
                 <div className="space-y-3">
-                  {/* Pool Selection Info */}
+                  {/* CLT Reward Pool Info */}
                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <Shield className="h-4 w-4 text-blue-400" />
-                      <span className="text-blue-400 font-semibold">Pool Selection</span>
+                      <Coins className="h-4 w-4 text-blue-400" />
+                      <span className="text-blue-400 font-semibold">CLT Reward Pool</span>
                     </div>
                     <p className="text-xs text-gray-400">
-                      You are staking specifically in: <span className="text-white font-mono">{pool.metadata?.title}</span>
+                      Supporting: <span className="text-white font-mono">{pool.metadata?.title}</span>
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Pool Address: <span className="text-gray-300 font-mono">{pool.address.slice(0, 10)}...{pool.address.slice(-8)}</span>
+                      Pool Contract: <span className="text-gray-300 font-mono">{pool.address.slice(0, 10)}...{pool.address.slice(-8)}</span>
                     </p>
+                    <div className="mt-2 flex items-center justify-between text-xs">
+                      <span className="text-gray-400">CLT Reward Pool:</span>
+                      <span className="text-green-400 font-mono">{parseFloat(pool.rewardAmount).toFixed(2)} ETH value</span>
+                    </div>
                   </div>
 
-                  {/* Stake Section */}
+                  {/* Stake CLT for Rewards Section */}
                   <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <TrendingUp className="h-4 w-4 text-green-400" />
-                      <span className="text-green-400 font-semibold">Stake CLT in This Pool</span>
+                      <span className="text-green-400 font-semibold">Stake CLT for Rewards</span>
                     </div>
                     <div className="space-y-2">
                       <div className="text-xs text-gray-400">
                         Min: {pool.metadata?.minStake || "10"} CLT • Max: {pool.metadata?.maxStake || "1000"} CLT
                       </div>
+                      <div className="text-xs text-green-400 mb-2">
+                        💰 Earn CLT rewards when this case is validated by analysts
+                      </div>
                       <div className="flex gap-2">
                         <Input
                           type="number"
-                          placeholder="Amount"
+                          placeholder="CLT Amount"
                           min={pool.metadata?.minStake || "10"}
                           max={pool.metadata?.maxStake || "1000"}
                           value={stakeAmounts[pool.address] || ""}
@@ -432,7 +459,7 @@ export default function EnhancedStakingPools() {
                           disabled={!stakeAmounts[pool.address] || parseFloat(stakeAmounts[pool.address]) <= 0}
                           className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap"
                         >
-                          Stake Here
+                          Stake CLT
                         </Button>
                       </div>
                     </div>
@@ -466,13 +493,13 @@ export default function EnhancedStakingPools() {
                     </div>
                   )}
 
-                  {/* Claim Rewards */}
+                  {/* Claim CLT Rewards */}
                   <Button
                     onClick={() => handleClaimRewards(pool.address)}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                   >
                     <Coins className="h-4 w-4 mr-2" />
-                    Claim Rewards
+                    Claim CLT Rewards
                   </Button>
                 </div>
 
