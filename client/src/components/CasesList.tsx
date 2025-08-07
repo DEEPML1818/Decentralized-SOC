@@ -34,6 +34,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { LoadingSpinner } from "./ui/loading-spinner";
+import React from 'react';
 
 interface Case {
   id: number;
@@ -53,6 +54,8 @@ interface Case {
   client_wallet?: string;
   created_at: string;
   updated_at: string;
+  uniqueKey?: string; // Added for unique key
+  sourceType?: 'ticket' | 'incident_report'; // Added to distinguish sources
 }
 
 interface CasesListProps {
@@ -67,7 +70,7 @@ export default function CasesList({ walletType }: CasesListProps) {
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
 
   // Fetch real tickets/cases from API - real-time integration
-  const { data: tickets = [], isLoading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useQuery({
+  const { data: ticketsData = [], isLoading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useQuery<Case[]>({
     queryKey: ['tickets'],
     queryFn: async () => {
       const response = await fetch('/api/tickets');
@@ -83,7 +86,7 @@ export default function CasesList({ walletType }: CasesListProps) {
   });
 
   // Fetch incident reports from API
-  const { data: incidentReports = [], isLoading: reportsLoading, error: reportsError, refetch: refetchIncidentReports } = useQuery({
+  const { data: incidentReportsData = [], isLoading: reportsLoading, error: reportsError, refetch: refetchIncidentReports } = useQuery<Case[]>({
     queryKey: ['incident-reports'],
     queryFn: async () => {
       const response = await fetch('/api/incident-reports');
@@ -98,8 +101,31 @@ export default function CasesList({ walletType }: CasesListProps) {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
-  // Combine tickets and incident reports
-  const allCases = [...tickets, ...incidentReports];
+  // Combine tickets and incident reports with unique keys
+  const allCases = React.useMemo(() => {
+    const tickets = ticketsData || [];
+    const reports = incidentReportsData || [];
+
+    // Convert tickets with unique identifiers
+    const convertedTickets = tickets.map((ticket: any) => ({
+      ...ticket,
+      uniqueKey: `ticket-${ticket.id}`,
+      sourceType: 'ticket'
+    }));
+
+    // Convert incident reports to case format with unique identifiers
+    const convertedReports = reports.map((report: any) => ({
+      ...report,
+      uniqueKey: `report-${report.id}`,
+      sourceType: 'incident_report',
+      client_name: report.client_name || 'Unknown',
+      contact_info: report.contact_info || 'Not provided',
+      assigned_analyst: report.assigned_analyst,
+      assigned_certifier: report.assigned_certifier
+    }));
+
+    return [...convertedTickets, ...convertedReports];
+  }, [ticketsData, incidentReportsData]);
 
   // Apply filters to combined cases
   const filteredCases = allCases.filter((caseItem: Case) => {
@@ -292,7 +318,7 @@ export default function CasesList({ walletType }: CasesListProps) {
         <div className="grid gap-4">
           {filteredCases.map((caseItem: Case) => (
             <Card
-              key={caseItem.id}
+              key={caseItem.uniqueKey} // Use the uniqueKey for the key prop
               className="cyber-glass bg-red-900/10 border-red-500/30 hover:border-red-400/50 transition-colors"
             >
               <CardContent className="p-6">

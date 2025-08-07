@@ -36,7 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid role. Must be client, analyst, or certifier" });
       }
 
-      // Check if address already has a role
+      // Check if address already has a different role
       const existingRole = (global as any).userRoles.get(address);
       if (existingRole && existingRole !== role) {
         return res.status(400).json({ 
@@ -44,10 +44,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // If same role, just confirm it
+      if (existingRole === role) {
+        return res.json({ success: true, address, role, message: `Role ${role} already assigned` });
+      }
+
       (global as any).userRoles.set(address, role);
       console.log(`Role assigned: ${address} -> ${role}`);
 
-      res.json({ success: true, address, role });
+      res.json({ success: true, address, role, message: `Role ${role} assigned successfully` });
     } catch (error) {
       console.error("Role assignment error:", error);
       res.status(500).json({ error: "Failed to assign role" });

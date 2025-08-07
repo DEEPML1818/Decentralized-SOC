@@ -58,24 +58,26 @@ export default function CaseDetailModal({ isOpen, onClose, caseData, userRole }:
     setIsLoading(true);
     try {
       // Use the caseData directly since it already contains the ticket information
-      if (caseData) {
+      if (caseData && caseData.id) {
         const ticketData: TicketDetails = {
           id: caseData.id,
-          title: caseData.title,
-          description: caseData.description,
-          severity: caseData.severity,
+          title: caseData.title || 'Untitled Case',
+          description: caseData.description || 'No description provided',
+          severity: caseData.severity || 'medium',
           category: caseData.category || 'Security Incident',
-          client_address: caseData.client_address || caseData.client_wallet,
+          client_address: caseData.client_address || caseData.client_wallet || caseData.client_name || 'Unknown',
           analyst_address: caseData.analyst_address || caseData.assigned_analyst,
           transaction_hash: caseData.transaction_hash,
-          block_number: caseData.block_number,
+          block_number: caseData.block_number || 0,
           contract_address: caseData.contract_address,
           stake_amount: caseData.stake_amount || caseData.reward_amount || 0,
-          status: caseData.status,
-          created_at: caseData.created_at,
-          updated_at: caseData.updated_at
+          status: caseData.status || 'open',
+          created_at: caseData.created_at || new Date().toISOString(),
+          updated_at: caseData.updated_at || new Date().toISOString()
         };
         setTicketDetails(ticketData);
+      } else {
+        throw new Error('Invalid case data provided');
       }
     } catch (error) {
       console.error('Error loading ticket details:', error);
