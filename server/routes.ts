@@ -650,6 +650,463 @@ Ensure the JSON is valid and parseable.`;
     }
   });
 
+  // IPFS storage endpoints for analyst and certifier profiles
+  app.post("/api/ipfs/store-analyst", async (req, res) => {
+    try {
+      const { address, profile, registrationDate } = req.body;
+      
+      const analystData = {
+        address,
+        profile,
+        registrationDate,
+        type: 'analyst_profile'
+      };
+
+      console.log(`🔗 Storing analyst profile in IPFS:`, {
+        address: address,
+        name: profile.name
+      });
+
+      const ipfsHash = await storage.uploadJSON(analystData, `analyst-${address}-profile`);
+
+      res.json({
+        success: true,
+        hash: ipfsHash,
+        message: `Analyst profile stored in IPFS with hash: ${ipfsHash}`
+      });
+
+    } catch (error) {
+      console.error("Analyst IPFS storage error:", error);
+      res.status(500).json({ 
+        error: "Failed to store analyst profile in IPFS",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/ipfs/store-certifier", async (req, res) => {
+    try {
+      const { address, profile, registrationDate } = req.body;
+      
+      const certifierData = {
+        address,
+        profile,
+        registrationDate,
+        type: 'certifier_profile'
+      };
+
+      console.log(`🔗 Storing certifier profile in IPFS:`, {
+        address: address,
+        name: profile.name
+      });
+
+      const ipfsHash = await storage.uploadJSON(certifierData, `certifier-${address}-profile`);
+
+      res.json({
+        success: true,
+        hash: ipfsHash,
+        message: `Certifier profile stored in IPFS with hash: ${ipfsHash}`
+      });
+
+    } catch (error) {
+      console.error("Certifier IPFS storage error:", error);
+      res.status(500).json({ 
+        error: "Failed to store certifier profile in IPFS",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/ipfs/store-analysis", async (req, res) => {
+    try {
+      const { ticketId, analystAddress, analysis, submittedAt, analystProfile } = req.body;
+      
+      const analysisData = {
+        ticketId,
+        analystAddress,
+        analysis,
+        submittedAt,
+        analystProfile,
+        type: 'security_analysis'
+      };
+
+      console.log(`🔗 Storing analysis in IPFS:`, {
+        ticketId: ticketId,
+        analyst: analystAddress.slice(0, 8) + '...'
+      });
+
+      const ipfsHash = await storage.uploadJSON(analysisData, `analysis-${ticketId}-${analystAddress}`);
+
+      res.json({
+        success: true,
+        hash: ipfsHash,
+        message: `Analysis stored in IPFS with hash: ${ipfsHash}`
+      });
+
+    } catch (error) {
+      console.error("Analysis IPFS storage error:", error);
+      res.status(500).json({ 
+        error: "Failed to store analysis in IPFS",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Analyst registration and management
+  app.post("/api/analysts/register", async (req, res) => {
+    try {
+      const { address, name, expertise, experience, certifications, ipfsHash } = req.body;
+      
+      // Store analyst in database/memory
+      if (!(global as any).analysts) {
+        (global as any).analysts = [];
+      }
+
+      const analystData = {
+        address,
+        name,
+        expertise,
+        experience,
+        certifications,
+        ipfsHash,
+        registeredAt: new Date().toISOString(),
+        isActive: true
+      };
+
+      // Remove existing entry if any
+      (global as any).analysts = (global as any).analysts.filter((a: any) => a.address !== address);
+      (global as any).analysts.push(analystData);
+
+      console.log(`New analyst registered: ${name} (${address})`);
+      res.json({ success: true, analyst: analystData });
+
+    } catch (error) {
+      console.error("Analyst registration error:", error);
+      res.status(500).json({ 
+        error: "Failed to register analyst",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/analysts/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const analysts = (global as any).analysts || [];
+      const analyst = analysts.find((a: any) => a.address === address);
+
+      if (!analyst) {
+        return res.status(404).json({ error: "Analyst not found" });
+      }
+
+      res.json(analyst);
+
+    } catch (error) {
+      console.error("Analyst lookup error:", error);
+      res.status(500).json({ 
+        error: "Failed to lookup analyst",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Certifier registration and management
+  app.post("/api/certifiers/register", async (req, res) => {
+    try {
+      const { address, name, organization, experience, certifications, ipfsHash } = req.body;
+      
+      // Store certifier in database/memory
+      if (!(global as any).certifiers) {
+        (global as any).certifiers = [];
+      }
+
+      const certifierData = {
+        address,
+        name,
+        organization,
+        experience,
+        certifications,
+        ipfsHash,
+        registeredAt: new Date().toISOString(),
+        isActive: true
+      };
+
+      // Remove existing entry if any
+      (global as any).certifiers = (global as any).certifiers.filter((c: any) => c.address !== address);
+      (global as any).certifiers.push(certifierData);
+
+      console.log(`New certifier registered: ${name} (${address})`);
+      res.json({ success: true, certifier: certifierData });
+
+    } catch (error) {
+      console.error("Certifier registration error:", error);
+      res.status(500).json({ 
+        error: "Failed to register certifier",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/certifiers/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const certifiers = (global as any).certifiers || [];
+      const certifier = certifiers.find((c: any) => c.address === address);
+
+      if (!certifier) {
+        return res.status(404).json({ error: "Certifier not found" });
+      }
+
+      res.json(certifier);
+
+    } catch (error) {
+      console.error("Certifier lookup error:", error);
+      res.status(500).json({ 
+        error: "Failed to lookup certifier",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Analysis submission and shortlisting workflow
+  app.post("/api/tickets/:id/submit-analysis", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { analyst_address, analysis_text, ipfs_hash, status } = req.body;
+      
+      if (!(global as any).analysisSubmissions) {
+        (global as any).analysisSubmissions = [];
+      }
+
+      const submission = {
+        id: Date.now().toString(),
+        ticket_id: id,
+        analyst_address,
+        analysis_text,
+        ipfs_hash,
+        status: status || 'submitted',
+        submitted_at: new Date().toISOString(),
+        is_shortlisted: false
+      };
+
+      (global as any).analysisSubmissions.push(submission);
+
+      console.log(`Analysis submitted for ticket ${id} by ${analyst_address}`);
+      res.json({ success: true, submission });
+
+    } catch (error) {
+      console.error("Analysis submission error:", error);
+      res.status(500).json({ 
+        error: "Failed to submit analysis",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/tickets/:id/analyses", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const submissions = (global as any).analysisSubmissions || [];
+      const ticketAnalyses = submissions.filter((s: any) => s.ticket_id === id);
+
+      res.json(ticketAnalyses);
+
+    } catch (error) {
+      console.error("Analysis lookup error:", error);
+      res.status(500).json({ 
+        error: "Failed to lookup analyses",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/tickets/:id/shortlist", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { analyst_address, certifier_address, shortlisted_at } = req.body;
+      
+      if (!(global as any).shortlists) {
+        (global as any).shortlists = [];
+      }
+
+      // Mark analysis as shortlisted
+      const submissions = (global as any).analysisSubmissions || [];
+      const submission = submissions.find((s: any) => 
+        s.ticket_id === id && s.analyst_address === analyst_address
+      );
+
+      if (submission) {
+        submission.is_shortlisted = true;
+        submission.shortlisted_by = certifier_address;
+        submission.shortlisted_at = shortlisted_at;
+      }
+
+      // Add to shortlist
+      const shortlistEntry = {
+        ticket_id: id,
+        analyst_address,
+        certifier_address,
+        shortlisted_at,
+        is_selected: false
+      };
+
+      (global as any).shortlists.push(shortlistEntry);
+
+      console.log(`Analyst ${analyst_address} shortlisted for ticket ${id} by ${certifier_address}`);
+      res.json({ success: true, shortlist: shortlistEntry });
+
+    } catch (error) {
+      console.error("Shortlisting error:", error);
+      res.status(500).json({ 
+        error: "Failed to shortlist analyst",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/tickets/:id/shortlisted", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const shortlists = (global as any).shortlists || [];
+      const analysts = (global as any).analysts || [];
+      const submissions = (global as any).analysisSubmissions || [];
+
+      const ticketShortlists = shortlists.filter((s: any) => s.ticket_id === id);
+
+      // Enrich with analyst profiles and analysis previews
+      const enrichedShortlists = ticketShortlists.map((shortlist: any) => {
+        const analyst = analysts.find((a: any) => a.address === shortlist.analyst_address);
+        const submission = submissions.find((s: any) => 
+          s.ticket_id === id && s.analyst_address === shortlist.analyst_address
+        );
+
+        return {
+          ...shortlist,
+          address: shortlist.analyst_address,
+          profile: analyst ? {
+            name: analyst.name,
+            expertise: analyst.expertise,
+            experience: analyst.experience
+          } : null,
+          analysis_preview: submission ? submission.analysis_text.substring(0, 200) : null
+        };
+      });
+
+      res.json(enrichedShortlists);
+
+    } catch (error) {
+      console.error("Shortlisted lookup error:", error);
+      res.status(500).json({ 
+        error: "Failed to lookup shortlisted analysts",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/tickets/pending-analysis", async (req, res) => {
+    try {
+      const submissions = (global as any).analysisSubmissions || [];
+      
+      // Group submissions by ticket and count
+      const ticketAnalysisCounts = submissions.reduce((acc: any, submission: any) => {
+        if (!acc[submission.ticket_id]) {
+          acc[submission.ticket_id] = 0;
+        }
+        acc[submission.ticket_id]++;
+        return acc;
+      }, {});
+
+      // Mock tickets with analysis counts (in real app, fetch from database)
+      const mockTickets = [
+        { id: 1, title: "Smart Contract Vulnerability Assessment", analysisCount: ticketAnalysisCounts['1'] || 0 },
+        { id: 2, title: "DeFi Protocol Security Review", analysisCount: ticketAnalysisCounts['2'] || 0 },
+        { id: 3, title: "NFT Marketplace Audit", analysisCount: ticketAnalysisCounts['3'] || 0 }
+      ];
+
+      res.json(mockTickets);
+
+    } catch (error) {
+      console.error("Pending analysis lookup error:", error);
+      res.status(500).json({ 
+        error: "Failed to lookup pending analysis tickets",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/tickets/client/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const shortlists = (global as any).shortlists || [];
+      
+      // Mock client tickets (in real app, fetch from database)
+      const mockTickets = [
+        { 
+          id: 1, 
+          title: "Smart Contract Vulnerability Assessment", 
+          client_address: address,
+          assigned_analyst: null,
+          reward_amount: 100,
+          shortlistCount: shortlists.filter((s: any) => s.ticket_id === '1').length
+        },
+        { 
+          id: 2, 
+          title: "DeFi Protocol Security Review", 
+          client_address: address,
+          assigned_analyst: null,
+          reward_amount: 150,
+          shortlistCount: shortlists.filter((s: any) => s.ticket_id === '2').length
+        }
+      ];
+
+      const clientTickets = mockTickets.filter(ticket => ticket.client_address === address);
+      res.json(clientTickets);
+
+    } catch (error) {
+      console.error("Client tickets lookup error:", error);
+      res.status(500).json({ 
+        error: "Failed to lookup client tickets",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/tickets/:id/assign-analyst", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { analyst_address, assigned_by, assigned_at } = req.body;
+      
+      if (!(global as any).ticketAssignments) {
+        (global as any).ticketAssignments = [];
+      }
+
+      const assignment = {
+        ticket_id: id,
+        analyst_address,
+        assigned_by,
+        assigned_at,
+        status: 'assigned'
+      };
+
+      // Remove any existing assignment for this ticket
+      (global as any).ticketAssignments = (global as any).ticketAssignments.filter(
+        (a: any) => a.ticket_id !== id
+      );
+
+      (global as any).ticketAssignments.push(assignment);
+
+      console.log(`Analyst ${analyst_address} assigned to ticket ${id} by client ${assigned_by}`);
+      res.json({ success: true, assignment });
+
+    } catch (error) {
+      console.error("Analyst assignment error:", error);
+      res.status(500).json({ 
+        error: "Failed to assign analyst",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Ticket endpoints
   app.get("/api/tickets", async (req, res) => {
     try {

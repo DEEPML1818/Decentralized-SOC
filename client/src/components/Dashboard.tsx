@@ -188,6 +188,31 @@ export default function Dashboard({ currentRole }: DashboardProps) {
               <span className="text-red-400 font-bold">{isEVMConnected ? 'EVM' : 'IOTA'}</span> Wallet: 
               <span className="text-red-400 font-mono">{currentAddress?.slice(0, 6)}...{currentAddress?.slice(-4)}</span>
             </p>
+            
+            {/* Quick Access Buttons */}
+            <div className="flex gap-2 justify-center mt-4">
+              <Button 
+                onClick={() => window.open('/analyst', '_blank')}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 font-mono"
+              >
+                📊 Analyst Portal
+              </Button>
+              <Button 
+                onClick={() => window.open('/certifier', '_blank')}
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 font-mono"
+              >
+                ⭐ Certifier Portal
+              </Button>
+              <Button 
+                onClick={() => window.open('/client', '_blank')}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 font-mono"
+              >
+                🏢 Client Portal
+              </Button>
+            </div>
             {isEVMConnected && (
               <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 inline-block">
                 <div className="flex items-center gap-4">

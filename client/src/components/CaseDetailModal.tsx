@@ -61,6 +61,11 @@ interface CaseDetail {
   priority: string;
   reportedBy?: string;
   createdAt: string;
+  client_address?: string; // Added for client wallet
+  analysts?: string[]; // Added for shortlisted analysts
+  shortlisted_analysts?: string[]; // Added for shortlisted analysts
+  certifier_address?: string; // Added for certifier wallet
+  certifier_decision?: string; // Added for certifier decision
 }
 
 interface PoolInfo {
@@ -116,55 +121,24 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
     }
   };
 
-  const autoAssignAnalyst = async () => {
-    if (!evmAddress || !caseId || !caseData) return;
+  // Function to fetch shortlisted analysts (newly added)
+  const loadShortlistedAnalysts = async () => {
+    if (!caseId || !caseData || !evmAddress || caseData.client_address !== evmAddress) return;
 
-    // Check if this is a client-created ticket and no analyst is assigned yet
-    const isClientCreatedTicket = caseData.client_wallet === evmAddress;
-    const hasAnalystAssigned = caseData.assigned_analyst && caseData.assigned_analyst !== "0x0000000000000000000000000000000000000000";
-
-    if (isClientCreatedTicket && !hasAnalystAssigned) {
-      setIsAssigningAnalyst(true);
-      try {
-        console.log(`Auto-assigning analyst for ticket ${caseId} to ${evmAddress}`);
-
-        // Call the smart contract setAnalyst function
-        await evmContractService.setAnalyst(caseId.toString(), evmAddress);
-
-        // Also update our API
-        try {
-          await fetch(`/api/incident-reports/${caseId}/assign-analyst`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              analyst_address: evmAddress
-            }),
-          });
-        } catch (apiError) {
-          console.log('API assignment failed, but blockchain assignment succeeded');
-        }
-
-        // Refresh case data to show the assignment
-        await fetchCaseDetail();
-
-        toast({
-          title: "Analyst Assigned",
-          description: "You have been automatically assigned as the analyst for this ticket.",
-        });
-
-      } catch (error: any) {
-        console.error('Error auto-assigning analyst:', error);
-        if (!error.message.includes('user rejected') && !error.message.includes('Analyst already assigned')) {
-          toast({
-            title: "Assignment Info",
-            description: "Could not auto-assign analyst. You can manually assign from the analyst page if needed.",
-          });
-        }
-      } finally {
-        setIsAssigningAnalyst(false);
+    try {
+      const response = await fetch(`/api/incident-reports/${caseId}/shortlisted-analysts`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch shortlisted analysts');
       }
+      const data = await response.json();
+      setCaseData(prev => prev ? { ...prev, shortlisted_analysts: data.shortlisted_analysts } : null);
+    } catch (error) {
+      console.error('Error loading shortlisted analysts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load shortlisted analysts.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -178,16 +152,16 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
 
       // Get real blockchain data
       let realPoolInfo: PoolInfo;
-      
+
       if (caseData.ticket_id !== undefined) {
         try {
           // Get ticket details from blockchain
           const ticketDetails = await evmContractService.getTicket(caseData.ticket_id);
-          
+
           // Get staking pool info if available
           let totalStaked = "0";
           let participantCount = 0;
-          
+
           if (ticketDetails.stakingPool && ticketDetails.stakingPool !== "0x0000000000000000000000000000000000000000") {
             try {
               const stakeInfo = await evmContractService.getStakeInfoForPool(ticketDetails.stakingPool, evmAddress || "0x0");
@@ -226,7 +200,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
           analysisProgress: 0
         };
       }
-      
+
       setPoolInfo(realPoolInfo);
     } catch (error) {
       console.error('Failed to load pool info:', error);
@@ -281,7 +255,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
     } catch (error: any) {
       console.error('Error joining security pool:', error);
       let errorMessage = "Unable to join security pool.";
-      
+
       if (error.message?.includes('user rejected')) {
         errorMessage = "Transaction was cancelled by user.";
       } else if (error.message?.includes('Only client can assign analyst')) {
@@ -404,10 +378,10 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
     }
   }, [isOpen, caseId, isEVMConnected]);
 
-  // Auto-assign analyst when case data is loaded and user is connected
+  // Load shortlisted analysts if the current user is the client
   useEffect(() => {
-    if (caseData && evmAddress && isEVMConnected && !isAssigningAnalyst) {
-      autoAssignAnalyst();
+    if (caseData && evmAddress && isEVMConnected && caseData?.client_address === evmAddress) {
+      loadShortlistedAnalysts();
     }
   }, [caseData, evmAddress, isEVMConnected]);
 
@@ -452,9 +426,12 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
     }
   };
 
-  const hasAnalystAssigned = caseData?.assigned_analyst && 
-    caseData.assigned_analyst !== "0x0000000000000000000000000000000000000000" && 
+  const hasAnalystAssigned = caseData?.assigned_analyst &&
+    caseData.assigned_analyst !== "0x0000000000000000000000000000000000000000" &&
     caseData.assigned_analyst !== null;
+
+  // Check if the current user is the client and has the ability to choose an analyst
+  const canChooseAnalyst = caseData?.client_address === evmAddress && !hasAnalystAssigned;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -737,7 +714,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                 )}
 
                 {/* Action Buttons */}
-                {evmAddress && !hasAnalystAssigned && (
+                {evmAddress && !hasAnalystAssigned && !canChooseAnalyst && (
                   <Button
                     onClick={handleJoinSecurityPool}
                     disabled={isJoiningPool}
@@ -755,6 +732,53 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                       </div>
                     )}
                   </Button>
+                )}
+
+                {/* Client choosing analyst section */}
+                {canChooseAnalyst && caseData.shortlisted_analysts && caseData.shortlisted_analysts.length > 0 && (
+                  <Card className="bg-red-900/20 border-red-500/30">
+                    <CardHeader>
+                      <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
+                        <Users className="h-5 w-5" />
+                        CHOOSE YOUR ANALYST
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="text-gray-400 font-mono text-sm">
+                        Shortlisted analysts for your review:
+                      </div>
+                      {caseData.shortlisted_analysts.map((analystAddress, index) => (
+                        <div key={index} className="flex items-center justify-between bg-black/50 p-3 rounded border border-red-500/20">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-red-400" />
+                            <span className="text-white font-mono text-sm">{analystAddress.slice(0, 10)}...{analystAddress.slice(-8)}</span>
+                          </div>
+                          <Button
+                            className="bg-green-600 hover:bg-green-700 text-white font-mono text-xs h-8 px-3"
+                            onClick={async () => {
+                              try {
+                                // Call contract to assign chosen analyst
+                                await evmContractService.assignAnalyst(caseId.toString(), analystAddress);
+                                // Update API
+                                await fetch(`/api/incident-reports/${caseId}/assign-analyst`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ analyst_address: analystAddress }),
+                                });
+                                await fetchCaseDetail();
+                                toast({ title: "Analyst Assigned", description: "You have successfully chosen an analyst." });
+                              } catch (error) {
+                                console.error("Error assigning analyst:", error);
+                                toast({ title: "Assignment Failed", description: "Could not assign analyst.", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            CHOOSE
+                          </Button>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
                 )}
 
                 {hasAnalystAssigned && caseData.assigned_analyst === evmAddress && (
