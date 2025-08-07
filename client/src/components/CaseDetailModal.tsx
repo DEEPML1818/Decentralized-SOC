@@ -73,7 +73,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
-  const { evmAddress, isEVMConnected, ethBalance } = useWallet();
+  const { evmAddress, isEVMConnected } = useWallet();
 
   const fetchCaseDetail = async () => {
     if (!caseId) return;
@@ -144,7 +144,8 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string | undefined) => {
+    if (!priority) return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
     switch (priority.toLowerCase()) {
       case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/50';
       case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/50';
