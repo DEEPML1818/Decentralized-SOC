@@ -4,6 +4,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "./WalletProvider";
+import { ConnectButton } from "@iota/dapp-kit";
 import IncidentReport from "./IncidentReport";
 import EVMIncidentReport from "./EVMIncidentReport";
 import CasesList from "./CasesList";
@@ -41,7 +42,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
     totalStaked: "0",
   });
 
-  const { walletType, evmAddress, iotaAddress, isEVMConnected, isIOTAConnected } = useWallet();
+  const { walletType, evmAddress, iotaAddress, isEVMConnected, isIOTAConnected, connectEVMWallet, setWalletType } = useWallet();
   const { toast } = useToast();
 
   // Load EVM statistics
@@ -76,7 +77,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-950">
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
+          <div className="text-center max-w-2xl mx-auto">
             <div className="cyber-pulse">
               <Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
             </div>
@@ -90,6 +91,62 @@ export default function Dashboard({ currentRole }: DashboardProps) {
                 : 'Please connect your IOTA wallet to access IOTA features'
               }
             </p>
+            
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 mb-8">
+              <h3 className="text-red-400 font-semibold mb-4">Connect Your Wallet</h3>
+              {walletType === 'evm' ? (
+                <div className="space-y-4">
+                  <p className="text-gray-300 text-sm">
+                    To access the EVM dSOC platform, connect your MetaMask wallet
+                  </p>
+                  <Button 
+                    onClick={async () => {
+                      try {
+                        await connectEVMWallet();
+                        toast({
+                          title: "Wallet Connected",
+                          description: "Successfully connected to EVM wallet"
+                        });
+                      } catch (error: any) {
+                        toast({
+                          title: "Connection Failed",
+                          description: error.message || "Failed to connect wallet",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Connect MetaMask
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-gray-300 text-sm">
+                    To access the IOTA dSOC platform, connect your IOTA wallet
+                  </p>
+                  <ConnectButton />
+                </div>
+              )}
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = '/'}
+                className="border-red-500/30 text-gray-300 hover:bg-red-500/10"
+              >
+                Back to Home
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setWalletType(walletType === 'evm' ? 'iota' : 'evm')}
+                className="border-red-500/30 text-gray-300 hover:bg-red-500/10"
+              >
+                Switch to {walletType === 'evm' ? 'IOTA' : 'EVM'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
