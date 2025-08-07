@@ -31,14 +31,6 @@ export interface IStorage {
   getAllTickets(): Promise<Ticket[]>;
   getTicketById(id: number): Promise<Ticket | null>;
   updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket>;
-
-  // Role management
-  getUserRole(address: string): Promise<'client' | 'analyst' | 'certifier' | null>;
-  assignUserRole(address: string, role: 'client' | 'analyst' | 'certifier'): Promise<void>;
-
-  // IPFS operations
-  uploadJSON(data: any, filename?: string): Promise<string>;
-  getJSON(hash: string): Promise<any>;
 }
 
 // In-memory storage as fallback when database is unavailable
@@ -46,8 +38,6 @@ export class MemoryStorage implements IStorage {
   private incidentReports: Map<number, IncidentReport> = new Map();
   private users: Map<number, User> = new Map();
   private tickets: Map<number, Ticket> = new Map();
-  private userRoles: Map<string, 'client' | 'analyst' | 'certifier'> = new Map();
-  private dataCache: Map<string, any> = new Map();
   private currentId = 1;
 
   async getUser(id: number): Promise<User | undefined> {
@@ -156,37 +146,11 @@ export class MemoryStorage implements IStorage {
     this.tickets.set(id, updated);
     return updated;
   }
-
-  // Role management methods
-  async getUserRole(address: string): Promise<'client' | 'analyst' | 'certifier' | null> {
-    return this.userRoles.get(address) || null;
-  }
-
-  async assignUserRole(address: string, role: 'client' | 'analyst' | 'certifier'): Promise<void> {
-    this.userRoles.set(address, role);
-  }
-
-  // IPFS methods (stub implementation for memory storage)
-  async uploadJSON(data: any, filename?: string): Promise<string> {
-    const hash = `Qm${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
-    this.dataCache.set(hash, data);
-    return hash;
-  }
-
-  async getJSON(hash: string): Promise<any> {
-    const data = this.dataCache.get(hash);
-    if (!data) {
-      throw new Error(`No data found for hash: ${hash}`);
-    }
-    return data;
-  }
-
 }
 
 // Pinata IPFS storage for decentralized data management (Direct API)
 export class PinataStorage implements IStorage {
   private dataCache: Map<string, any> = new Map();
-  private userRoles: Map<string, 'client' | 'analyst' | 'certifier'> = new Map();
   private metadataHash: string | null = null;
   private pinataApiKey: string;
   private pinataSecretKey: string;
@@ -499,53 +463,6 @@ export class PinataStorage implements IStorage {
     
     return updated;
   }
-
-  // Role management methods
-  async getUserRole(address: string): Promise<'client' | 'analyst' | 'certifier' | null> {
-    return this.userRoles.get(address) || null;
-  }
-
-  async assignUserRole(address: string, role: 'client' | 'analyst' | 'certifier'): Promise<void> {
-    this.userRoles.set(address, role);
-    // Store roles in IPFS for persistence
-    if (this.pinataApiKey && this.pinataSecretKey) {
-      try {
-        const roles = Object.fromEntries(this.userRoles.entries());
-        const hash = await this.uploadToIPFSWithPinata(roles, 'dsoc-user-roles.json', 'dSOC-UserRoles');
-        this.dataCache.set('user_roles_hash', hash);
-        await this.updateMetadata();
-      } catch (error) {
-        console.error("Failed to save user roles to IPFS:", error);
-      }
-    }
-  }
-
-  // IPFS methods - main implementation
-  async uploadJSON(data: any, filename?: string): Promise<string> {
-    if (this.pinataApiKey && this.pinataSecretKey) {
-      return await this.uploadToIPFSWithPinata(data, filename || 'data.json', filename || 'IPFS-Data');
-    }
-    // Fallback to memory storage
-    const hash = `Qm${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
-    this.dataCache.set(hash, data);
-    return hash;
-  }
-
-  async getJSON(hash: string): Promise<any> {
-    // Check memory cache first
-    const cachedData = this.dataCache.get(hash);
-    if (cachedData) {
-      return cachedData;
-    }
-
-    // Try to fetch from IPFS
-    try {
-      const response = await axios.get(`${this.pinataGateway}/ipfs/${hash}`);
-      return response.data;
-    } catch (error) {
-      throw new Error(`Failed to fetch data from IPFS hash: ${hash}`);
-    }
-  }
 }
 
 // Real database storage using Drizzle + Neon
@@ -623,29 +540,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tickets.id, id))
       .returning();
     return result[0];
-  }
-
-  // Role management methods (stub implementation - would use database in real app)
-  async getUserRole(address: string): Promise<'client' | 'analyst' | 'certifier' | null> {
-    // In a real implementation, this would query a user_roles table
-    return null; // Placeholder
-  }
-
-  async assignUserRole(address: string, role: 'client' | 'analyst' | 'certifier'): Promise<void> {
-    // In a real implementation, this would insert/update in a user_roles table
-    console.log(`Role assignment: ${address} → ${role}`);
-  }
-
-  // IPFS methods (stub implementation for database storage)
-  async uploadJSON(data: any, filename?: string): Promise<string> {
-    // In a real implementation, this would store in database and return a reference
-    const hash = `db_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    return hash;
-  }
-
-  async getJSON(hash: string): Promise<any> {
-    // In a real implementation, this would fetch from database by reference
-    throw new Error(`Database storage does not support direct IPFS hash retrieval: ${hash}`);
   }
 }
 
