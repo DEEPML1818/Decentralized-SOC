@@ -15,7 +15,7 @@ export const SCROLL_TESTNET_CONFIG = {
 
 // Contract addresses from your deployment
 export const CONTRACT_ADDRESSES = {
-    CLT_REWARD: '0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097', // Updated CLT Token contract
+  CLT_REWARD: '0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097', // Updated CLT Token contract
   SOC_SERVICE: '0xE87bFbFC9fC93b94756384e07cCa4B1e857bfC94', // New SOCService with CLT payment system
 };
 
@@ -223,24 +223,6 @@ export const SOC_SERVICE_ABI = [
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "_title",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "cltAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "createTicket",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "_rewardToken",
         "type": "address"
@@ -285,24 +267,6 @@ export const SOC_SERVICE_ABI = [
     "type": "event"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "emergencyWithdraw",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
@@ -320,24 +284,6 @@ export const SOC_SERVICE_ABI = [
     ],
     "name": "EmergencyWithdraw",
     "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "analyst",
-        "type": "address"
-      }
-    ],
-    "name": "setAnalyst",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   },
   {
     "anonymous": false,
@@ -392,12 +338,35 @@ export const SOC_SERVICE_ABI = [
   {
     "inputs": [
       {
+        "internalType": "string",
+        "name": "_title",
+        "type": "string"
+      },
+      {
         "internalType": "uint256",
-        "name": "ticketId",
+        "name": "cltAmount",
         "type": "uint256"
       }
     ],
-    "name": "validateTicket",
+    "name": "createTicket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "emergencyWithdraw",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -426,6 +395,24 @@ export const SOC_SERVICE_ABI = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "ticketId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "analyst",
+        "type": "address"
+      }
+    ],
+    "name": "setAnalyst",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -488,6 +475,19 @@ export const SOC_SERVICE_ABI = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "ticketId",
+        "type": "uint256"
+      }
+    ],
+    "name": "validateTicket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ];

@@ -324,6 +324,7 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
         description: description.substring(0, 100) + "..."
       });
 
+      const storage = getStorage();
       const ipfsHash = await storage.uploadJSON(metadata, `pool-${poolAddress}-metadata`);
 
       res.json({
@@ -350,6 +351,7 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
         return res.status(400).json({ error: "IPFS hash parameter is required" });
       }
 
+      const storage = getStorage();
       const metadata = await storage.getJSON(hash);
       res.json({ metadata });
 
@@ -459,7 +461,7 @@ Format as structured markdown for a security analyst.`;
         title: report.title,
         description: report.description,
         severity: report.severity,
-        status: "open",
+        status: "open" as "open",
         client_name: report.client_name,
         contact_info: report.contact_info,
         client_wallet: report.client_wallet,
@@ -634,7 +636,7 @@ Format as structured markdown for a security analyst.`;
       const updates = {
         ai_analysis: analysis_report,
         status: status,
-        updated_at: new Date().toISOString()
+        updated_at: new Date()
       };
 
       const updatedReport = await storage.updateIncidentReport(id, updates);
@@ -725,6 +727,67 @@ Ensure the JSON is valid and parseable.`;
     }
   });
 
+  // Role management endpoints
+  app.get("/api/roles/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const storage = getStorage();
+      
+      // Check if user has an assigned role
+      const userRole = await storage.getUserRole(address);
+      
+      res.json({ address, role: userRole });
+    } catch (error) {
+      console.error("Get user role error:", error);
+      res.status(500).json({ 
+        error: "Failed to get user role",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/roles/assign", async (req, res) => {
+    try {
+      const { address, role } = req.body;
+      const storage = getStorage();
+
+      if (!address || !role) {
+        return res.status(400).json({ error: "Address and role are required" });
+      }
+
+      if (!['client', 'analyst', 'certifier'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be client, analyst, or certifier" });
+      }
+
+      // Check if user already has a role (one-role-per-address enforcement)
+      const existingRole = await storage.getUserRole(address);
+      if (existingRole && existingRole !== null) {
+        return res.status(400).json({ 
+          error: `Address ${address} already has role: ${existingRole}. One role per address enforced.` 
+        });
+      }
+
+      // Assign the role
+      await storage.assignUserRole(address, role);
+
+      console.log(`✅ Role assigned: ${address} → ${role}`);
+
+      res.json({
+        success: true,
+        address,
+        role,
+        message: `Successfully assigned role ${role} to ${address}`
+      });
+
+    } catch (error) {
+      console.error("Role assignment error:", error);
+      res.status(500).json({ 
+        error: "Failed to assign role",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // IPFS storage endpoints for analyst and certifier profiles
   app.post("/api/ipfs/store-analyst", async (req, res) => {
     try {
@@ -749,6 +812,7 @@ Ensure the JSON is valid and parseable.`;
         name: profile.name
       });
 
+      const storage = getStorage();
       const ipfsHash = await storage.uploadJSON(analystData, `analyst-${address}-profile`);
 
       res.json({
@@ -789,6 +853,7 @@ Ensure the JSON is valid and parseable.`;
         name: profile.name
       });
 
+      const storage = getStorage();
       const ipfsHash = await storage.uploadJSON(certifierData, `certifier-${address}-profile`);
 
       res.json({
@@ -831,6 +896,7 @@ Ensure the JSON is valid and parseable.`;
         analyst: analystAddress.slice(0, 8) + '...'
       });
 
+      const storage = getStorage();
       const ipfsHash = await storage.uploadJSON(analysisData, `analysis-${ticketId}-${analystAddress}`);
 
       res.json({
