@@ -43,6 +43,8 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - **2025-08-07**: Created dedicated AnalystValidation page for proper analyst workflow management
 - **2025-08-07**: Fixed "Only analyst can validate" error by implementing setAnalyst function call before validation
 - **2025-08-07**: Added /analyst route with ticket lookup, analyst assignment, and validation functionality
+- **2025-08-07**: Enhanced CaseDetailModal with automatic analyst assignment when clicking "View Detail"
+- **2025-08-07**: Auto-assignment triggers setAnalyst smart contract call for client-created tickets without assigned analysts
 - **2025-08-06**: Fixed MetaMask wallet connection by adding missing connectWallet method to EVMContractService
 - **2025-08-06**: Added proper TypeScript support for window.ethereum interface
 - **2025-08-06**: Enhanced EVM wallet connection with automatic network switching to Scroll Sepolia

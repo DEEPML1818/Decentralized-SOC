@@ -80,6 +80,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [reportText, setReportText] = useState("");
   const [hasJoinedPool, setHasJoinedPool] = useState(false);
+  const [isAssigningAnalyst, setIsAssigningAnalyst] = useState(false);
   const { toast } = useToast();
   const { evmAddress, isEVMConnected } = useWallet();
 
@@ -112,6 +113,58 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const autoAssignAnalyst = async () => {
+    if (!evmAddress || !caseId || !caseData) return;
+    
+    // Check if this is a client-created ticket and no analyst is assigned yet
+    const isClientCreatedTicket = caseData.client_wallet === evmAddress;
+    const hasAnalystAssigned = caseData.assigned_analyst && caseData.assigned_analyst !== "0x0000000000000000000000000000000000000000";
+    
+    if (isClientCreatedTicket && !hasAnalystAssigned) {
+      setIsAssigningAnalyst(true);
+      try {
+        console.log(`Auto-assigning analyst for ticket ${caseId} to ${evmAddress}`);
+        
+        // Call the smart contract setAnalyst function
+        await evmContractService.setAnalyst(caseId.toString(), evmAddress);
+        
+        // Also update our API
+        try {
+          await fetch(`/api/incident-reports/${caseId}/assign-analyst`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              analyst_address: evmAddress
+            }),
+          });
+        } catch (apiError) {
+          console.log('API assignment failed, but blockchain assignment succeeded');
+        }
+        
+        // Refresh case data to show the assignment
+        await fetchCaseDetail();
+        
+        toast({
+          title: "Analyst Assigned",
+          description: "You have been automatically assigned as the analyst for this ticket.",
+        });
+        
+      } catch (error: any) {
+        console.error('Error auto-assigning analyst:', error);
+        if (!error.message.includes('user rejected') && !error.message.includes('Analyst already assigned')) {
+          toast({
+            title: "Assignment Info",
+            description: "Could not auto-assign analyst. You can manually assign from the analyst page if needed.",
+          });
+        }
+      } finally {
+        setIsAssigningAnalyst(false);
+      }
     }
   };
 
@@ -231,7 +284,7 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
       });
 
       // Call the smart contract validateTicket function
-      const txResult = await evmContractService.validateTicket(parseInt(caseId));
+      const txResult = await evmContractService.validateTicket(caseId.toString());
       
       // Update the case with transaction details
       await fetch(`/api/incident-reports/${caseId}`, {
@@ -289,6 +342,13 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
       }
     }
   }, [isOpen, caseId, isEVMConnected]);
+
+  // Auto-assign analyst when case data is loaded and user is connected
+  useEffect(() => {
+    if (caseData && evmAddress && isEVMConnected && !isAssigningAnalyst) {
+      autoAssignAnalyst();
+    }
+  }, [caseData, evmAddress, isEVMConnected]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
