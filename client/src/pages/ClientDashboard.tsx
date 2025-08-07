@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import {
   Shield,
   Eye
 } from "lucide-react";
-import { setAnalyst } from "@/lib/evm-contract";
+import { evmContractService } from "@/lib/evm-contract";
 
 interface ClientTicket {
   id: string;
@@ -51,7 +50,7 @@ export default function ClientDashboard() {
   useEffect(() => {
     const address = localStorage.getItem('connectedWallet') || "";
     setConnectedAddress(address);
-    
+
     if (address) {
       loadMyTickets(address);
     }
@@ -103,8 +102,8 @@ export default function ClientDashboard() {
 
       // Then, call the smart contract setAnalyst function
       try {
-        const txHash = await setAnalyst(parseInt(ticketId), analystAddress);
-        
+        const txHash = await evmContractService.setAnalyst(parseInt(ticketId), analystAddress);
+
         toast({
           title: "Success",
           description: `Analyst assigned successfully! Transaction: ${txHash}`,
@@ -276,7 +275,7 @@ export default function ClientDashboard() {
                       )}
                     </Card>
                   ))}
-                  
+
                   {shortlistedAnalysts.length === 0 && (
                     <div className="text-center py-8">
                       <Clock className="h-12 w-12 text-gray-500 mx-auto mb-4" />
