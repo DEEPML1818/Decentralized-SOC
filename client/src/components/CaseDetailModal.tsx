@@ -57,14 +57,25 @@ export default function CaseDetailModal({ isOpen, onClose, caseData, userRole }:
   const loadTicketDetails = async () => {
     setIsLoading(true);
     try {
-      // Load real ticket data from backend
-      const response = await fetch('/api/tickets');
-      if (response.ok) {
-        const tickets = await response.json();
-        const ticket = tickets.find((t: any) => t.id === parseInt(caseData.id));
-        if (ticket) {
-          setTicketDetails(ticket);
-        }
+      // Use the caseData directly since it already contains the ticket information
+      if (caseData) {
+        const ticketData: TicketDetails = {
+          id: caseData.id,
+          title: caseData.title,
+          description: caseData.description,
+          severity: caseData.severity,
+          category: caseData.category || 'Security Incident',
+          client_address: caseData.client_address || caseData.client_wallet,
+          analyst_address: caseData.analyst_address || caseData.assigned_analyst,
+          transaction_hash: caseData.transaction_hash,
+          block_number: caseData.block_number,
+          contract_address: caseData.contract_address,
+          stake_amount: caseData.stake_amount || caseData.reward_amount || 0,
+          status: caseData.status,
+          created_at: caseData.created_at,
+          updated_at: caseData.updated_at
+        };
+        setTicketDetails(ticketData);
       }
     } catch (error) {
       console.error('Error loading ticket details:', error);

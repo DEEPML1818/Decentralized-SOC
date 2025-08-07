@@ -7,6 +7,64 @@ import { insertIncidentReportSchema, insertTicketSchema } from "@shared/schema";
 const API_KEY = process.env.GOOGLE_API_KEY;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Role management system
+  if (!(global as any).userRoles) {
+    (global as any).userRoles = new Map(); // address -> role mapping
+  }
+
+  // Helper function to validate user role
+  const validateRole = (address: string, requiredRole: string) => {
+    const userRole = (global as any).userRoles.get(address);
+    return userRole === requiredRole;
+  };
+
+  // Basic health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Role management endpoints
+  app.post("/api/roles/assign", (req, res) => {
+    try {
+      const { address, role } = req.body;
+
+      if (!address || !role) {
+        return res.status(400).json({ error: "Address and role are required" });
+      }
+
+      if (!['client', 'analyst', 'certifier'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be client, analyst, or certifier" });
+      }
+
+      // Check if address already has a role
+      const existingRole = (global as any).userRoles.get(address);
+      if (existingRole && existingRole !== role) {
+        return res.status(400).json({ 
+          error: `Address already assigned as ${existingRole}. Each address can only have one role.` 
+        });
+      }
+
+      (global as any).userRoles.set(address, role);
+      console.log(`Role assigned: ${address} -> ${role}`);
+
+      res.json({ success: true, address, role });
+    } catch (error) {
+      console.error("Role assignment error:", error);
+      res.status(500).json({ error: "Failed to assign role" });
+    }
+  });
+
+  app.get("/api/roles/:address", (req, res) => {
+    try {
+      const { address } = req.params;
+      const role = (global as any).userRoles.get(address) || null;
+      res.json({ address, role });
+    } catch (error) {
+      console.error("Role lookup error:", error);
+      res.status(500).json({ error: "Failed to get role" });
+    }
+  });
+
   // AI Assistant endpoints
   app.post("/api/ai/chat", async (req, res) => {
     try {
@@ -121,7 +179,7 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
   app.post("/api/rewards/mint", async (req, res) => {
     try {
       const { recipientAddress, amount, rewardType, ticketId } = req.body;
-      
+
       if (!recipientAddress || !amount || !rewardType) {
         return res.status(400).json({ 
           error: "Missing required fields: recipientAddress, amount, and rewardType" 
@@ -167,7 +225,7 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
   app.get("/api/rewards/history/:address", async (req, res) => {
     try {
       const { address } = req.params;
-      
+
       if (!address) {
         return res.status(400).json({ error: "Address parameter is required" });
       }
@@ -234,7 +292,7 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
   app.post("/api/pools/metadata", async (req, res) => {
     try {
       const { poolAddress, title, description, category, riskLevel, estimatedAPY, minStake, maxStake } = req.body;
-      
+
       if (!poolAddress || !title || !description) {
         return res.status(400).json({ 
           error: "Missing required fields: poolAddress, title, and description" 
@@ -282,7 +340,7 @@ Respond in a friendly, conversational way while providing expert-level cybersecu
   app.get("/api/pools/metadata/:hash", async (req, res) => {
     try {
       const { hash } = req.params;
-      
+
       if (!hash) {
         return res.status(400).json({ error: "IPFS hash parameter is required" });
       }
@@ -517,6 +575,11 @@ Format as structured markdown for a security analyst.`;
         return res.status(400).json({ error: "Analyst address is required" });
       }
 
+      // Validate that the assignee has the 'analyst' role
+      if (!validateRole(analyst_address, 'analyst')) {
+        return res.status(403).json({ error: "The assigned address does not have the 'analyst' role." });
+      }
+
       const updates = {
         assigned_analyst: analyst_address,
         status: "assigned"
@@ -554,6 +617,13 @@ Format as structured markdown for a security analyst.`;
 
       if (existingReport.assigned_analyst !== analyst_address) {
         return res.status(403).json({ error: "Only the assigned analyst can submit a report for this case" });
+      }
+
+      // Validate that the submitter is an analyst
+      if (!validateRole(analyst_address, 'analyst')) {
+        return res.status(403).json({ 
+          error: "Only users with 'analyst' role can submit analysis" 
+        });
       }
 
       const updates = {
@@ -654,7 +724,14 @@ Ensure the JSON is valid and parseable.`;
   app.post("/api/ipfs/store-analyst", async (req, res) => {
     try {
       const { address, profile, registrationDate } = req.body;
-      
+
+      // Validate that the user has the 'analyst' role before storing profile
+      if (!validateRole(address, 'analyst')) {
+        return res.status(403).json({ 
+          error: "Only users with 'analyst' role can store analyst profiles." 
+        });
+      }
+
       const analystData = {
         address,
         profile,
@@ -687,7 +764,14 @@ Ensure the JSON is valid and parseable.`;
   app.post("/api/ipfs/store-certifier", async (req, res) => {
     try {
       const { address, profile, registrationDate } = req.body;
-      
+
+      // Validate that the user has the 'certifier' role before storing profile
+      if (!validateRole(address, 'certifier')) {
+        return res.status(403).json({ 
+          error: "Only users with 'certifier' role can store certifier profiles." 
+        });
+      }
+
       const certifierData = {
         address,
         profile,
@@ -720,7 +804,14 @@ Ensure the JSON is valid and parseable.`;
   app.post("/api/ipfs/store-analysis", async (req, res) => {
     try {
       const { ticketId, analystAddress, analysis, submittedAt, analystProfile } = req.body;
-      
+
+      // Validate analyst submitting analysis
+      if (!validateRole(analystAddress, 'analyst')) {
+        return res.status(403).json({ 
+          error: "Only users with 'analyst' role can store analysis." 
+        });
+      }
+
       const analysisData = {
         ticketId,
         analystAddress,
@@ -756,7 +847,14 @@ Ensure the JSON is valid and parseable.`;
   app.post("/api/analysts/register", async (req, res) => {
     try {
       const { address, name, expertise, experience, certifications, ipfsHash } = req.body;
-      
+
+      // Validate that the user has the 'analyst' role
+      if (!validateRole(address, 'analyst')) {
+        return res.status(403).json({ 
+          error: "Only users with 'analyst' role can register as an analyst." 
+        });
+      }
+
       // Store analyst in database/memory
       if (!(global as any).analysts) {
         (global as any).analysts = [];
@@ -814,7 +912,14 @@ Ensure the JSON is valid and parseable.`;
   app.post("/api/certifiers/register", async (req, res) => {
     try {
       const { address, name, organization, experience, certifications, ipfsHash } = req.body;
-      
+
+      // Validate that the user has the 'certifier' role
+      if (!validateRole(address, 'certifier')) {
+        return res.status(403).json({ 
+          error: "Only users with 'certifier' role can register as a certifier." 
+        });
+      }
+
       // Store certifier in database/memory
       if (!(global as any).certifiers) {
         (global as any).certifiers = [];
@@ -873,7 +978,14 @@ Ensure the JSON is valid and parseable.`;
     try {
       const { id } = req.params;
       const { analyst_address, analysis_text, ipfs_hash, status } = req.body;
-      
+
+      // Validate that the submitter is an analyst
+      if (!validateRole(analyst_address, 'analyst')) {
+        return res.status(403).json({ 
+          error: "Only users with 'analyst' role can submit analysis" 
+        });
+      }
+
       if (!(global as any).analysisSubmissions) {
         (global as any).analysisSubmissions = [];
       }
@@ -920,11 +1032,33 @@ Ensure the JSON is valid and parseable.`;
     }
   });
 
+  // Analyst shortlisting by certifiers
   app.post("/api/tickets/:id/shortlist", async (req, res) => {
     try {
       const { id } = req.params;
-      const { analyst_address, certifier_address, shortlisted_at } = req.body;
-      
+      const { analyst_address, certifier_address, is_approved, analysis_preview } = req.body;
+
+      // Validate that the certifier has certifier role
+      if (!validateRole(certifier_address, 'certifier')) {
+        return res.status(403).json({ 
+          error: "Only users with 'certifier' role can shortlist analysts" 
+        });
+      }
+
+      // Validate that the analyst has analyst role
+      if (!validateRole(analyst_address, 'analyst')) {
+        return res.status(403).json({ 
+          error: "Target address must have 'analyst' role" 
+        });
+      }
+
+      // Prevent self-certification
+      if (analyst_address.toLowerCase() === certifier_address.toLowerCase()) {
+        return res.status(403).json({ 
+          error: "Certifiers cannot certify their own work" 
+        });
+      }
+
       if (!(global as any).shortlists) {
         (global as any).shortlists = [];
       }
@@ -938,7 +1072,7 @@ Ensure the JSON is valid and parseable.`;
       if (submission) {
         submission.is_shortlisted = true;
         submission.shortlisted_by = certifier_address;
-        submission.shortlisted_at = shortlisted_at;
+        submission.shortlisted_at = new Date().toISOString();
       }
 
       // Add to shortlist
@@ -946,7 +1080,7 @@ Ensure the JSON is valid and parseable.`;
         ticket_id: id,
         analyst_address,
         certifier_address,
-        shortlisted_at,
+        shortlisted_at: new Date().toISOString(),
         is_selected: false
       };
 
@@ -1006,7 +1140,7 @@ Ensure the JSON is valid and parseable.`;
   app.get("/api/tickets/pending-analysis", async (req, res) => {
     try {
       const submissions = (global as any).analysisSubmissions || [];
-      
+
       // Group submissions by ticket and count
       const ticketAnalysisCounts = submissions.reduce((acc: any, submission: any) => {
         if (!acc[submission.ticket_id]) {
@@ -1038,7 +1172,7 @@ Ensure the JSON is valid and parseable.`;
     try {
       const { address } = req.params;
       const shortlists = (global as any).shortlists || [];
-      
+
       // Mock client tickets (in real app, fetch from database)
       const mockTickets = [
         { 
@@ -1071,11 +1205,50 @@ Ensure the JSON is valid and parseable.`;
     }
   });
 
+  // Ticket submission and management endpoints
+  app.post("/api/tickets", async (req, res) => {
+    try {
+      const ticketData = req.body;
+
+      // Validate that the submitter is a client
+      if (!validateRole(ticketData.client_wallet, 'client')) {
+        return res.status(403).json({ 
+          error: "Only users with 'client' role can submit tickets" 
+        });
+      }
+
+      const storage = getStorage();
+      const validatedData = insertTicketSchema.parse(ticketData);
+      const ticket = await storage.createTicket(validatedData);
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Failed to create ticket:", error);
+      res.status(500).json({ 
+        error: "Failed to create ticket",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   app.post("/api/tickets/:id/assign-analyst", async (req, res) => {
     try {
       const { id } = req.params;
       const { analyst_address, assigned_by, assigned_at } = req.body;
-      
+
+      // Validate that the client making the assignment has the 'client' role
+      if (!validateRole(assigned_by, 'client')) {
+        return res.status(403).json({ 
+          error: "Only users with 'client' role can assign analysts to tickets." 
+        });
+      }
+
+      // Validate that the analyst being assigned has the 'analyst' role
+      if (!validateRole(analyst_address, 'analyst')) {
+        return res.status(403).json({ 
+          error: "The address being assigned does not have the 'analyst' role." 
+        });
+      }
+
       if (!(global as any).ticketAssignments) {
         (global as any).ticketAssignments = [];
       }
@@ -1107,40 +1280,17 @@ Ensure the JSON is valid and parseable.`;
     }
   });
 
-  // Ticket endpoints
-  app.get("/api/tickets", async (req, res) => {
-    try {
-      const storage = getStorage();
-      const tickets = await storage.getAllTickets();
-      res.json(tickets);
-    } catch (error) {
-      console.error("Failed to fetch tickets:", error);
-      res.status(500).json({ 
-        error: "Failed to fetch tickets",
-        details: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
-  app.post("/api/tickets", async (req, res) => {
-    try {
-      const storage = getStorage();
-      const validatedData = insertTicketSchema.parse(req.body);
-      const ticket = await storage.createTicket(validatedData);
-      res.status(201).json(ticket);
-    } catch (error) {
-      console.error("Failed to create ticket:", error);
-      res.status(500).json({ 
-        error: "Failed to create ticket",
-        details: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
   // Store incident reports submitted via blockchain (handles both manual and AI-generated cases)
   app.post('/api/incident-reports', async (req, res) => {
     try {
       const incidentData = req.body;
+
+      // Basic validation for client role if client_wallet is provided
+      if (incidentData.client_wallet && !validateRole(incidentData.client_wallet, 'client')) {
+        return res.status(403).json({ 
+          error: "Only users with 'client' role can submit incident reports." 
+        });
+      }
 
       // Store in memory (in production, this would go to a database)
       const incidentReport = {

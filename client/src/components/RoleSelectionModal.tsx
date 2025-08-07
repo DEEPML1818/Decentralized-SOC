@@ -1,9 +1,11 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Users, CheckCircle, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useWallet } from "@/components/WalletProvider";
+import { User, Shield, Award, AlertCircle, CheckCircle, Eye } from "lucide-react";
 
 interface RoleSelectionModalProps {
   isOpen: boolean;
@@ -28,7 +30,7 @@ const roles = [
   },
   {
     id: "analyst",
-    title: "Security Analyst", 
+    title: "Security Analyst",
     description: "Analyze incidents and provide professional assessments",
     icon: Users,
     color: "text-purple-400",
@@ -45,7 +47,7 @@ const roles = [
     title: "Certifier",
     description: "Validate and approve analyst reports for quality assurance",
     icon: CheckCircle,
-    color: "text-green-400", 
+    color: "text-green-400",
     bgColor: "bg-green-500/10",
     features: [
       "Review analyst reports",
@@ -71,16 +73,24 @@ const roles = [
 ];
 
 export default function RoleSelectionModal({ isOpen, onClose, onRoleSelect }: RoleSelectionModalProps) {
-  const [selectedRole, setSelectedRole] = useState<string>("");
+  const { assignRole } = useWallet();
+  const { toast } = useToast();
 
-  const handleRoleSelect = (roleId: string) => {
-    setSelectedRole(roleId);
-  };
-
-  const handleConfirm = () => {
-    if (selectedRole) {
-      onRoleSelect(selectedRole);
+  const handleRoleSelection = async (role: string) => {
+    const success = await assignRole(role);
+    if (success) {
+      onRoleSelect(role);
       onClose();
+      toast({
+        title: "Role Assigned",
+        description: `You are now registered as a ${role}`,
+      });
+    } else {
+      toast({
+        title: "Role Assignment Failed",
+        description: "This address may already have a different role assigned",
+        variant: "destructive"
+      });
     }
   };
 
@@ -99,17 +109,14 @@ export default function RoleSelectionModal({ isOpen, onClose, onRoleSelect }: Ro
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           {roles && roles.map((role) => {
             const IconComponent = role.icon;
-            const isSelected = selectedRole === role.id;
-            
+            // For now, we won't use selectedRole state here as the selection is handled directly by handleRoleSelection
+            // const isSelected = selectedRole === role.id; 
+
             return (
-              <Card 
+              <Card
                 key={role.id}
-                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
-                  isSelected 
-                    ? 'border-purple-500 bg-slate-800/80 shadow-lg shadow-purple-500/20' 
-                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
-                }`}
-                onClick={() => handleRoleSelect(role.id)}
+                className={`cursor-pointer transition-all duration-200 hover:scale-105 border-slate-700 bg-slate-800/50 hover:border-slate-600`}
+                onClick={() => handleRoleSelection(role.id)}
               >
                 <CardHeader className="text-center">
                   <div className={`w-16 h-16 mx-auto rounded-full ${role.bgColor} flex items-center justify-center mb-3`}>
@@ -138,20 +145,14 @@ export default function RoleSelectionModal({ isOpen, onClose, onRoleSelect }: Ro
         </div>
 
         <div className="flex justify-center gap-4 mt-8">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={onClose}
             className="border-slate-600 text-gray-300 hover:bg-slate-800"
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleConfirm}
-            disabled={!selectedRole}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-          >
-            Continue as {selectedRole ? roles.find(r => r.id === selectedRole)?.title : 'Role'}
-          </Button>
+          {/* The confirmation button logic is now handled within handleRoleSelection */}
         </div>
       </DialogContent>
     </Dialog>
