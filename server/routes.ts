@@ -506,6 +506,75 @@ Format as structured markdown for a security analyst.`;
     }
   });
 
+  // Analyst Assignment endpoint
+  app.patch("/api/incident-reports/:id/assign-analyst", async (req, res) => {
+    try {
+      const storage = getStorage();
+      const id = parseInt(req.params.id);
+      const { analyst_address } = req.body;
+
+      if (!analyst_address) {
+        return res.status(400).json({ error: "Analyst address is required" });
+      }
+
+      const updates = {
+        assigned_analyst: analyst_address,
+        status: "assigned"
+      };
+
+      const updatedReport = await storage.updateIncidentReport(id, updates);
+
+      console.log(`Analyst ${analyst_address} assigned to incident report ID: ${id}`);
+      res.json(updatedReport);
+    } catch (error) {
+      console.error("Failed to assign analyst:", error);
+      res.status(500).json({ 
+        error: "Failed to assign analyst",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Report Submission endpoint
+  app.patch("/api/incident-reports/:id/submit-report", async (req, res) => {
+    try {
+      const storage = getStorage();
+      const id = parseInt(req.params.id);
+      const { analyst_address, analysis_report, status = "analyzed" } = req.body;
+
+      if (!analyst_address || !analysis_report) {
+        return res.status(400).json({ error: "Analyst address and analysis report are required" });
+      }
+
+      // Verify that the analyst is assigned to this case
+      const existingReport = await storage.getIncidentReportById(id);
+      if (!existingReport) {
+        return res.status(404).json({ error: "Incident report not found" });
+      }
+
+      if (existingReport.assigned_analyst !== analyst_address) {
+        return res.status(403).json({ error: "Only the assigned analyst can submit a report for this case" });
+      }
+
+      const updates = {
+        ai_analysis: analysis_report,
+        status: status,
+        updated_at: new Date().toISOString()
+      };
+
+      const updatedReport = await storage.updateIncidentReport(id, updates);
+
+      console.log(`Analysis report submitted by ${analyst_address} for incident report ID: ${id}`);
+      res.json(updatedReport);
+    } catch (error) {
+      console.error("Failed to submit report:", error);
+      res.status(500).json({ 
+        error: "Failed to submit report",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // AI Incident Analysis endpoint
   app.post("/api/ai/analyze-incident", async (req, res) => {
     try {

@@ -24,8 +24,12 @@ import {
   Brain,
   TrendingUp,
   Users,
-  Target
+  Target,
+  Upload,
+  Send
 } from "lucide-react";
+import { Textarea } from "./ui/textarea";
+import { Label } from "./ui/label";
 
 interface CaseDetailModalProps {
   caseId: number;
@@ -72,6 +76,10 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
   const [poolInfo, setPoolInfo] = useState<PoolInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isJoiningPool, setIsJoiningPool] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportText, setReportText] = useState("");
+  const [hasJoinedPool, setHasJoinedPool] = useState(false);
   const { toast } = useToast();
   const { evmAddress, isEVMConnected } = useWallet();
 
@@ -111,17 +119,131 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
     if (!caseId) return;
 
     try {
+      // Check if current user has joined the pool
+      const hasJoined = evmAddress && caseData?.assigned_analyst === evmAddress;
+      setHasJoinedPool(!!hasJoined);
+      
       // Mock pool data - replace with actual contract calls
       const mockPoolInfo: PoolInfo = {
         totalStaked: "1250.50",
         participantCount: 8,
         rewardPool: "500.00",
         stakingDeadline: "2024-02-15",
-        analysisProgress: 65
+        analysisProgress: hasJoined ? 85 : 65
       };
       setPoolInfo(mockPoolInfo);
     } catch (error) {
       console.error('Failed to load pool info:', error);
+    }
+  };
+
+  const handleJoinSecurityPool = async () => {
+    if (!evmAddress || !caseId) {
+      toast({
+        title: "Authentication Required",
+        description: "Please connect your EVM wallet to join the security pool.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsJoiningPool(true);
+    try {
+      // Call API to assign analyst to the case
+      const response = await fetch(`/api/incident-reports/${caseId}/assign-analyst`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          analyst_address: evmAddress
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to join security pool');
+      }
+
+      setHasJoinedPool(true);
+      
+      // Refresh case data
+      await fetchCaseDetail();
+      await loadPoolInfo();
+
+      toast({
+        title: "Successfully Joined Pool",
+        description: "You are now assigned as the security analyst for this case.",
+      });
+    } catch (error) {
+      console.error('Error joining security pool:', error);
+      toast({
+        title: "Failed to Join Pool",
+        description: error instanceof Error ? error.message : "Unable to join security pool.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsJoiningPool(false);
+    }
+  };
+
+  const handleSubmitReport = async () => {
+    if (!reportText.trim()) {
+      toast({
+        title: "Report Required",
+        description: "Please enter your analysis report before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!evmAddress || !caseId) {
+      toast({
+        title: "Authentication Required",
+        description: "Please connect your EVM wallet to submit the report.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      // Submit the analysis report
+      const response = await fetch(`/api/incident-reports/${caseId}/submit-report`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          analyst_address: evmAddress,
+          analysis_report: reportText,
+          status: 'analyzed'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit report');
+      }
+
+      // Refresh case data
+      await fetchCaseDetail();
+      
+      toast({
+        title: "Report Submitted Successfully",
+        description: "Your security analysis has been submitted and is awaiting certification.",
+      });
+      
+      // Clear the report text
+      setReportText("");
+      
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      toast({
+        title: "Failed to Submit Report",
+        description: error instanceof Error ? error.message : "Unable to submit analysis report.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingReport(false);
     }
   };
 
@@ -344,8 +466,74 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                         </p>
                       </div>
 
-                      <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-mono">
-                        JOIN SECURITY POOL
+                      <Button 
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-mono disabled:opacity-50"
+                        onClick={handleJoinSecurityPool}
+                        disabled={isJoiningPool || hasJoinedPool}
+                      >
+                        {isJoiningPool ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            JOINING...
+                          </div>
+                        ) : hasJoinedPool ? (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            JOINED POOL
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Upload className="h-4 w-4" />
+                            JOIN SECURITY POOL
+                          </div>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Report Submission Section - Only show if analyst has joined */}
+                {hasJoinedPool && isEVMConnected && (
+                  <Card className="bg-red-900/20 border-red-500/30">
+                    <CardHeader>
+                      <CardTitle className="text-red-400 flex items-center gap-2 font-mono">
+                        <FileText className="h-5 w-5" />
+                        SUBMIT ANALYSIS
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="analysis-report" className="text-red-400 font-mono text-sm">
+                          SECURITY ANALYSIS REPORT
+                        </Label>
+                        <Textarea
+                          id="analysis-report"
+                          value={reportText}
+                          onChange={(e) => setReportText(e.target.value)}
+                          rows={6}
+                          className="bg-black/50 border-red-500/30 text-white focus:border-red-400 font-mono text-sm mt-2"
+                          placeholder="Enter your detailed security analysis, findings, recommendations, and threat assessment..."
+                        />
+                        <div className="text-xs text-gray-400 font-mono mt-1">
+                          Min 50 characters required for submission
+                        </div>
+                      </div>
+                      <Button 
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-mono disabled:opacity-50"
+                        onClick={handleSubmitReport}
+                        disabled={isSubmittingReport || reportText.length < 50}
+                      >
+                        {isSubmittingReport ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            SUBMITTING REPORT...
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Send className="h-4 w-4" />
+                            SUBMIT ANALYSIS REPORT
+                          </div>
+                        )}
                       </Button>
                     </CardContent>
                   </Card>
@@ -361,13 +549,16 @@ export default function CaseDetailModal({ caseId, children }: CaseDetailModalPro
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-mono">
-                      🤖 REQUEST AI ANALYSIS
+                      <Brain className="h-4 w-4 mr-2" />
+                      REQUEST AI ANALYSIS
                     </Button>
                     <Button variant="outline" className="w-full border-red-500/30 text-red-400 hover:bg-red-900/20 font-mono">
-                      📊 VIEW THREAT INTEL
+                      <FileText className="h-4 w-4 mr-2" />
+                      VIEW THREAT INTEL
                     </Button>
                     <Button variant="outline" className="w-full border-red-500/30 text-red-400 hover:bg-red-900/20 font-mono">
-                      🔍 START DEEP SCAN
+                      <Activity className="h-4 w-4 mr-2" />
+                      START DEEP SCAN
                     </Button>
                   </CardContent>
                 </Card>
