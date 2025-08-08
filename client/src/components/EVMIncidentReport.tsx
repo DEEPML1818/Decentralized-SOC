@@ -65,15 +65,12 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
       return;
     }
 
-    // This part of the original code was replaced by the changes.
-    // The new logic in the <changes> section handles the submission.
-    // The following is a placeholder to indicate where the original logic was.
-    // Original logic was about creating ticket on EVM blockchain and then storing in DB.
-    // The new logic directly uses formData which is not fully defined in the original code snippet provided.
-    // I am adapting the new logic to use the incidentData state and wallet info.
-
     try {
       setIsSubmitting(true);
+
+      // Ensure wallet connection and signer initialization
+      console.log('Ensuring wallet connection...');
+      await evmContractService.connectWallet();
 
       // Create ticket using new SOCService contract
       console.log('Creating ticket with CLT amount:', incidentData.cltAmount);
@@ -156,30 +153,34 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
 
   if (!isEVMConnected) {
     return (
-      <Card className="bg-orange-500/5 border-orange-500/20">
-        <CardContent className="p-6 text-center">
-          <Zap className="h-12 w-12 text-orange-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-orange-400 mb-2">Connect MetaMask</h3>
-          <p className="text-gray-300">
-            Please connect your MetaMask wallet to submit incident reports on Scroll EVM
-          </p>
-        </CardContent>
-      </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-orange-900/20 to-slate-900 p-4 flex items-center justify-center">
+        <Card className="bg-orange-500/5 border-orange-500/20 max-w-md">
+          <CardContent className="p-8 text-center">
+            <Zap className="h-16 w-16 text-orange-400 mx-auto mb-6" />
+            <h3 className="text-xl font-semibold text-orange-400 mb-4">Connect MetaMask</h3>
+            <p className="text-gray-300 text-lg">
+              Please connect your MetaMask wallet to submit incident reports on Scroll EVM
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="bg-gradient-to-br from-orange-500/5 to-red-500/5 border-orange-500/20">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-orange-400">
-          <AlertTriangle className="h-5 w-5" />
-          EVM Incident Report
-        </CardTitle>
-        <CardDescription className="text-gray-300">
-          Submit security incidents using ETH on Scroll blockchain. Earn CLT tokens as rewards.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-orange-900/20 to-slate-900 p-4">
+      <div className="max-w-4xl mx-auto">
+        <Card className="bg-gradient-to-br from-orange-500/5 to-red-500/5 border-orange-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-400 text-2xl">
+              <AlertTriangle className="h-6 w-6" />
+              EVM Incident Report
+            </CardTitle>
+            <CardDescription className="text-gray-300 text-lg">
+              Submit security incidents using ETH on Scroll blockchain. Earn CLT tokens as rewards.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Incident Title */}
           <div>
@@ -383,5 +384,7 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
         </div>
       </CardContent>
     </Card>
+      </div>
+    </div>
   );
 }
