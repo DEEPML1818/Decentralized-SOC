@@ -75,10 +75,14 @@ export default function ClientPortal() {
         ai_analysis: `Client-submitted security incident: ${formData.title}. Requires analyst review and validation.`,
         transaction_hash: null, // Will be updated after blockchain transaction
         block_number: null,
-        contract_address: null
+        contract_address: null,
+        status: 'open',
+        assigned_analyst: null,
+        assigned_certifier: null,
+        ticket_id: null // Will be updated after blockchain transaction
       };
 
-      console.log('📝 Creating incident report in IPFS:', incidentData);
+      console.log('📝 Creating incident report in IPFS decentralized storage:', incidentData);
       const ipfsResponse = await axios.post('/api/incident-reports', incidentData);
       
       toast({
@@ -99,8 +103,8 @@ export default function ClientPortal() {
 
       // Step 6: Update incident report with blockchain transaction details
       await axios.patch(`/api/incident-reports/${ipfsResponse.data.id}`, {
-        transaction_hash: result.hash,
-        block_number: result.blockNumber,
+        transaction_hash: result.txHash,
+        ticket_id: result.ticketId,
         contract_address: evmContractService.getSOCServiceAddress()
       });
 

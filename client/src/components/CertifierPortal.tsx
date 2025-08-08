@@ -61,19 +61,28 @@ export default function CertifierPortal() {
 
   const loadCases = async () => {
     try {
+      console.log('📥 Loading analyzed cases from IPFS storage...');
       const response = await axios.get('/api/incident-reports');
+      
       // Filter for cases that have analyst reports and are ready for validation
       const analyzedCases = response.data.filter((item: IncidentReport) => 
         item.assigned_analyst && 
         item.ai_analysis && 
         item.status !== 'validated'
       );
+      
+      console.log('📊 IPFS analyzed cases ready for certification:', analyzedCases.length);
       setCases(analyzedCases);
-    } catch (error) {
-      console.error('Failed to load cases:', error);
+      
       toast({
-        title: "Load Failed",
-        description: "Failed to load analyzed cases from IPFS",
+        title: "IPFS Data Loaded",
+        description: `Loaded ${analyzedCases.length} analyzed cases from decentralized storage`,
+      });
+    } catch (error) {
+      console.error('Failed to load analyzed cases from IPFS:', error);
+      toast({
+        title: "IPFS Load Failed",
+        description: "Failed to load analyzed cases from IPFS decentralized storage",
         variant: "destructive"
       });
     } finally {

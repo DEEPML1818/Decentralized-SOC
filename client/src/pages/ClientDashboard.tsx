@@ -45,7 +45,7 @@ interface Case {
 }
 
 export default function ClientDashboard() {
-  const { address, evmBalance, iotaBalance } = useWallet();
+  const { address } = useWallet();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
@@ -475,11 +475,11 @@ export default function ClientDashboard() {
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h3 className="font-semibold text-white">{case_.title}</h3>
-                                <Badge className={`${getSeverityColor(case_.severity)} text-white`}>
-                                  {case_.severity.toUpperCase()}
+                                <Badge className={`${getSeverityColor(case_.severity || 'medium')} text-white`}>
+                                  {(case_.severity || 'medium').toUpperCase()}
                                 </Badge>
                                 <Badge variant="outline" className="text-gray-300">
-                                  {case_.network.toUpperCase()}
+                                  {(case_.network || 'Scroll').toUpperCase()}
                                 </Badge>
                               </div>
                               <div className="flex items-center gap-4 text-sm text-gray-400">

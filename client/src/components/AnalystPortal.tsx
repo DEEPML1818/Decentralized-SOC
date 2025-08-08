@@ -65,13 +65,20 @@ export default function AnalystPortal() {
 
   const loadCases = async () => {
     try {
+      console.log('📥 Loading cases from IPFS storage...');
       const response = await axios.get('/api/incident-reports');
+      console.log('📊 IPFS cases loaded:', response.data.length, 'incidents');
       setCases(response.data);
-    } catch (error) {
-      console.error('Failed to load cases:', error);
+      
       toast({
-        title: "Load Failed",
-        description: "Failed to load cases from IPFS",
+        title: "IPFS Data Loaded",
+        description: `Loaded ${response.data.length} cases from decentralized storage`,
+      });
+    } catch (error) {
+      console.error('Failed to load cases from IPFS:', error);
+      toast({
+        title: "IPFS Load Failed",
+        description: "Failed to load cases from IPFS decentralized storage",
         variant: "destructive"
       });
     } finally {
