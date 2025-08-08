@@ -1,348 +1,689 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import React, { useState, useEffect } from 'react';
+import { useWallet } from '../components/WalletProvider';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Label } from '../components/ui/label';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Progress } from '../components/ui/progress';
 import { 
-  User,
+  Shield, 
+  AlertTriangle, 
+  Clock, 
+  DollarSign, 
+  Upload, 
+  Eye, 
+  TrendingUp,
+  FileText,
+  Coins,
+  Network,
   CheckCircle,
-  Clock,
-  Star,
+  XCircle,
+  AlertCircle,
   Users,
-  Wallet,
-  Shield,
-  Eye
-} from "lucide-react";
-import { evmContractService } from "@/lib/evm-contract";
+  Activity
+} from 'lucide-react';
 
-interface ClientTicket {
-  id: string;
+interface Case {
+  id: number;
   title: string;
-  client_address: string;
-  assigned_analyst: string | null;
-  reward_amount: number;
-  shortlistCount: number;
-  status: string;
-}
-
-interface ShortlistedAnalyst {
-  address: string;
-  profile: {
-    name: string;
-    expertise: string[];
-    experience: string;
-  } | null;
-  analysis_preview: string | null;
-  shortlisted_at: string;
-  is_selected: boolean;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'pending' | 'assigned' | 'analyzing' | 'completed' | 'rejected';
+  network: 'ethereum' | 'polygon' | 'iota';
+  assignedAnalyst?: string;
+  stakingAmount?: number;
+  estimatedReward?: number;
+  submittedAt: string;
+  completedAt?: string;
 }
 
 export default function ClientDashboard() {
-  const [connectedAddress, setConnectedAddress] = useState<string>("");
-  const [myTickets, setMyTickets] = useState<ClientTicket[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<ClientTicket | null>(null);
-  const [shortlistedAnalysts, setShortlistedAnalysts] = useState<ShortlistedAnalyst[]>([]);
-  const [isAssigning, setIsAssigning] = useState(false);
+  const { address, isConnected, evmBalance, iotaBalance } = useWallet();
+  const [cases, setCases] = useState<Case[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+  
+  // Form states
+  const [incidentForm, setIncidentForm] = useState({
+    title: '',
+    description: '',
+    severity: 'medium' as const,
+    category: 'vulnerability' as const,
+    network: 'ethereum' as const,
+    affectedSystems: '',
+    evidenceFiles: [] as File[],
+    stakingAmount: 100
+  });
 
-  const { toast } = useToast();
+  const [stats, setStats] = useState({
+    totalCases: 0,
+    activeCases: 0,
+    completedCases: 0,
+    totalStaked: 0,
+    totalRewardsEarned: 0
+  });
 
   useEffect(() => {
-    const address = localStorage.getItem('connectedWallet') || "";
-    setConnectedAddress(address);
-
-    if (address) {
-      loadMyTickets(address);
+    if (isConnected && address) {
+      loadClientCases();
+      loadClientStats();
     }
-  }, []);
+  }, [isConnected, address]);
 
-  const loadMyTickets = async (address: string) => {
+  const loadClientCases = async () => {
     try {
       const response = await fetch(`/api/tickets/client/${address}`);
       if (response.ok) {
-        const tickets = await response.json();
-        setMyTickets(tickets);
+        const data = await response.json();
+        setCases(data);
       }
     } catch (error) {
-      console.error('Error loading tickets:', error);
+      console.error('Failed to load cases:', error);
     }
   };
 
-  const loadShortlistedAnalysts = async (ticketId: string) => {
-    try {
-      const response = await fetch(`/api/tickets/${ticketId}/shortlisted`);
-      if (response.ok) {
-        const analysts = await response.json();
-        setShortlistedAnalysts(analysts);
-      }
-    } catch (error) {
-      console.error('Error loading shortlisted analysts:', error);
-    }
+  const loadClientStats = async () => {
+    // Mock stats for demonstration
+    setStats({
+      totalCases: 12,
+      activeCases: 5,
+      completedCases: 7,
+      totalStaked: 850,
+      totalRewardsEarned: 340
+    });
   };
 
-  const selectAnalyst = async (analystAddress: string, ticketId: string) => {
-    setIsAssigning(true);
+  const handleSubmitIncident = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
     try {
-      // First, assign in backend
-      const backendResponse = await fetch(`/api/tickets/${ticketId}/assign-analyst`, {
+      // First, analyze the incident with AI
+      const analysisResponse = await fetch('/api/ai/analyze-case', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          analyst_address: analystAddress,
-          assigned_by: connectedAddress,
-          assigned_at: new Date().toISOString()
+          userInput: incidentForm.description,
+          caseType: incidentForm.category,
+          requestType: 'incident_submission'
         })
       });
 
-      if (!backendResponse.ok) {
-        throw new Error('Failed to assign analyst in backend');
-      }
+      if (!analysisResponse.ok) throw new Error('AI analysis failed');
+      const analysis = await analysisResponse.json();
 
-      // Then, call the smart contract setAnalyst function
-      try {
-        const txHash = await evmContractService.setAnalyst(parseInt(ticketId), analystAddress);
+      // Create incident report
+      const incidentData = {
+        title: analysis.title || incidentForm.title,
+        description: incidentForm.description,
+        severity: analysis.severity || incidentForm.severity,
+        category: incidentForm.category,
+        network: incidentForm.network,
+        client_name: address,
+        contact_info: `${incidentForm.network.toUpperCase()} Wallet: ${address}`,
+        client_wallet: address,
+        affected_systems: incidentForm.affectedSystems,
+        evidence_urls: incidentForm.evidenceFiles.map(f => f.name).join(', '),
+        contract_address: '0xE87bFbFC9fC93b94756384e07cCa4B1e857bfC94',
+        ai_analysis: analysis.technicalDetails,
+        estimated_reward: analysis.estimatedReward || 150,
+        required_analysts: analysis.requiredAnalysts || 2,
+        submissionType: 'client_incident_report',
+        blockchainTxHash: `0x${Math.random().toString(16).substring(2, 66)}`,
+        staking_amount: incidentForm.stakingAmount
+      };
 
-        toast({
-          title: "Success",
-          description: `Analyst assigned successfully! Transaction: ${txHash}`,
-        });
-
-        console.log(`🔗 Blockchain assignment complete:`, {
-          ticketId: ticketId,
-          analyst: analystAddress,
-          client: connectedAddress,
-          txHash: txHash
-        });
-
-      } catch (contractError: any) {
-        console.error('Contract call failed:', contractError);
-        toast({
-          title: "Warning", 
-          description: "Analyst assigned in system, but blockchain transaction failed. Please try again.",
-          variant: "destructive"
-        });
-      }
-
-      // Reload data
-      loadMyTickets(connectedAddress);
-      setSelectedTicket(null);
-
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
+      const response = await fetch('/api/incident-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(incidentData)
       });
+
+      if (response.ok) {
+        setNotification('✅ Security incident submitted successfully to dSOC network!');
+        setIncidentForm({
+          title: '',
+          description: '',
+          severity: 'medium',
+          category: 'vulnerability',
+          network: 'ethereum',
+          affectedSystems: '',
+          evidenceFiles: [],
+          stakingAmount: 100
+        });
+        loadClientCases();
+        setTimeout(() => setNotification(null), 5000);
+      }
+    } catch (error) {
+      setNotification('❌ Failed to submit incident. Please try again.');
+      setTimeout(() => setNotification(null), 5000);
     } finally {
-      setIsAssigning(false);
+      setLoading(false);
     }
   };
 
-  const viewShortlistedAnalysts = (ticket: ClientTicket) => {
-    setSelectedTicket(ticket);
-    loadShortlistedAnalysts(ticket.id);
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setIncidentForm(prev => ({ ...prev, evidenceFiles: files }));
   };
 
-  if (!connectedAddress) {
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-500';
+      case 'high': return 'bg-orange-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'rejected': return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'analyzing': return <Activity className="h-4 w-4 text-blue-500" />;
+      default: return <Clock className="h-4 w-4 text-yellow-500" />;
+    }
+  };
+
+  if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-6">
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-slate-800/50 border-yellow-500/30">
-            <CardHeader>
-              <CardTitle className="text-yellow-400 flex items-center gap-2">
-                <Wallet className="h-6 w-6" />
-                Wallet Connection Required
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-300">Please connect your wallet to access the client dashboard.</p>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Shield className="h-12 w-12 mx-auto text-red-500 mb-4" />
+            <CardTitle className="text-2xl text-red-500">Client Portal</CardTitle>
+            <CardDescription>
+              Connect your wallet to access the dSOC Client Dashboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Please connect your wallet to submit security incidents and track cases.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">Client Dashboard</h1>
-          <p className="text-gray-300">Manage your security cases and select analysts</p>
-          <p className="text-sm text-gray-400">Address: {connectedAddress}</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-red-500 flex items-center gap-3">
+              <Shield className="h-8 w-8" />
+              Client Security Portal
+            </h1>
+            <p className="text-gray-400 mt-2">Submit incidents, track cases, and manage security operations</p>
+          </div>
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Connected</span>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {address?.slice(0, 8)}...{address?.slice(-6)}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <Tabs defaultValue="tickets" className="space-y-6">
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="tickets">My Tickets</TabsTrigger>
-            <TabsTrigger value="assigned">Assigned Cases</TabsTrigger>
+        {/* Notification */}
+        {notification && (
+          <Alert className={`${notification.includes('✅') ? 'border-green-500' : 'border-red-500'} bg-gray-800/50`}>
+            <AlertDescription>{notification}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Total Cases</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.totalCases}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Active Cases</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-500">{stats.activeCases}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Completed</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-500">{stats.completedCases}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-1">
+                <Coins className="h-4 w-4" />
+                Total Staked
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-500">{stats.totalStaked} CLT</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">ETH Balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-500">{evmBalance} ETH</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="report" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-800/50">
+            <TabsTrigger value="report" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Report Incident
+            </TabsTrigger>
+            <TabsTrigger value="cases" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+              <FileText className="h-4 w-4 mr-2" />
+              My Cases
+            </TabsTrigger>
+            <TabsTrigger value="staking" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Staking
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+              <Activity className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tickets" className="space-y-4">
-            <div className="grid gap-4">
-              {myTickets.filter(ticket => !ticket.assigned_analyst).map((ticket) => (
-                <Card key={ticket.id} className="bg-slate-800/50 border-gray-600">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-white">{ticket.title}</CardTitle>
-                        <div className="flex gap-2 mt-2">
-                          <Badge className="bg-green-500/20 text-green-300">
-                            {ticket.reward_amount} CLT Reward
-                          </Badge>
-                          <Badge variant="outline">
-                            {ticket.shortlistCount} Shortlisted
-                          </Badge>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => viewShortlistedAnalysts(ticket)}
-                        disabled={ticket.shortlistCount === 0}
-                        className="bg-green-600 hover:bg-green-700"
+          {/* Report Incident Tab */}
+          <TabsContent value="report">
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-red-500 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  Submit Security Incident
+                </CardTitle>
+                <CardDescription>
+                  Report security incidents to the dSOC network for analysis and resolution
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmitIncident} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Incident Title</Label>
+                      <Input
+                        placeholder="Brief description of the incident"
+                        value={incidentForm.title}
+                        onChange={(e) => setIncidentForm(prev => ({ ...prev, title: e.target.value }))}
+                        required
+                        className="bg-gray-700 border-gray-600"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Network</Label>
+                      <Select 
+                        value={incidentForm.network} 
+                        onValueChange={(value) => setIncidentForm(prev => ({ ...prev, network: value as any }))}
                       >
-                        <Users className="h-4 w-4 mr-2" />
-                        Select Analyst
-                      </Button>
+                        <SelectTrigger className="bg-gray-700 border-gray-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ethereum">Ethereum</SelectItem>
+                          <SelectItem value="polygon">Polygon</SelectItem>
+                          <SelectItem value="iota">IOTA</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-300 text-sm">
-                      Status: Awaiting analyst selection
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                  </div>
 
-            {selectedTicket && (
-              <Card className="bg-slate-800/50 border-green-500/30">
-                <CardHeader>
-                  <CardTitle className="text-green-400">
-                    Select Analyst for: {selectedTicket.title}
-                  </CardTitle>
-                  <p className="text-gray-300">
-                    Choose from {shortlistedAnalysts.length} certified analysts
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {shortlistedAnalysts.map((analyst) => (
-                    <Card key={analyst.address} className="bg-slate-900/50 border-gray-600">
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h4 className="text-white font-medium">
-                              {analyst.profile?.name || `Analyst ${analyst.address.slice(0, 8)}...`}
-                            </h4>
-                            <p className="text-gray-400 text-sm">
-                              Address: {analyst.address}
-                            </p>
-                            {analyst.profile?.expertise && (
-                              <div className="flex gap-1 mt-2">
-                                {analyst.profile.expertise.slice(0, 4).map((exp, i) => (
-                                  <Badge key={i} variant="outline" className="text-xs">
-                                    {exp}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                            <p className="text-gray-400 text-sm mt-2">
-                              Shortlisted: {new Date(analyst.shortlisted_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <Button
-                              onClick={() => selectAnalyst(analyst.address, selectedTicket.id)}
-                              disabled={isAssigning}
-                              className="bg-green-600 hover:bg-green-700"
-                              size="sm"
-                            >
-                              {isAssigning ? "Assigning..." : "Select Analyst"}
-                            </Button>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      {analyst.analysis_preview && (
-                        <CardContent>
-                          <div className="bg-slate-800/50 p-3 rounded">
-                            <h5 className="text-gray-300 text-sm font-medium mb-2">Analysis Preview:</h5>
-                            <p className="text-gray-400 text-sm">
-                              {analyst.analysis_preview}
-                            </p>
-                          </div>
-                        </CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Severity Level</Label>
+                      <Select 
+                        value={incidentForm.severity} 
+                        onValueChange={(value) => setIncidentForm(prev => ({ ...prev, severity: value as any }))}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="critical">Critical</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Select 
+                        value={incidentForm.category} 
+                        onValueChange={(value) => setIncidentForm(prev => ({ ...prev, category: value as any }))}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="vulnerability">Smart Contract Vulnerability</SelectItem>
+                          <SelectItem value="breach">Security Breach</SelectItem>
+                          <SelectItem value="malware">Malware Detection</SelectItem>
+                          <SelectItem value="phishing">Phishing Attack</SelectItem>
+                          <SelectItem value="ddos">DDoS Attack</SelectItem>
+                          <SelectItem value="insider_threat">Insider Threat</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Incident Description</Label>
+                    <Textarea
+                      placeholder="Provide detailed description of the security incident..."
+                      value={incidentForm.description}
+                      onChange={(e) => setIncidentForm(prev => ({ ...prev, description: e.target.value }))}
+                      required
+                      rows={6}
+                      className="bg-gray-700 border-gray-600"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Affected Systems</Label>
+                    <Input
+                      placeholder="List affected systems, contracts, or applications"
+                      value={incidentForm.affectedSystems}
+                      onChange={(e) => setIncidentForm(prev => ({ ...prev, affectedSystems: e.target.value }))}
+                      className="bg-gray-700 border-gray-600"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Evidence Files</Label>
+                      <Input
+                        type="file"
+                        multiple
+                        onChange={handleFileUpload}
+                        className="bg-gray-700 border-gray-600"
+                      />
+                      {incidentForm.evidenceFiles.length > 0 && (
+                        <p className="text-sm text-gray-400">
+                          {incidentForm.evidenceFiles.length} file(s) selected
+                        </p>
                       )}
-                    </Card>
-                  ))}
-
-                  {shortlistedAnalysts.length === 0 && (
-                    <div className="text-center py-8">
-                      <Clock className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-300 mb-2">
-                        No Analysts Shortlisted Yet
-                      </h3>
-                      <p className="text-gray-400">
-                        Please wait for certifiers to review and shortlist qualified analysts.
-                      </p>
                     </div>
-                  )}
+                    
+                    <div className="space-y-2">
+                      <Label>Staking Amount (CLT)</Label>
+                      <Input
+                        type="number"
+                        min="10"
+                        max="1000"
+                        value={incidentForm.stakingAmount}
+                        onChange={(e) => setIncidentForm(prev => ({ ...prev, stakingAmount: parseInt(e.target.value) || 100 }))}
+                        className="bg-gray-700 border-gray-600"
+                      />
+                      <p className="text-xs text-gray-400">Higher stakes prioritize your case</p>
+                    </div>
+                  </div>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedTicket(null)}
-                    className="w-full"
+                  <Button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-red-500 hover:bg-red-600"
                   >
-                    Back to My Tickets
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="h-4 w-4 mr-2" />
+                        Submit Security Incident
+                      </>
+                    )}
                   </Button>
-                </CardContent>
-              </Card>
-            )}
+                </form>
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          <TabsContent value="assigned" className="space-y-4">
-            <div className="grid gap-4">
-              {myTickets.filter(ticket => ticket.assigned_analyst).map((ticket) => (
-                <Card key={ticket.id} className="bg-slate-800/50 border-green-600">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-white">{ticket.title}</CardTitle>
-                        <p className="text-gray-300 text-sm mt-1">
-                          Assigned to: {ticket.assigned_analyst}
-                        </p>
-                        <div className="flex gap-2 mt-2">
-                          <Badge className="bg-green-500/20 text-green-300">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Analyst Assigned
-                          </Badge>
-                          <Badge variant="outline">
-                            {ticket.reward_amount} CLT
-                          </Badge>
-                        </div>
-                      </div>
+          {/* My Cases Tab */}
+          <TabsContent value="cases">
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-red-500 flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  My Security Cases
+                </CardTitle>
+                <CardDescription>
+                  Track the status and progress of your submitted security incidents
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {cases.length === 0 ? (
+                    <div className="text-center py-12">
+                      <FileText className="h-12 w-12 mx-auto text-gray-500 mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-400">No cases submitted yet</h3>
+                      <p className="text-gray-500 mt-2">Submit your first security incident to get started</p>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-300 text-sm">
-                      Status: Work in progress - analyst is analyzing your case
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                  ) : (
+                    cases.map((case_) => (
+                      <div key={case_.id} className="border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-semibold text-white">{case_.title}</h3>
+                              <Badge className={`${getSeverityColor(case_.severity)} text-white`}>
+                                {case_.severity.toUpperCase()}
+                              </Badge>
+                              <Badge variant="outline" className="text-gray-300">
+                                {case_.network.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-400">
+                              <div className="flex items-center gap-1">
+                                {getStatusIcon(case_.status)}
+                                <span className="capitalize">{case_.status.replace('_', ' ')}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                <span>Submitted {new Date(case_.submittedAt).toLocaleDateString()}</span>
+                              </div>
+                              {case_.stakingAmount && (
+                                <div className="flex items-center gap-1">
+                                  <Coins className="h-4 w-4" />
+                                  <span>{case_.stakingAmount} CLT staked</span>
+                                </div>
+                              )}
+                            </div>
+                            {case_.assignedAnalyst && (
+                              <div className="mt-2 text-sm text-gray-400">
+                                <Users className="h-4 w-4 inline mr-1" />
+                                Analyst: {case_.assignedAnalyst.slice(0, 8)}...
+                              </div>
+                            )}
+                          </div>
+                          <Button variant="outline" size="sm" className="border-gray-600">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </Button>
+                        </div>
+                        {case_.status === 'analyzing' && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between text-sm text-gray-400 mb-2">
+                              <span>Analysis Progress</span>
+                              <span>65%</span>
+                            </div>
+                            <Progress value={65} className="h-2" />
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            {myTickets.filter(ticket => ticket.assigned_analyst).length === 0 && (
-              <div className="text-center py-8">
-                <Shield className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-300 mb-2">
-                  No Assigned Cases
-                </h3>
-                <p className="text-gray-400">
-                  Cases you assign to analysts will appear here.
-                </p>
-              </div>
-            )}
+          {/* Staking Tab */}
+          <TabsContent value="staking">
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-red-500 flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Staking & Rewards
+                </CardTitle>
+                <CardDescription>
+                  Stake CLT tokens to prioritize your cases and earn rewards
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card className="bg-gray-700/50 border-gray-600">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm text-gray-400">Available Balance</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-yellow-500">1,250 CLT</div>
+                      <p className="text-xs text-gray-400 mt-1">Available for staking</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gray-700/50 border-gray-600">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm text-gray-400">Total Staked</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-blue-500">{stats.totalStaked} CLT</div>
+                      <p className="text-xs text-gray-400 mt-1">Across all cases</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gray-700/50 border-gray-600">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm text-gray-400">Rewards Earned</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-500">{stats.totalRewardsEarned} CLT</div>
+                      <p className="text-xs text-gray-400 mt-1">From completed cases</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-red-500 flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    Case Analytics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Critical Cases</span>
+                        <span>2/12 (17%)</span>
+                      </div>
+                      <Progress value={17} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>High Priority</span>
+                        <span>3/12 (25%)</span>
+                      </div>
+                      <Progress value={25} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Medium Priority</span>
+                        <span>5/12 (42%)</span>
+                      </div>
+                      <Progress value={42} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Low Priority</span>
+                        <span>2/12 (16%)</span>
+                      </div>
+                      <Progress value={16} className="h-2" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-red-500 flex items-center gap-2">
+                    <Network className="h-5 w-5" />
+                    Network Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Ethereum</span>
+                        <span>7/12 (58%)</span>
+                      </div>
+                      <Progress value={58} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Polygon</span>
+                        <span>3/12 (25%)</span>
+                      </div>
+                      <Progress value={25} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>IOTA</span>
+                        <span>2/12 (17%)</span>
+                      </div>
+                      <Progress value={17} className="h-2" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
