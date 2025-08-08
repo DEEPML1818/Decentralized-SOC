@@ -3,6 +3,7 @@ import { useWallet } from "@/components/providers/WalletProvider";
 import Dashboard from "@/components/Dashboard";
 import Header from "@/components/Header";
 import EnhancedStakingPools from "@/components/EnhancedStakingPools";
+import EVMBalanceDisplay from "@/components/EVMBalanceDisplay";
 import CasesList from "@/components/CasesList";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
