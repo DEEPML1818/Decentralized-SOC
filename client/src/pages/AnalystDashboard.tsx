@@ -10,25 +10,30 @@ import { Brain, Upload, Download, FileText, Clock, CheckCircle2, AlertTriangle }
 import { evmContractService } from '@/lib/evm-contract';
 import { apiRequest } from '@/lib/queryClient';
 
-interface Ticket {
+interface IncidentReport {
   id: number;
   title: string;
   description: string;
   severity: string;
   status: string;
   client_name: string;
-  analyst_address: string | null;
-  certifier: string | null;
-  reward_amount: string;
-  staking_pool: string;
-  is_validated: boolean;
+  contact_info: string;
+  client_wallet: string;
+  affected_systems: string;
+  attack_vectors: string;
+  evidence_urls: string;
+  ai_analysis: string;
+  assigned_analyst: string | null;
+  transaction_hash: string;
+  block_number: number;
   created_at: string;
+  ticket_id: number;
 }
 
 export default function AnalystDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<IncidentReport | null>(null);
   const [analysisText, setAnalysisText] = useState('');
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -52,25 +57,32 @@ export default function AnalystDashboard() {
     checkWallet();
   }, []);
 
-  // Fetch available tickets for analysts
+  // Fetch real IPFS incident reports instead of fake tickets
   const { data: tickets = [], isLoading } = useQuery({
-    queryKey: ['/api/tickets'],
-    queryFn: () => apiRequest('/api/tickets'),
+    queryKey: ['/api/incident-reports'],
+    queryFn: () => apiRequest('/api/incident-reports'),
     refetchInterval: 5000, // Refresh every 5 seconds
   });
 
   // Join as analyst mutation
   const joinAsAnalystMutation = useMutation({
-    mutationFn: async (ticketId: number) => {
+    mutationFn: async (incidentReport: IncidentReport) => {
       if (!account) throw new Error('Wallet not connected');
       
-      const txResult = await evmContractService.assignAsAnalyst(ticketId);
-      console.log('Joined as analyst:', txResult);
+      console.log('🔗 Assigning as analyst for case:', incidentReport.id, 'ticket_id:', incidentReport.ticket_id);
       
-      // Update backend
-      return apiRequest(`/api/tickets/${ticketId}/assign-analyst`, {
-        method: 'POST',
-        body: JSON.stringify({ analyst_address: account }),
+      // Use ticket_id for blockchain call, fallback to case id
+      const ticketId = incidentReport.ticket_id || incidentReport.id;
+      const txResult = await evmContractService.assignAsAnalyst(ticketId);
+      console.log('Joined as analyst blockchain tx:', txResult);
+      
+      // Update IPFS record
+      return apiRequest(`/api/incident-reports/${incidentReport.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ 
+          assigned_analyst: account,
+          status: 'analyzing'
+        }),
       });
     },
     onSuccess: () => {
@@ -78,7 +90,7 @@ export default function AnalystDashboard() {
         title: "Success",
         description: "You have successfully joined as analyst!",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/incident-reports'] });
     },
     onError: (error: any) => {
       toast({
@@ -91,11 +103,13 @@ export default function AnalystDashboard() {
 
   // Submit analysis mutation
   const submitAnalysisMutation = useMutation({
-    mutationFn: async ({ ticketId, analysis }: { ticketId: number; analysis: string }) => {
-      return apiRequest(`/api/tickets/${ticketId}/submit-report`, {
-        method: 'POST',
+    mutationFn: async ({ incidentId, analysis }: { incidentId: number; analysis: string }) => {
+      console.log('📝 Submitting analysis for incident:', incidentId);
+      return apiRequest(`/api/incident-reports/${incidentId}`, {
+        method: 'PATCH',
         body: JSON.stringify({ 
-          report: analysis,
+          ai_analysis: analysis,
+          status: 'analyzed',
           analyst_address: account 
         }),
       });
@@ -108,7 +122,7 @@ export default function AnalystDashboard() {
       setSelectedTicket(null);
       setAnalysisText('');
       setAiAnalysis('');
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/incident-reports'] });
     },
     onError: (error: any) => {
       toast({
@@ -119,8 +133,8 @@ export default function AnalystDashboard() {
     },
   });
 
-  const handleJoinAsAnalyst = (ticket: Ticket) => {
-    joinAsAnalystMutation.mutate(ticket.id);
+  const handleJoinAsAnalyst = (incident: IncidentReport) => {
+    joinAsAnalystMutation.mutate(incident);
   };
 
   const handleSubmitAnalysis = () => {
@@ -128,7 +142,7 @@ export default function AnalystDashboard() {
     
     const finalAnalysis = analysisText || aiAnalysis;
     submitAnalysisMutation.mutate({
-      ticketId: selectedTicket.id,
+      incidentId: selectedTicket.id,
       analysis: finalAnalysis,
     });
   };
@@ -169,14 +183,14 @@ export default function AnalystDashboard() {
   };
 
   const getAvailableTickets = () => {
-    return tickets.filter((ticket: Ticket) => 
-      !ticket.analyst_address || ticket.analyst_address === account
+    return tickets.filter((incident: IncidentReport) => 
+      !incident.assigned_analyst || incident.assigned_analyst === account
     );
   };
 
   const getMyTickets = () => {
-    return tickets.filter((ticket: Ticket) => 
-      ticket.analyst_address === account
+    return tickets.filter((incident: IncidentReport) => 
+      incident.assigned_analyst === account
     );
   };
 
@@ -241,27 +255,27 @@ export default function AnalystDashboard() {
                   <p className="text-gray-400">No available cases</p>
                 </div>
               ) : (
-                getAvailableTickets().map((ticket: Ticket) => (
-                  <Card key={ticket.id} className="bg-gray-700/50 border-gray-600">
+                getAvailableTickets().map((incident: IncidentReport) => (
+                  <Card key={incident.id} className="bg-gray-700/50 border-gray-600">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-semibold text-white text-sm">{ticket.title}</h3>
-                        <Badge className={`${getSeverityColor(ticket.severity)} text-white text-xs`}>
-                          {ticket.severity}
+                        <h3 className="font-semibold text-white text-sm">{incident.title}</h3>
+                        <Badge className={`${getSeverityColor(incident.severity)} text-white text-xs`}>
+                          {incident.severity}
                         </Badge>
                       </div>
                       <p className="text-gray-300 text-xs mb-3 line-clamp-2">
-                        {ticket.description}
+                        {incident.description}
                       </p>
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2 text-xs text-gray-400">
                           <Clock className="h-3 w-3" />
-                          {new Date(ticket.created_at).toLocaleDateString()}
+                          {new Date(incident.created_at).toLocaleDateString()}
                         </div>
-                        {!ticket.analyst_address ? (
+                        {!incident.assigned_analyst ? (
                           <Button
                             size="sm"
-                            onClick={() => handleJoinAsAnalyst(ticket)}
+                            onClick={() => handleJoinAsAnalyst(incident)}
                             disabled={joinAsAnalystMutation.isPending}
                             className="bg-blue-500 hover:bg-blue-600 text-xs"
                           >
@@ -270,7 +284,7 @@ export default function AnalystDashboard() {
                         ) : (
                           <Button
                             size="sm"
-                            onClick={() => setSelectedTicket(ticket)}
+                            onClick={() => setSelectedTicket(incident)}
                             className="bg-green-500 hover:bg-green-600 text-xs"
                           >
                             Analyze
@@ -296,28 +310,28 @@ export default function AnalystDashboard() {
                   <p className="text-gray-400">No active cases</p>
                 </div>
               ) : (
-                getMyTickets().map((ticket: Ticket) => (
-                  <Card key={ticket.id} className="bg-gray-700/50 border-gray-600">
+                getMyTickets().map((incident: IncidentReport) => (
+                  <Card key={incident.id} className="bg-gray-700/50 border-gray-600">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-semibold text-white text-sm">{ticket.title}</h3>
-                        <Badge className={`${getSeverityColor(ticket.severity)} text-white text-xs`}>
-                          {ticket.severity}
+                        <h3 className="font-semibold text-white text-sm">{incident.title}</h3>
+                        <Badge className={`${getSeverityColor(incident.severity)} text-white text-xs`}>
+                          {incident.severity}
                         </Badge>
                       </div>
                       <p className="text-gray-300 text-xs mb-3 line-clamp-2">
-                        {ticket.description}
+                        {incident.description}
                       </p>
                       <div className="flex justify-between items-center">
                         <Badge 
                           variant="outline" 
-                          className={`text-xs ${ticket.is_validated ? 'border-green-500 text-green-300' : 'border-yellow-500 text-yellow-300'}`}
+                          className={`text-xs ${incident.status === 'analyzed' ? 'border-green-500 text-green-300' : 'border-yellow-500 text-yellow-300'}`}
                         >
-                          {ticket.is_validated ? 'Completed' : 'In Progress'}
+                          {incident.status === 'analyzed' ? 'Completed' : 'In Progress'}
                         </Badge>
                         <Button
                           size="sm"
-                          onClick={() => setSelectedTicket(ticket)}
+                          onClick={() => setSelectedTicket(incident)}
                           className="bg-blue-500 hover:bg-blue-600 text-xs"
                         >
                           View Details
