@@ -6,9 +6,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   const [location] = useLocation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
-      <header className="sticky top-0 z-30 border-b border-gray-800 bg-gray-900/70 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 to-black text-white">
+      <header className="sticky top-0 z-30 border-b border-gray-800 bg-gray-900/70 backdrop-blur w-full">
+        <div className="flex items-center justify-between px-4 py-3 w-full">
           <div className="flex items-center gap-6">
             <Link href="/">
               <div className="flex items-center gap-2 cursor-pointer">
@@ -45,7 +45,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           <ConnectWalletButton />
         </div>
       </header>
-      <main className="mx-auto max-w-7xl p-4">{children}</main>
+      <main className="w-full p-4 min-h-[calc(100vh-80px)]">{children}</main>
     </div>
   );
 };

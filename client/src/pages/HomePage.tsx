@@ -18,9 +18,26 @@ import {
 
 export default function HomePage() {
   const [selectedRole, setSelectedRole] = useState<string>('client');
-  const { walletType, evmAddress, isEVMConnected, isIOTAConnected, connectEVMWallet } = useWallet();
-  const iotaAccount = useCurrentAccount();
+  
+  // Safely access wallet context with fallback values
+  let walletType: string | null = null;
+  let evmAddress: string | null = null;
+  let isEVMConnected = false;
+  let isIOTAConnected = false;
+  let connectEVMWallet: () => void = () => {}; // Provide a no-op function
 
+  try {
+    const walletContext = useWallet();
+    walletType = walletContext.walletType;
+    evmAddress = walletContext.evmAddress;
+    isEVMConnected = walletContext.isEVMConnected;
+    isIOTAConnected = walletContext.isIOTAConnected;
+    connectEVMWallet = walletContext.connectEVMWallet;
+  } catch (error) {
+    console.warn('WalletProvider not found, using default values');
+  }
+
+  const iotaAccount = useCurrentAccount();
   const iotaAddress = iotaAccount?.address;
 
   return (

@@ -201,8 +201,14 @@ export default function DAppPage() {
           </TabsContent>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <Dashboard currentRole={selectedRole} />
+            <div className="w-full space-y-6">
+              <div className="w-full">
+                <Dashboard />
+              </div>
+              <div className="grid lg:grid-cols-2 gap-6">
+                <EnhancedStakingPools />
+                <EVMBalanceDisplay />
+              </div>
             </div>
           </TabsContent>
         </Tabs>
