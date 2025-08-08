@@ -17,7 +17,7 @@ export const SCROLL_SEPOLIA_CONFIG = {
 // Updated contract addresses - New deployments with mint function and proper staking
 export const CONTRACT_ADDRESSES = {
   CLT_REWARD: '0xD5d71c78f44b2B3840c7a0374c52Be959FA73E5f', // New CLT Token contract
-  SOC_SERVICE: '0xe2a4Aa48B8FD43dFcEe40c6220f35Db7F7dD5D0f', // New SOCService contract
+  SOC_SERVICE: '0x5835fcE133F0119439C5F4209ce5FD7A850FDa7A', // New SOCService contract
 };
 
 // CLT Reward Token ABI (CyberLink Token with mint function)
