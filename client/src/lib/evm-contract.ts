@@ -970,6 +970,62 @@ class EVMContractService {
       throw new Error(`Failed to get ticket counter: ${error.message}`);
     }
   }
+
+  // Staking pool interaction methods (for EnhancedStakingPools component)
+  async getStakeInfoForPool(poolAddress: string, userAddress: string): Promise<{amount: string}> {
+    // Since we don't have actual staking pools implemented yet, return mock data
+    // In a real implementation, this would query the staking pool contract
+    return {
+      amount: "0" // Default to 0 staked for now
+    };
+  }
+
+  async stakeInPool(poolAddress: string, amount: string): Promise<string> {
+    if (!this.signer) throw new Error('Signer not initialized');
+    
+    try {
+      // This would interact with the actual staking pool contract
+      // For now, we'll simulate the transaction
+      console.log(`Simulating staking ${amount} CLT in pool ${poolAddress}`);
+      
+      // In a real implementation, this would:
+      // 1. Get the staking pool contract
+      // 2. Approve CLT spending if needed
+      // 3. Call the stake function
+      
+      // Return a mock transaction hash
+      return `0x${'0'.repeat(64)}`;
+    } catch (error: any) {
+      console.error('Stake in pool failed:', error);
+      throw new Error(`Failed to stake in pool: ${error.message}`);
+    }
+  }
+
+  async withdrawFromPool(poolAddress: string, amount: string): Promise<string> {
+    if (!this.signer) throw new Error('Signer not initialized');
+    
+    try {
+      console.log(`Simulating withdrawal of ${amount} CLT from pool ${poolAddress}`);
+      // Return a mock transaction hash
+      return `0x${'1'.repeat(64)}`;
+    } catch (error: any) {
+      console.error('Withdraw from pool failed:', error);
+      throw new Error(`Failed to withdraw from pool: ${error.message}`);
+    }
+  }
+
+  async claimFromPool(poolAddress: string): Promise<string> {
+    if (!this.signer) throw new Error('Signer not initialized');
+    
+    try {
+      console.log(`Simulating reward claim from pool ${poolAddress}`);
+      // Return a mock transaction hash
+      return `0x${'2'.repeat(64)}`;
+    } catch (error: any) {
+      console.error('Claim from pool failed:', error);
+      throw new Error(`Failed to claim from pool: ${error.message}`);
+    }
+  }
 }
 
 // Export singleton instance

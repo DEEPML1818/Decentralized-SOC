@@ -61,6 +61,11 @@ export default function EnhancedStakingPools() {
 
     try {
       setLoading(true);
+      
+      // Ensure wallet connection and provider initialization
+      console.log('Ensuring wallet connection before loading pools...');
+      await evmContractService.connectWallet();
+      
       const ticketCounter = await evmContractService.getTicketCounter();
       const poolsData: StakingPool[] = [];
 
