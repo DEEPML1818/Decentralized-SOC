@@ -3,13 +3,25 @@ import { useCurrentAccount } from '@iota/dapp-kit';
 import { evmContractService } from '../../lib/evm-contract';
 
 export interface WalletContext {
+  // Basic connection state
   isConnected: boolean
+  isEVMConnected: boolean
+  isIOTAConnected: boolean
   walletType: 'EVM' | 'IOTA' | null
-  address?: string
+  address: string | null
+  evmAddress: string | null
+  iotaAddress: string | null
   roles: string[]
+  
+  // Connection methods (supporting both naming conventions)
   connectEvm: () => Promise<void>
   connectIota: () => Promise<void>
+  connectEVMWallet: () => Promise<void>
+  connectIOTAWallet: () => Promise<void>
   disconnect: () => Promise<void>
+  disconnectWallet: () => void
+  setWalletType: (type: 'EVM' | 'IOTA' | null) => void
+  assignRole: (role: string) => Promise<void>
 }
 
 const WalletContextProvider = createContext<WalletContext | undefined>(undefined);
@@ -28,7 +40,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
   const iotaAddress = iotaAccount?.address || null;
 
   const isConnected = !!evmAddress || !!iotaAddress;
-  const address = evmAddress || iotaAddress || undefined;
+  const isEVMConnected = !!evmAddress;
+  const isIOTAConnected = !!iotaAddress;
+  const address = evmAddress || iotaAddress || null;
 
   const connectEvm = async (): Promise<void> => {
     try {
@@ -63,6 +77,41 @@ export function WalletProvider({ children }: WalletProviderProps) {
     setWalletType(null);
     setRoles([]);
     localStorage.removeItem('connectedWallet');
+  };
+
+  const disconnectWallet = (): void => {
+    disconnect();
+  };
+
+  const assignRole = async (role: string): Promise<void> => {
+    try {
+      const currentAddress = address;
+      if (!currentAddress) {
+        throw new Error('No wallet connected');
+      }
+
+      const response = await fetch('/api/roles/assign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: currentAddress,
+          role: role
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Role assigned:', data);
+        await fetchUserRoles(currentAddress);
+      } else {
+        throw new Error('Failed to assign role');
+      }
+    } catch (error) {
+      console.error('Error assigning role:', error);
+      throw error;
+    }
   };
 
   const fetchUserRoles = async (userAddress: string): Promise<void> => {
@@ -139,12 +188,21 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
   const contextValue: WalletContext = {
     isConnected,
+    isEVMConnected,
+    isIOTAConnected,
     walletType,
     address,
+    evmAddress,
+    iotaAddress,
     roles,
     connectEvm,
     connectIota,
+    connectEVMWallet: connectEvm, // Alias for compatibility
+    connectIOTAWallet: connectIota, // Alias for compatibility
     disconnect,
+    disconnectWallet,
+    setWalletType,
+    assignRole,
   };
 
   return (

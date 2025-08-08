@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/components/providers/WalletProvider";
-import { User, Shield, Award, AlertCircle, CheckCircle, Eye } from "lucide-react";
+import { User, Shield, Award, AlertCircle, CheckCircle, Eye, Users } from "lucide-react";
 
 interface RoleSelectionModalProps {
   isOpen: boolean;
