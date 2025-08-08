@@ -264,7 +264,7 @@ export default function ClientDashboard() {
                 <CardTitle className="text-sm font-medium text-gray-400">ETH Balance</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-purple-500">{evmBalance} ETH</div>
+                <div className="text-2xl font-bold text-purple-500">0.00 ETH</div>
               </CardContent>
             </Card>
           </div>
