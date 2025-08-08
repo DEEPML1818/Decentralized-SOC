@@ -41,6 +41,23 @@ export default function Dashboard({ currentRole }: DashboardProps) {
     cltBalance: "0",
     totalStaked: "0",
   });
+  // Assume these are available from your context or props
+  const userRole = currentRole; // Replace with actual role state if dynamic
+  const assignRole = async (role: string) => {
+    // Mock function for role assignment
+    console.log(`Assigning role: ${role}`);
+    // In a real app, this would involve a contract call or API request
+    // For now, we'll simulate success and update the local state if needed
+    return true; // Simulate success
+  };
+  const getDefaultTabForRole = (role: string) => {
+    switch (role) {
+      case 'analyst': return 'incidents';
+      case 'certifier': return 'tickets';
+      case 'client': return 'incidents';
+      default: return 'incidents';
+    }
+  };
 
   const { walletType, evmAddress, iotaAddress, isEVMConnected, isIOTAConnected, connectEVMWallet, setWalletType } = useWallet();
   const { toast } = useToast();
@@ -73,6 +90,71 @@ export default function Dashboard({ currentRole }: DashboardProps) {
   const isWalletConnected = walletType === 'evm' ? isEVMConnected : isIOTAConnected;
   const currentAddress = walletType === 'evm' ? evmAddress : iotaAddress;
 
+  const handlePortalAccess = async (portalType: string) => {
+    if (!isWalletConnected) {
+      toast({
+        title: "Wallet Required", 
+        description: "Please connect your wallet to access portals",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const currentAddress = evmAddress || iotaAddress;
+    if (!currentAddress) {
+      toast({
+        title: "No Wallet Address",
+        description: "Unable to detect wallet address",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Auto-assign role if user doesn't have one
+    if (!userRole) {
+      try {
+        const success = await assignRole(portalType);
+        if (success) {
+          toast({
+            title: "Role Assigned",
+            description: `You have been assigned the ${portalType} role`
+          });
+        } else {
+          toast({
+            title: "Role Assignment Failed", 
+            description: "Unable to assign role. Please try again.",
+            variant: "destructive"
+          });
+          return;
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to assign role",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    // Check if user has the required role for this portal
+    if (userRole !== portalType && userRole !== 'admin') {
+      toast({
+        title: "Access Denied",
+        description: `This portal requires ${portalType} role. Your current role: ${userRole || 'none'}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setActiveTab(getDefaultTabForRole(portalType));
+    toast({
+      title: "Portal Access Granted",
+      description: `Welcome to the ${portalType} portal`
+    });
+  };
+
+
   if (!isWalletConnected) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-950">
@@ -91,7 +173,7 @@ export default function Dashboard({ currentRole }: DashboardProps) {
                 : 'Please connect your IOTA wallet to access IOTA features'
               }
             </p>
-            
+
             <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 mb-8">
               <h3 className="text-red-400 font-semibold mb-4">Connect Your Wallet</h3>
               {walletType === 'evm' ? (
@@ -245,25 +327,25 @@ export default function Dashboard({ currentRole }: DashboardProps) {
               <span className="text-red-400 font-bold">{isEVMConnected ? 'EVM' : 'IOTA'}</span> Wallet: 
               <span className="text-red-400 font-mono">{currentAddress?.slice(0, 6)}...{currentAddress?.slice(-4)}</span>
             </p>
-            
+
             {/* Quick Access Buttons */}
             <div className="flex gap-2 justify-center mt-4">
               <Button 
-                onClick={() => window.open('/analyst', '_blank')}
+                onClick={() => window.location.href = '/analyst'}
                 size="sm"
                 className="bg-blue-600 hover:bg-blue-700 font-mono"
               >
                 📊 Analyst Portal
               </Button>
               <Button 
-                onClick={() => window.open('/certifier', '_blank')}
+                onClick={() => window.location.href = '/certifier'}
                 size="sm"
                 className="bg-purple-600 hover:bg-purple-700 font-mono"
               >
                 ⭐ Certifier Portal
               </Button>
               <Button 
-                onClick={() => window.open('/client', '_blank')}
+                onClick={() => window.location.href = '/client'}
                 size="sm"
                 className="bg-green-600 hover:bg-green-700 font-mono"
               >
@@ -296,6 +378,46 @@ export default function Dashboard({ currentRole }: DashboardProps) {
             )}
           </div>
         </div>
+
+        {/* Current Role & Balance Display */}
+          <Card className="bg-slate-800/50 border-red-500/30 mb-8">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <Shield className="h-6 w-6 text-red-400" />
+                  <div>
+                    <h3 className="text-red-400 font-semibold">Security Officer</h3>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-gray-300">
+                        Role: <Badge className={`${
+                          userRole === 'analyst' ? 'bg-blue-500' :
+                          userRole === 'certifier' ? 'bg-purple-500' :
+                          userRole === 'client' ? 'bg-green-500' :
+                          'bg-gray-500'
+                        } text-white text-xs`}>
+                          {userRole || 'None'}
+                        </Badge>
+                      </span>
+                      <span className="text-gray-500">|</span>
+                      <span className="text-gray-300">
+                        {walletType === 'evm' ? 'EVM' : 'IOTA'} Wallet: 
+                        <span className="ml-1 font-mono text-xs">
+                          {isWalletConnected ? 
+                            `${(evmAddress || iotaAddress)?.slice(0, 6)}...${(evmAddress || iotaAddress)?.slice(-4)}` : 
+                            'Not connected'
+                          }
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {walletType === 'evm' && isEVMConnected && (
+                  <EVMBalanceDisplay address={evmAddress!} />
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
