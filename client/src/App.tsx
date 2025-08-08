@@ -10,6 +10,9 @@ import AnalystDashboard from "./pages/AnalystDashboard";
 import CertifierDashboard from "./pages/CertifierDashboard";
 import CertifierDashboardNew from "./pages/CertifierDashboardNew";
 import ClientDashboard from "./pages/ClientDashboard";
+import ClientPortal from "./components/ClientPortal";
+import AnalystPortal from "./components/AnalystPortal";
+import CertifierPortal from "./components/CertifierPortal";
 import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import EVMIncidentReport from "./components/EVMIncidentReport";
@@ -93,9 +96,12 @@ function App() {
               <Route path="/dapp" component={DAppPage} />
               <Route path="/analyst" component={AnalystDashboard} />
               <Route path="/analyst-validation" component={AnalystValidation} />
+              <Route path="/analyst-portal" component={AnalystPortal} />
               <Route path="/certifier" component={CertifierDashboardNew} />
               <Route path="/certifier-old" component={CertifierDashboard} />
+              <Route path="/certifier-portal" component={CertifierPortal} />
               <Route path="/client" component={ClientDashboard} />
+              <Route path="/client-portal" component={ClientPortal} />
               <Route component={NotFound} />
             </Switch>
             <Toaster />

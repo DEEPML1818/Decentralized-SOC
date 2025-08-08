@@ -355,7 +355,7 @@ export const CLT_REWARD_ABI = [
   }
 ];
 
-// SOCService ABI - New contract with assignAsAnalyst, assignAsCertifier, and validateTicket
+// SOCService ABI - Latest deployment with createTicket, assignAsAnalyst, assignAsCertifier, and validateTicket
 export const SOC_SERVICE_ABI = [
   {
     "inputs": [
