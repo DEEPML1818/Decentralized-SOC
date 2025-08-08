@@ -4,7 +4,6 @@ import Dashboard from "@/components/Dashboard";
 import Header from "@/components/Header";
 import EnhancedStakingPools from "@/components/EnhancedStakingPools";
 import CasesList from "@/components/CasesList";
-import { TestTicketCreation } from "@/components/TestTicketCreation";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -94,7 +93,7 @@ export default function DAppPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-orange-900/20 to-slate-900">
       <Header currentRole={selectedRole} onRoleChange={setSelectedRole} />
-      
+
       <main className="container mx-auto px-4 py-8">
         {/* Platform Overview */}
         <div className="mb-8">
@@ -204,7 +203,6 @@ export default function DAppPage() {
           <TabsContent value="dashboard" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               <Dashboard currentRole={selectedRole} />
-              <TestTicketCreation />
             </div>
           </TabsContent>
         </Tabs>

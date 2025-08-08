@@ -26,7 +26,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900">
       <Header currentRole={selectedRole} onRoleChange={setSelectedRole} />
-      
+
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
           {/* Hero Section */}
@@ -42,7 +42,7 @@ export default function HomePage() {
             <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
               Decentralized Security Operations Center - A blockchain-powered platform for security incident management and token distribution
             </p>
-            
+
             {/* Quick Actions */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
@@ -196,7 +196,7 @@ export default function HomePage() {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="space-y-3">
                   <h4 className="text-orange-400 font-semibold">EVM Wallet (MetaMask)</h4>
                   {isEVMConnected && evmAddress ? (
