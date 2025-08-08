@@ -788,13 +788,43 @@ class EVMContractService {
         console.log(`Minted ${mintAmount} CLT tokens for user`);
       }
 
-      // Approve CLT spending
+      // Get CLT contract instance
       const cltContract = new ethers.Contract(CONTRACT_ADDRESSES.CLT_REWARD, CLT_REWARD_ABI, this.signer);
-      console.log('Approving CLT spending...');
       
-      const approveTx = await cltContract.approve(CONTRACT_ADDRESSES.SOC_SERVICE, amountWei);
-      await approveTx.wait();
-      console.log('CLT spending approved');
+      // Check current allowance
+      const currentAllowance = await cltContract.allowance(userAddress, CONTRACT_ADDRESSES.SOC_SERVICE);
+      console.log('Current allowance:', ethers.formatEther(currentAllowance));
+      
+      // If allowance is insufficient, approve the required amount
+      if (currentAllowance < amountWei) {
+        console.log('Insufficient allowance, approving CLT spending...');
+        
+        // Reset allowance to 0 first (some tokens require this)
+        if (currentAllowance > 0) {
+          console.log('Resetting allowance to 0...');
+          const resetTx = await cltContract.approve(CONTRACT_ADDRESSES.SOC_SERVICE, 0);
+          await resetTx.wait();
+          console.log('Allowance reset to 0');
+        }
+        
+        // Approve the required amount
+        console.log('Approving CLT spending for amount:', ethers.formatEther(amountWei));
+        const approveTx = await cltContract.approve(CONTRACT_ADDRESSES.SOC_SERVICE, amountWei);
+        console.log('Approval transaction sent:', approveTx.hash);
+        
+        const approveReceipt = await approveTx.wait();
+        console.log('Approval transaction confirmed:', approveReceipt);
+        
+        // Verify allowance was set
+        const newAllowance = await cltContract.allowance(userAddress, CONTRACT_ADDRESSES.SOC_SERVICE);
+        console.log('New allowance:', ethers.formatEther(newAllowance));
+        
+        if (newAllowance < amountWei) {
+          throw new Error('Failed to set sufficient allowance');
+        }
+      } else {
+        console.log('Sufficient allowance already exists');
+      }
 
       // Create ticket
       const socContract = new ethers.Contract(CONTRACT_ADDRESSES.SOC_SERVICE, SOC_SERVICE_ABI, this.signer);
