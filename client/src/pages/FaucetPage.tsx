@@ -65,7 +65,8 @@ export default function FaucetPage() {
 
     setEvmLoading(true);
     try {
-      const txHash = await evmContractService.mintCLTReward(evmAddress!, amount);
+      const result = await evmContractService.mintCLT(evmAddress!, amount);
+      const txHash = result.txHash;
       
       const newRequest: FaucetRequest = {
         address: evmAddress!,

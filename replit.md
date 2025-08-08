@@ -64,6 +64,19 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - **2025-08-08**: Integrated AI-powered analysis in AnalystDashboard with vulnerability assessment
 - **2025-08-08**: Implemented blockchain transactions for joinAsAnalyst, joinAsCertifier, and validateTicket
 - **2025-08-08**: Added automatic reward distribution: analyst (100 CLT), certifier (50 CLT)
+- **2025-08-08**: Successfully integrated new smart contracts with plug-and-play functionality
+- **2025-08-08**: Updated CLT Token address to 0xD5d71c78f44b2B3840c7a0374c52Be959FA73E5f (CyberLink Token)
+- **2025-08-08**: Updated SOCService address to 0xe2a4Aa48B8FD43dFcEe40c6220f35Db7F7dD5D0f
+- **2025-08-08**: Completely rebuilt evm-contract.ts with new contract ABIs and clean architecture
+- **2025-08-08**: Enhanced CLT Token with public mint function for faucet integration
+- **2025-08-08**: Updated SOCService with assignAsAnalyst, assignAsCertifier, and validateTicket functions
+- **2025-08-08**: Implemented automatic CLT token minting in createTicket workflow (balance check → mint → approve → create)
+- **2025-08-08**: Enhanced faucet functionality to use real CLT token minting instead of mock data
+- **2025-08-08**: Added comprehensive error handling with user-friendly messages for all contract interactions
+- **2025-08-08**: Created TestTicketCreation component for debugging and testing contract workflows
+- **2025-08-08**: All contract functions now work as plug-and-play: mintCLT, createTicket, assignAsAnalyst, assignAsCertifier, validateTicket
+- **2025-08-08**: Fixed all legacy contract references and ensured system uses only new deployed contracts
+- **2025-08-08**: Verified comprehensive blockchain workflow: wallet connect → mint CLT → create ticket → assign roles → validate → earn rewards
 - **2025-08-06**: Fixed MetaMask wallet connection by adding missing connectWallet method to EVMContractService
 - **2025-08-06**: Added proper TypeScript support for window.ethereum interface
 - **2025-08-06**: Enhanced EVM wallet connection with automatic network switching to Scroll Sepolia
