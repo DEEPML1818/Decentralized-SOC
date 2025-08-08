@@ -48,6 +48,10 @@ export default function CertifierPortal() {
   useEffect(() => {
     loadCases();
     connectWallet();
+    
+    // Auto-refresh every 10 seconds to catch newly analyzed cases
+    const interval = setInterval(loadCases, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const connectWallet = async () => {
@@ -67,8 +71,8 @@ export default function CertifierPortal() {
       // Filter for cases that have analyst reports and are ready for validation
       const analyzedCases = response.data.filter((item: IncidentReport) => 
         item.assigned_analyst && 
-        item.ai_analysis && 
-        item.status !== 'validated'
+        (item.ai_analysis || item.status === 'analyzed') && 
+        !['validated', 'completed'].includes(item.status)
       );
       
       console.log('📊 IPFS analyzed cases ready for certification:', analyzedCases.length);
@@ -103,22 +107,39 @@ export default function CertifierPortal() {
     setIsAssigning(true);
 
     try {
+      // Ensure contract service is connected
+      try {
+        await evmContractService.connectWallet();
+        console.log('✅ EVM contract service connected for certifier assignment');
+      } catch (error) {
+        console.error('❌ Failed to connect EVM contract service:', error);
+      }
+
       // Step 1: Assign as certifier on blockchain
       toast({
-        title: "Assigning as Certifier",
-        description: "Submitting blockchain transaction...",
+        title: "🔄 MetaMask Transaction",
+        description: "Please confirm certifier assignment in MetaMask...",
       });
 
-      await evmContractService.assignAsCertifier(caseItem.ticket_id);
+      console.log(`🔗 Starting assignAsCertifier transaction for ticket_id: ${caseItem.ticket_id}`);
+      const txResult = await evmContractService.assignAsCertifier(caseItem.ticket_id);
+      console.log('✅ Certifier assignment transaction completed:', txResult);
+
+      toast({
+        title: "✅ Blockchain Transaction Confirmed",
+        description: `TX Hash: ${txResult.txHash?.slice(0, 10)}...`,
+        variant: "default"
+      });
 
       // Step 2: Update IPFS record
       await axios.patch(`/api/incident-reports/${caseItem.id}`, {
         assigned_certifier: walletAddress,
-        status: 'certifier_assigned'
+        status: 'certifier_assigned',
+        transaction_hash: txResult.txHash
       });
 
       toast({
-        title: "Assignment Successful!",
+        title: "🔗 Certifier Assignment Complete!",
         description: `You are now assigned as certifier for case #${caseItem.id}`,
         variant: "default"
       });
@@ -128,10 +149,20 @@ export default function CertifierPortal() {
       setSelectedCase(caseItem);
 
     } catch (error: any) {
-      console.error('Assignment failed:', error);
+      console.error('❌ Certifier assignment failed:', error);
+      let errorMessage = "Failed to assign as certifier";
+      
+      if (error.message.includes('User rejected')) {
+        errorMessage = 'Transaction rejected by user';
+      } else if (error.message.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds for transaction';
+      } else if (error.message) {
+        errorMessage = `Transaction failed: ${error.message}`;
+      }
+
       toast({
-        title: "Assignment Failed",
-        description: error.message || "Failed to assign as certifier",
+        title: "❌ Certifier Assignment Failed",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -145,21 +176,38 @@ export default function CertifierPortal() {
     setIsValidating(true);
 
     try {
+      // Ensure contract service is connected
+      try {
+        await evmContractService.connectWallet();
+        console.log('✅ EVM contract service connected for validation');
+      } catch (error) {
+        console.error('❌ Failed to connect EVM contract service:', error);
+      }
+
       // Step 1: Validate ticket on blockchain (earns 100 CLT reward)
       toast({
-        title: "Validating Case",
-        description: "Submitting validation to blockchain...",
+        title: "🔄 MetaMask Validation",
+        description: "Please confirm ticket validation in MetaMask...",
       });
 
-      await evmContractService.validateTicket(selectedCase.ticket_id);
+      console.log(`🔗 Starting validateTicket transaction for ticket_id: ${selectedCase.ticket_id}`);
+      const txResult = await evmContractService.validateTicket(selectedCase.ticket_id);
+      console.log('✅ Ticket validation transaction completed:', txResult);
+
+      toast({
+        title: "✅ Validation Transaction Confirmed",
+        description: `TX Hash: ${txResult.txHash?.slice(0, 10)}...`,
+        variant: "default"
+      });
 
       // Step 2: Update IPFS record as completed
       await axios.patch(`/api/incident-reports/${selectedCase.id}`, {
-        status: 'validated'
+        status: 'validated',
+        validation_transaction_hash: txResult.txHash
       });
 
       toast({
-        title: "Validation Complete!",
+        title: "🎉 Case Validation Complete!",
         description: "Case validated successfully! You earned 100 CLT tokens as reward.",
         variant: "default"
       });
@@ -169,10 +217,20 @@ export default function CertifierPortal() {
       setSelectedCase(null);
 
     } catch (error: any) {
-      console.error('Validation failed:', error);
+      console.error('❌ Validation failed:', error);
+      let errorMessage = "Failed to validate case";
+      
+      if (error.message.includes('User rejected')) {
+        errorMessage = 'Transaction rejected by user';
+      } else if (error.message.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds for transaction';
+      } else if (error.message) {
+        errorMessage = `Transaction failed: ${error.message}`;
+      }
+
       toast({
-        title: "Validation Failed",
-        description: error.message || "Failed to validate case",
+        title: "❌ Validation Failed",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
