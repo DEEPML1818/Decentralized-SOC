@@ -69,33 +69,35 @@ export default function AnalystDashboard() {
     mutationFn: async (incidentReport: IncidentReport) => {
       if (!account) throw new Error('Wallet not connected');
       
-      console.log('🔗 Assigning as analyst for case:', incidentReport.id, 'ticket_id:', incidentReport.ticket_id);
+      // Convert case ID to ticket ID (arrays start from 0, so case 1 = ticket 0)
+      const ticketId = incidentReport.id - 1;
+      console.log(`🔗 Assigning as analyst for case: ${incidentReport.id} ticket_id: ${ticketId}`);
       
-      // Use ticket_id for blockchain call, fallback to case id
-      const ticketId = incidentReport.ticket_id || incidentReport.id;
+      // Call blockchain assignAsAnalyst function
       const txResult = await evmContractService.assignAsAnalyst(ticketId);
-      console.log('Joined as analyst blockchain tx:', txResult);
+      console.log('✅ Blockchain assignment successful:', txResult);
       
-      // Update IPFS record
+      // Update IPFS record with wallet address
       return apiRequest(`/api/incident-reports/${incidentReport.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ 
           assigned_analyst: account,
-          status: 'analyzing'
+          status: 'assigned'
         }),
       });
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "You have successfully joined as analyst!",
+        title: "🔗 Assigned as Analyst",
+        description: "Successfully assigned to case via blockchain transaction",
+        variant: "default"
       });
       queryClient.invalidateQueries({ queryKey: ['/api/incident-reports'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: `Failed to join as analyst: ${error.message}`,
+        title: "Assignment Failed",
+        description: error.message || "Blockchain transaction failed",
         variant: "destructive",
       });
     },
