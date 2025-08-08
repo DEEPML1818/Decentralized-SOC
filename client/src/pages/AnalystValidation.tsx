@@ -222,9 +222,9 @@ export default function AnalystValidation() {
         roleCopy="Connect your wallet to access the dSOC Analyst Dashboard. Please connect your wallet with analyst role to access incident tickets."
       >
         <div className="text-white p-4">
-          <div className="max-w-7xl mx-auto space-y-6"></div>
+          <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}</div>
         </div>
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-blue-500 flex items-center gap-3">
@@ -753,6 +753,7 @@ export default function AnalystValidation() {
             </div>
           </TabsContent>
         </Tabs>
+          </div>
         </div>
       </WalletGate>
     </AppLayout>
