@@ -1467,10 +1467,10 @@
     valtio "1.13.2"
     viem ">=2.29.0"
 
-"@replit/vite-plugin-cartographer@^0.2.5":
-  version "0.2.5"
-  resolved "https://registry.npmjs.org/@replit/vite-plugin-cartographer/-/vite-plugin-cartographer-0.2.5.tgz"
-  integrity sha512-488/4xisKv78NdvisspfKteLBwAf3dpuUKlQeTmJiqvUE+d4jjXgOogl7Do2Ad8mHuWAHhA/z5RxKAKtR/5jBw==
+"@replit/vite-plugin-cartographer@^0.2.8":
+  version "0.2.8"
+  resolved "https://registry.npmjs.org/@replit/vite-plugin-cartographer/-/vite-plugin-cartographer-0.2.8.tgz"
+  integrity sha512-eNr3OAhJFv5b6tbDZ0Bc7DR4O0jxBN17LtBhHagf6FWdpOStNw8Pxsnd8pood7veHRDFbMB9+nsKsWKcB/j1xw==
   dependencies:
     "@babel/parser" "^7.26.9"
     "@babel/traverse" "^7.26.9"
