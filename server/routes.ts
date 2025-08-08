@@ -62,8 +62,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/roles/:address", (req, res) => {
     try {
       const { address } = req.params;
-      const role = (global as any).userRoles.get(address) || null;
-      res.json({ address, role });
+      const role = (global as any).userRoles.get(address);
+      const roles = role ? [role] : []; // Convert single role to array format
+      res.json({ address, role, roles });
     } catch (error) {
       console.error("Role lookup error:", error);
       res.status(500).json({ error: "Failed to get role" });

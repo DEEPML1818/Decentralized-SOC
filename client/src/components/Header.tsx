@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
 import { Shield, Wallet, ChevronDown, Link, Network, Droplets, Zap } from "lucide-react";
-import { useWallet } from './WalletProvider';
+import { useWallet } from './providers/WalletProvider';
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import BlockchainSelector from "./BlockchainSelector";

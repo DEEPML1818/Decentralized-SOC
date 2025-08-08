@@ -5,7 +5,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet } from "@/components/WalletProvider";
+import { useWallet } from "@/components/providers/WalletProvider";
 import { evmContractService, CONTRACT_ADDRESSES } from "@/lib/evm-contract";
 import {
   AlertTriangle,

@@ -1,0 +1,59 @@
+Absolutely—let’s frame this like you're briefing a highly capable AI designer to help you mock up and shape the portal interfaces for Analyst, Certifier, and Client roles. You want the prompts to be clear, direct, and purpose-driven so the output reflects your real-world dev needs. Here's how you could write each request:
+
+---
+
+### 🎨 Prompt for AI Agent: Client Portal Interface Design
+
+```
+Design a responsive and modern portal page UI for a Web3-based Client in a decentralized security operations center (dSOC). The portal should include:
+
+- Wallet connection component (MetaMask and IOTA Wallet via @iota/dapp-kit)
+- Incident reporting form for both IOTA and EVM networks
+- Fields for issue description, severity, category
+- Evidence file upload with IPFS integration (via Pinata)
+- Case tracker showing submitted cases, current status, analyst assignment
+- Balance widget showing ETH and CLT token holdings
+- Staking interface for prioritizing incident review
+- Notifications for case updates or analyst comments
+
+Use a clean dashboard layout, Tailwind CSS style conventions, and modular React components. Show clear role-based access control behavior.
+```
+
+---
+
+### 🎨 Prompt for AI Agent: Analyst Portal Interface Design
+
+```
+Design an interface for a Web3-based Analyst portal inside a decentralized SOC (dSOC). Portal should support:
+
+- Analyst verification via IOTA-based VC
+- Queue of incident tickets, with filtering by severity, network, and status
+- Ability to claim/accept incident tickets
+- Evidence file viewer (IPFS preview, SHA-256 hash verification)
+- AI-powered analysis panel integrated with Google Generative AI
+- Resolution submission form (notes, evidence, final analysis)
+- Reward tracking widget showing earned CLT tokens and claim history
+
+Layout must be responsive and use Tailwind CSS with modular React components. Prioritize clean, functional UX for technical users.
+```
+
+---
+
+### 🎨 Prompt for AI Agent: Certifier Portal Interface Design
+
+```
+Create a UI design for the Certifier Portal in a Web3-enabled decentralized SOC (dSOC) platform. The page should include:
+
+- Certifier identity verification using IOTA VC
+- Queue of analyst-submitted incident resolutions
+- Side-by-side layout to review evidence and analysis
+- Approve/Reject buttons with visual feedback
+- On-chain triggers for CLT token payout to analysts
+- Metrics dashboard for certifier performance, approval history, turnaround time
+
+Follow a minimalist and professional design language using React and Tailwind CSS. Ensure role-based routing and dynamic case loading.
+```
+
+---
+
+Would you like me to convert any of these into real React component skeletons next? Or generate mock images to visualize the page layouts?

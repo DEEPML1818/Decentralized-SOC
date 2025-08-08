@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { WalletGate } from '../components/wallet/WalletGate';
 import { AppLayout } from '../components/layout/AppLayout';
-import { useWallet } from '../components/WalletProvider';
+import { useWallet } from '../components/providers/WalletProvider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';

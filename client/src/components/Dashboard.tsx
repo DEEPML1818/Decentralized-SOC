@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet } from "./WalletProvider";
+import { useWallet } from "./providers/WalletProvider";
 import { ConnectButton } from "@iota/dapp-kit";
 import IncidentReport from "./IncidentReport";
 import EVMIncidentReport from "./EVMIncidentReport";

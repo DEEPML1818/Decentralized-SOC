@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useWallet } from "@/components/WalletProvider";
+import { useWallet } from "@/components/providers/WalletProvider";
 import { ConnectButton } from "@iota/dapp-kit";
 import { useToast } from "@/hooks/use-toast";
 import { Network, Wallet, ShieldCheck, Zap } from "lucide-react";

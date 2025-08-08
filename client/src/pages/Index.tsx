@@ -9,7 +9,7 @@ import Dashboard from "@/components/Dashboard";
 import RoleSelectionModal from "@/components/RoleSelectionModal";
 import BlockchainSelector from "@/components/BlockchainSelector";
 import UserGuide from "@/components/UserGuide";
-import { useWallet } from "@/components/WalletProvider";
+import { useWallet } from "@/components/providers/WalletProvider";
 import { 
   Shield, 
   Network, 

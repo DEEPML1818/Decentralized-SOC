@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet } from "@/components/WalletProvider";
+import { useWallet } from "@/components/providers/WalletProvider";
 import { useCurrentAccount } from "@iota/dapp-kit";
 import Header from "@/components/Header";
 import { evmContractService } from "@/lib/evm-contract";

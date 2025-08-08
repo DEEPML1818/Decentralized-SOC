@@ -1,0 +1,352 @@
+# Add “connect wallet” across all portals: AI prompts + drop‑in components
+
+You want a single, consistent “Connect Wallet” experience that’s visible on every page, gates content by role, and works with both MetaMask (EVM/Scroll) and IOTA via `@iota/dapp-kit`. Below are precise prompts for your AI agent, plus copy‑paste React/TypeScript components you can drop into your app today.
+
+---
+
+## Prompt your AI agent (global, once)
+
+“Implement a universal Connect Wallet UX across the entire dSOC app with these requirements:
+
+- Support EVM (MetaMask) and IOTA wallet (via @iota/dapp-kit) using our existing unified WalletProvider.
+- Place a persistent Connect button in the top navigation across all pages.
+- Add a content gate that:
+  - If wallet is not connected: shows a page-level banner with the text:
+    ‘Connect your wallet to access the dSOC [Role] Dashboard. Please connect your wallet with [role] role to access incident tickets.’
+  - If wallet is connected but role is missing: shows a ‘Role required’ message and a link to request access.
+  - If connected and role present: render the protected content.
+- Provide a single Connect menu that lets the user choose EVM or IOTA, shows loading states, errors, and success toasts.
+- Typesafe with TypeScript, zero additional dependencies, Tailwind CSS for styling, responsive by default.
+- Drop-in components to deliver:
+  1) <ConnectWalletButton /> for the header
+  2) <WalletGate requiredRole="Analyst" | "Certifier" | "Client"> for any page content
+- Ensure clean state transitions: connecting → connected, switching wallet types, and disconnect.
+- Test cases: no wallet, MetaMask locked, IOTA not initialized, network mismatch, missing role.
+- Don’t alter our provider internals; adapt to the following minimal context contract:
+
+  interface WalletContext {
+    isConnected: boolean
+    walletType: 'EVM' | 'IOTA' | null
+    address?: string
+    roles: string[] // e.g., ['Client','Analyst','Certifier']
+    connectEvm: () => Promise<void>
+    connectIota: () => Promise<void>
+    disconnect: () => Promise<void>
+  }
+
+Return production-ready React/TS code and Tailwind classes with accessible markup.”
+
+---
+
+## Page-specific micro-prompts
+
+- Analyst portal banner copy
+  “For the Analyst dashboard gate, use: ‘Connect your wallet to access the dSOC Analyst Dashboard. Please connect your wallet with analyst role to access incident tickets.’”
+
+- Certifier portal banner copy
+  “For the Certifier dashboard gate, use: ‘Connect your wallet to access the dSOC Certifier Dashboard. Please connect your wallet with certifier role to review and approve reports.’”
+
+- Client portal banner copy
+  “For the Client dashboard gate, use: ‘Connect your wallet to access the dSOC Client Portal. Please connect your wallet with client role to submit and track incidents.’”
+
+---
+
+## Drop‑in React components (copy‑paste)
+
+Create these components under, e.g., src/components/wallet/.
+
+### 1) ConnectWalletButton.tsx
+
+```tsx
+import React, { useState } from 'react'
+import { useWallet } from '../providers/WalletProvider' // adjust path
+
+function truncate(addr?: string, left = 6, right = 4) {
+  if (!addr) return ''
+  if (addr.length <= left + right) return addr
+  return `${addr.slice(0, left)}…${addr.slice(-right)}`
+}
+
+export const ConnectWalletButton: React.FC<{ compact?: boolean }> = ({ compact }) => {
+  const { isConnected, walletType, address, connectEvm, connectIota, disconnect } = useWallet()
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState<'EVM' | 'IOTA' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleConnect = async (type: 'EVM' | 'IOTA') => {
+    setError(null)
+    setLoading(type)
+    try {
+      if (type === 'EVM') await connectEvm()
+      else await connectIota()
+      setOpen(false)
+    } catch (e: any) {
+      setError(e?.message || 'Failed to connect wallet')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  if (isConnected) {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className={`inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 ${compact ? 'px-2 py-1' : ''}`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+        >
+          <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          <span className="hidden sm:inline">{walletType}</span>
+          <span className="font-mono">{truncate(address)}</span>
+        </button>
+        {open && (
+          <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="px-4 py-3 text-xs text-zinc-500">
+              Connected to {walletType}. Address:
+              <div className="font-mono text-zinc-900 dark:text-zinc-100">{address}</div>
+            </div>
+            <button
+              onClick={() => { setOpen(false); void disconnect() }}
+              className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-zinc-800"
+            >
+              Disconnect
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`inline-flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 ${compact ? 'px-2 py-1' : ''}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        Connect Wallet
+      </button>
+      {open && (
+        <div className="absolute right-0 z-20 mt-2 w-64 overflow-hidden rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="px-4 py-3 text-xs text-zinc-500">Choose a wallet</div>
+          <button
+            onClick={() => handleConnect('EVM')}
+            className="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            disabled={loading !== null}
+          >
+            <span>MetaMask (EVM/Scroll)</span>
+            {loading === 'EVM' && <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-600" />}
+          </button>
+          <button
+            onClick={() => handleConnect('IOTA')}
+            className="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            disabled={loading !== null}
+          >
+            <span>IOTA Wallet (@iota/dapp-kit)</span>
+            {loading === 'IOTA' && <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-600" />}
+          </button>
+          {error && <div className="px-4 py-2 text-xs text-red-600">{error}</div>}
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+---
+
+### 2) WalletGate.tsx
+
+```tsx
+import React from 'react'
+import { ConnectWalletButton } from './ConnectWalletButton'
+import { useWallet } from '../providers/WalletProvider' // adjust path
+
+type Role = 'Client' | 'Analyst' | 'Certifier'
+
+interface WalletGateProps {
+  requiredRole?: Role
+  roleCopy?: string // custom banner copy override
+  className?: string
+  children: React.ReactNode
+}
+
+export const WalletGate: React.FC<WalletGateProps> = ({
+  requiredRole,
+  roleCopy,
+  className,
+  children,
+}) => {
+  const { isConnected, roles } = useWallet()
+
+  const hasRole = requiredRole ? roles?.includes(requiredRole) : true
+
+  if (!isConnected) {
+    return (
+      <div className={className}>
+        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+          <h2 className="mb-1 text-sm font-semibold">
+            {roleCopy ?? 'Connect your wallet to continue'}
+          </h2>
+          <p className="mb-3 text-xs text-amber-800 dark:text-amber-200">
+            Please connect your wallet with the appropriate role to access this dashboard.
+          </p>
+          <ConnectWalletButton />
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasRole) {
+    return (
+      <div className={className}>
+        <div className="rounded-md border border-red-300 bg-red-50 p-4 text-red-900 dark:border-red-700 dark:bg-red-950 dark:text-red-100">
+          <h2 className="mb-1 text-sm font-semibold">Role required</h2>
+          <p className="text-xs">
+            Your wallet is connected but does not have the required role ({requiredRole}).
+            Contact support or request access.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return <div className={className}>{children}</div>
+}
+```
+
+---
+
+### 3) AppLayout with persistent header button
+
+```tsx
+import React from 'react'
+import { ConnectWalletButton } from '../components/wallet/ConnectWalletButton'
+
+export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/70 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-semibold">dSOC</span>
+            <span className="text-xs text-zinc-500">Decentralized SOC</span>
+          </div>
+          <ConnectWalletButton />
+        </div>
+      </header>
+      <main className="mx-auto max-w-7xl p-4">{children}</main>
+    </div>
+  )
+}
+```
+
+---
+
+### 4) Example usage in each portal
+
+```tsx
+// AnalystDashboard.tsx
+import React from 'react'
+import { AppLayout } from '../layout/AppLayout'
+import { WalletGate } from '../components/wallet/WalletGate'
+
+export default function AnalystDashboard() {
+  return (
+    <AppLayout>
+      <WalletGate
+        requiredRole="Analyst"
+        roleCopy="Connect your wallet to access the dSOC Analyst Dashboard. Please connect your wallet with analyst role to access incident tickets."
+      >
+        {/* Protected analyst content goes here */}
+        <h1 className="mb-4 text-xl font-semibold">Analyst Tickets</h1>
+        {/* ... */}
+      </WalletGate>
+    </AppLayout>
+  )
+}
+```
+
+```tsx
+// CertifierPortal.tsx
+import React from 'react'
+import { AppLayout } from '../layout/AppLayout'
+import { WalletGate } from '../components/wallet/WalletGate'
+
+export default function CertifierPortal() {
+  return (
+    <AppLayout>
+      <WalletGate
+        requiredRole="Certifier"
+        roleCopy="Connect your wallet to access the dSOC Certifier Dashboard. Please connect your wallet with certifier role to review and approve reports."
+      >
+        {/* Protected certifier content */}
+        <h1 className="mb-4 text-xl font-semibold">Certifier Review Queue</h1>
+        {/* ... */}
+      </WalletGate>
+    </AppLayout>
+  )
+}
+```
+
+```tsx
+// ClientPortal.tsx
+import React from 'react'
+import { AppLayout } from '../layout/AppLayout'
+import { WalletGate } from '../components/wallet/WalletGate'
+
+export default function ClientPortal() {
+  return (
+    <AppLayout>
+      <WalletGate
+        requiredRole="Client"
+        roleCopy="Connect your wallet to access the dSOC Client Portal. Please connect your wallet with client role to submit and track incidents."
+      >
+        {/* Protected client content */}
+        <h1 className="mb-4 text-xl font-semibold">Submit a Security Incident</h1>
+        {/* ... */}
+      </WalletGate>
+    </AppLayout>
+  )
+}
+```
+
+---
+
+## Minimal provider contract (adapt your WalletProvider)
+
+If your existing provider already matches this, you’re set. If not, ensure it exposes:
+
+```ts
+export interface WalletContext {
+  isConnected: boolean
+  walletType: 'EVM' | 'IOTA' | null
+  address?: string
+  roles: string[] // ['Client','Analyst','Certifier']
+  connectEvm: () => Promise<void>
+  connectIota: () => Promise<void>
+  disconnect: () => Promise<void>
+}
+```
+
+And a hook:
+
+```ts
+export const useWallet = (): WalletContext => { /* ... */ }
+```
+
+Populate roles from your Supabase/auth layer once the wallet is connected.
+
+---
+
+## Quick QA checklist
+
+- Header button: visible on every route, shows correct state (connected vs not).
+- Banner copy: matches role-specific portals, disappears immediately after connect.
+- Role enforcement: connect as wrong role → clear error banner; correct role → content renders.
+- IOTA and EVM both connect, disconnect, and re-connect cleanly without page reloads.
+- Keyboard and screen-reader accessible menus; focus returns to trigger after close.
+
+If you want, I can wire this directly into your existing WalletProvider signatures or tailor the role fetch to your Supabase schema. Point me to your provider shape and I’ll align it exactly.

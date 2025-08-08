@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { aiAssistant } from "@/lib/ai-service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useWallet } from "@/components/WalletProvider";
+import { useWallet } from "@/components/providers/WalletProvider";
 import { useCurrentAccount, useSignTransaction, useIotaClient } from "@iota/dapp-kit";
 import { evmContractService } from "@/lib/evm-contract";
 import { createContractService } from "@/lib/contract";

@@ -6,7 +6,7 @@ import { Label } from "./ui/label";
 import { Badge } from "./ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet } from "./WalletProvider";
+import { useWallet } from "./providers/WalletProvider";
 import { evmContractService } from "@/lib/evm-contract";
 import { 
   Coins, 

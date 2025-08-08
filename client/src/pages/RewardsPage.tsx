@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useWallet } from "@/components/WalletProvider";
+import { useWallet } from "@/components/providers/WalletProvider";
 import Header from "@/components/Header";
 import CLTRewardManager from "@/components/CLTRewardManager";
 

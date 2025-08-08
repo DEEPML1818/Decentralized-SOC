@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { useWallet } from './WalletProvider';
+import { useWallet } from './providers/WalletProvider';
 import { evmContractService } from '@/lib/evm-contract';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, RefreshCw, DollarSign, Zap } from 'lucide-react';

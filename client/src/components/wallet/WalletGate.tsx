@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ConnectWalletButton } from './ConnectWalletButton';
-import { useWallet } from '../WalletProvider';
+import { useWallet } from '../providers/WalletProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Shield, AlertTriangle, Lock } from 'lucide-react';
@@ -21,13 +21,10 @@ export const WalletGate: React.FC<WalletGateProps> = ({
   className,
   children,
 }) => {
-  const { isEVMConnected, isIOTAConnected, userRole, evmAddress, iotaAddress } = useWallet();
-  
-  const isConnected = isEVMConnected || isIOTAConnected;
-  const address = evmAddress || iotaAddress;
+  const { isConnected, roles, address } = useWallet();
   
   // Check if user has the required role
-  const hasRole = requiredRole ? userRole === requiredRole : true;
+  const hasRole = requiredRole ? roles.includes(requiredRole) : true;
 
   const getDefaultRoleCopy = (role?: Role) => {
     switch (role) {
@@ -82,7 +79,7 @@ export const WalletGate: React.FC<WalletGateProps> = ({
               <AlertTriangle className="h-4 w-4 text-red-500" />
               <AlertDescription className="text-red-200">
                 Your wallet is connected but does not have the required <strong>{requiredRole}</strong> role.
-                Current role: {userRole || 'None'}
+                Current roles: {roles.length ? roles.join(', ') : 'None'}
               </AlertDescription>
             </Alert>
             

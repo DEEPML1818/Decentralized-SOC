@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useWallet } from "@/components/WalletProvider";
+import { useWallet } from "@/components/providers/WalletProvider";
 import Dashboard from "@/components/Dashboard";
 import Header from "@/components/Header";
 import EnhancedStakingPools from "@/components/EnhancedStakingPools";

@@ -12,7 +12,7 @@ import AIAssistant from "./components/AIAssistant";
 import IncidentReport from "./components/IncidentReport";
 import EVMIncidentReport from "./components/EVMIncidentReport";
 import { ThemeProvider } from "./components/ThemeProvider";
-import { WalletProvider } from "./components/WalletProvider";
+import { WalletProvider } from "./components/providers/WalletProvider";
 import "./App.css";
 import SmartContractAudit from "./components/SmartContractAudit";
 

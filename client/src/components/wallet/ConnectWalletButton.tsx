@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useWallet } from '../WalletProvider';
+import { useWallet } from '../providers/WalletProvider';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Wallet, ChevronDown, LogOut } from 'lucide-react';
@@ -16,29 +16,24 @@ export const ConnectWalletButton: React.FC<{ compact?: boolean }> = ({ compact }
     isConnected, 
     walletType, 
     address, 
-    connectEVMWallet, 
-    disconnectEVMWallet,
-    evmAddress,
-    iotaAddress,
-    isEVMConnected,
-    isIOTAConnected
+    connectEvm, 
+    connectIota,
+    disconnect
   } = useWallet();
   
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<'EVM' | 'IOTA' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const currentAddress = evmAddress || iotaAddress;
-  const currentWalletType = isEVMConnected ? 'EVM' : isIOTAConnected ? 'IOTA' : null;
-
   const handleConnect = async (type: 'EVM' | 'IOTA') => {
     setError(null);
     setLoading(type);
     try {
       if (type === 'EVM') {
-        await connectEVMWallet();
+        await connectEvm();
+      } else {
+        await connectIota();
       }
-      // IOTA connection is handled by the ConnectButton from @iota/dapp-kit
       setOpen(false);
     } catch (e: any) {
       setError(e?.message || 'Failed to connect wallet');
@@ -47,15 +42,12 @@ export const ConnectWalletButton: React.FC<{ compact?: boolean }> = ({ compact }
     }
   };
 
-  const handleDisconnect = () => {
-    if (isEVMConnected) {
-      disconnectEVMWallet();
-    }
-    // IOTA disconnect is handled by the wallet provider
+  const handleDisconnect = async () => {
+    await disconnect();
     setOpen(false);
   };
 
-  if (isEVMConnected || isIOTAConnected) {
+  if (isConnected) {
     return (
       <div className="relative">
         <Button
@@ -64,16 +56,16 @@ export const ConnectWalletButton: React.FC<{ compact?: boolean }> = ({ compact }
           className={`flex items-center gap-2 border-gray-600 bg-gray-800 text-white hover:bg-gray-700 ${compact ? 'px-2 py-1' : ''}`}
         >
           <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
-          <span className="hidden sm:inline">{currentWalletType}</span>
-          <span className="font-mono text-xs">{truncate(currentAddress)}</span>
+          <span className="hidden sm:inline">{walletType}</span>
+          <span className="font-mono text-xs">{truncate(address)}</span>
           <ChevronDown className="h-3 w-3" />
         </Button>
         
         {open && (
           <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-lg border border-gray-600 bg-gray-800 shadow-lg">
             <div className="px-4 py-3 text-xs text-gray-400">
-              Connected to {currentWalletType}
-              <div className="mt-1 font-mono text-white break-all">{currentAddress}</div>
+              Connected to {walletType}
+              <div className="mt-1 font-mono text-white break-all">{address}</div>
             </div>
             <button
               onClick={handleDisconnect}

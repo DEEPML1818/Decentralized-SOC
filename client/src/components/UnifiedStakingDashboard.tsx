@@ -5,7 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Badge } from "./ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet } from "./WalletProvider";
+import { useWallet } from "./providers/WalletProvider";
 import { evmContractService } from "@/lib/evm-contract";
 import { 
   Coins, 
