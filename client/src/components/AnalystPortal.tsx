@@ -105,7 +105,11 @@ export default function AnalystPortal() {
         description: "Submitting blockchain transaction...",
       });
 
-      await evmContractService.assignAsAnalyst(caseItem.ticket_id);
+      // Use case ID if ticket_id is not available (for IPFS cases)
+      const ticketId = caseItem.ticket_id || caseItem.id;
+      console.log('🎫 Using ticket/case ID for assignment:', ticketId);
+      
+      await evmContractService.assignAsAnalyst(ticketId);
 
       // Step 2: Update IPFS record
       await axios.patch(`/api/incident-reports/${caseItem.id}`, {
@@ -154,9 +158,13 @@ export default function AnalystPortal() {
         description: "Saving analysis to IPFS...",
       });
 
+      console.log('📊 Storing analyst report for case ID:', selectedCase.id);
+      console.log('📝 Report content length:', analystReport.length, 'characters');
+      
       await axios.patch(`/api/incident-reports/${selectedCase.id}`, {
         ai_analysis: analystReport,
-        status: 'analyzed'
+        status: 'analyzed',
+        analyst_address: walletAddress
       });
 
       toast({
