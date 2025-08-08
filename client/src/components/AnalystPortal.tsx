@@ -101,31 +101,21 @@ export default function AnalystPortal() {
     try {
       // Convert case ID to ticket ID (arrays start from 0, so case 1 = ticket 0)
       const ticketId = caseItem.id - 1;
-      console.log(`📋 Assigning as analyst for case: ${caseItem.id}, converting to ticket ID: ${ticketId}`);
+      console.log(`🔗 Assigning as analyst for case: ${caseItem.id} ticket_id: ${ticketId}`);
 
-      // Step 1: Submit blockchain transaction
-      toast({
-        title: "Blockchain Transaction",
-        description: `Calling assignAsAnalyst(${ticketId}) on contract...`,
-      });
-      
+      // Call blockchain assignAsAnalyst function
       const txResult = await evmContractService.assignAsAnalyst(ticketId);
       console.log('✅ Blockchain assignment successful:', txResult);
 
-      toast({
-        title: "Transaction Confirmed",
-        description: `Successfully assigned as analyst for ticket ${ticketId}. Tx: ${txResult.txHash.substring(0, 10)}...`,
-      });
-
-      // Step 2: Update IPFS record
+      // Update IPFS record with wallet address
       await axios.patch(`/api/incident-reports/${caseItem.id}`, {
         assigned_analyst: walletAddress,
         status: 'assigned'
       });
 
       toast({
-        title: "Assignment Complete!",
-        description: `Successfully assigned as analyst for case #${caseItem.id} (ticket ${ticketId})`,
+        title: "🔗 Assigned as Analyst",
+        description: `Case #${caseItem.id} assigned to ${walletAddress.substring(0, 10)}...`,
         variant: "default"
       });
 
@@ -137,7 +127,7 @@ export default function AnalystPortal() {
       console.error('Assignment failed:', error);
       toast({
         title: "Assignment Failed",
-        description: error.message || "Blockchain transaction failed",
+        description: error.message || "Transaction failed",
         variant: "destructive"
       });
     } finally {
@@ -362,7 +352,7 @@ export default function AnalystPortal() {
                     disabled={isAssigning}
                     className="w-full bg-green-600 hover:bg-green-700"
                   >
-                    {isAssigning ? "Assigning..." : "Assign Myself as Analyst"}
+                    {isAssigning ? "Assigning..." : "Assign as Analyst"}
                   </Button>
                 ) : selectedCase.assigned_analyst === walletAddress ? (
                   <div className="space-y-4">
