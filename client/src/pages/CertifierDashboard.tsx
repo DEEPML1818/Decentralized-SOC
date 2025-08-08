@@ -290,7 +290,8 @@ Large-scale phishing campaign targeting YieldGuard DeFi users through DNS hijack
         roleCopy="Connect your wallet to access the dSOC Certifier Dashboard. Please connect your wallet with certifier role to review and approve reports."
       >
         <div className="text-white p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+          <div className="max-w-7xl mx-auto space-y-6"></div>
+        </div>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
