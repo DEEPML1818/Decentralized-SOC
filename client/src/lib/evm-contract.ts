@@ -16,7 +16,7 @@ export const SCROLL_TESTNET_CONFIG = {
 // Contract addresses from your deployment
 export const CONTRACT_ADDRESSES = {
     CLT_REWARD: '0xD0fD6bD7a7b1f5d7B3fCCD99e72f1013a3ebD097', // Updated CLT Token contract
-  SOC_SERVICE: '0xE87bFbFC9fC93b94756384e07cCa4B1e857bfC94', // New SOCService with CLT payment system
+  SOC_SERVICE: '0x8165d0626f76088B24DD00A0d8C27912EE22b29D', // New SOCService with CLT payment system
 };
 
 // CLT Reward Token ABI (Simple ERC20 with mint)

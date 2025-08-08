@@ -28,8 +28,9 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
     category: "malware",
     location: "",
     priority: "medium",
-    ethAmount: "0.01", // ETH amount for transaction
-    analystAddress: "" // Analyst wallet address
+    cltAmount: "100", // CLT tokens for staking pool
+    affectedSystems: "",
+    attackVectors: ""
   });
 
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
@@ -74,176 +75,73 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
     try {
       setIsSubmitting(true);
 
-      // Constructing the data object based on the new submission structure,
-      // merging existing incidentData with wallet information and other fields.
-      const submissionData = {
-        title: incidentData.title,
-        description: incidentData.description,
-        severity: incidentData.priority, // Mapping priority to severity
-        category: incidentData.category,
-        client_name: 'Anonymous', // Default or could be fetched/input
-        contact_info: `EVM Wallet: ${evmAddress}`, // Using EVM address as contact info
-        client_wallet: evmAddress,
-        transaction_hash: '', // This would come from the EVM transaction, if any
-        contract_address: CONTRACT_ADDRESSES.SOC_SERVICE, // Using defined contract address
-        block_number: 0, // This would come from the EVM transaction, if any
-        gas_used: '', // This would come from the EVM transaction, if any
-        affected_systems: incidentData.location || 'Not specified', // Using location field
-        attack_vectors: '', // Not directly provided in original incidentData
-        evidence_urls: evidenceFiles.map(file => file.name).join(', '), // Placeholder for evidence URLs
-        status: 'pending', // Default status
-        network: 'scroll', // Assuming Scroll network based on context
-        submissionType: 'evm_incident_report',
-        ipfs_metadata_hash: '',
-        staking_pool_address: ''
-      };
+      // Create ticket using new SOCService contract
+      console.log('Creating ticket with CLT amount:', incidentData.cltAmount);
+      
+      const createResult = await evmContractService.createTicket(
+        incidentData.title,
+        incidentData.cltAmount
+      );
 
-      // Mocking the EVM transaction part as the original code did,
-      // but the submission logic is now handled by the fetch call.
-      // In a real scenario, the transaction would be initiated here.
-      // For the purpose of this fix, we'll simulate getting transaction details.
+      console.log('Ticket created:', createResult);
 
-      // Simulate creating ticket on EVM blockchain to get transaction details
-      // This part is based on the original code's intention but adapted for the new submission flow.
-      try {
-        toast({
-          title: "Creating EVM Ticket",
-          description: "Submitting to Scroll blockchain...",
-        });
-        const tx = await evmContractService.createTicket(
-          incidentData.title,
-          incidentData.ethAmount || "0.01"
-        );
-        // tx now contains txHash, stakingPoolAddress, and ticketId
-        const txHash = tx.txHash;
-        const stakingPoolAddress = tx.stakingPoolAddress;
-        const ticketId = tx.ticketId;
-
-        // If analyst address is provided, assign analyst to the ticket
-        if (incidentData.analystAddress && ticketId) {
-          try {
-            console.log(`Assigning analyst ${incidentData.analystAddress} to ticket ${ticketId}`);
-            await evmContractService.setAnalyst(ticketId, incidentData.analystAddress);
-            console.log('Analyst assigned successfully');
-          } catch (analystError) {
-            console.error('Failed to assign analyst:', analystError);
-            // Continue even if analyst assignment fails
-          }
-        }
-
-        submissionData.transaction_hash = txHash || '';
-        submissionData.client_name = evmAddress || 'Anonymous';
-        submissionData.contact_info = `EVM Wallet: ${evmAddress}`;
-        
-        // Add ticket ID if available
-        if (ticketId) {
-          submissionData.ticket_id = parseInt(ticketId);
-        }
-
-        // Store staking pool metadata in IPFS
-        if (stakingPoolAddress) {
-          try {
-            console.log("Storing pool metadata in IPFS...", {
-              poolAddress: stakingPoolAddress,
-              title: incidentData.title
-            });
-
-            const poolMetadataResponse = await fetch('/api/pools/metadata', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                poolAddress: stakingPoolAddress,
-                title: incidentData.title,
-                description: `Security analysis pool for "${incidentData.title}". Analysts investigate ${incidentData.description}. Stake CLT tokens to support this security investigation and earn rewards.`,
-                category: "Security Analysis",
-                riskLevel: incidentData.priority === "critical" ? "High" : incidentData.priority === "high" ? "Medium-High" : "Medium",
-                estimatedAPY: "12-18%",
-                minStake: "10",
-                maxStake: "1000"
-              }),
-            });
-
-            if (poolMetadataResponse.ok) {
-              const poolResult = await poolMetadataResponse.json();
-              console.log("Pool metadata stored in IPFS:", poolResult.ipfsHash);
-              
-              // Add IPFS hash to submission data
-              submissionData.ipfs_metadata_hash = poolResult.ipfsHash;
-              submissionData.staking_pool_address = stakingPoolAddress;
-            }
-          } catch (error) {
-            console.error("Failed to store pool metadata:", error);
-          }
-        }
-
-        toast({
-          title: "Transaction successful",
-          description: `Transaction hash: ${txHash ? txHash.slice(0, 10) + '...' : 'Transaction completed'}`,
-        });
-
-      } catch (evmError: any) {
-        console.error('EVM ticket creation failed:', evmError);
-        let errorMessage = "Failed to create ticket on EVM";
-
-        if (evmError.code === 4001) {
-          errorMessage = "Transaction was rejected by user";
-        } else if (evmError.message?.includes('insufficient funds')) {
-          errorMessage = "Insufficient ETH for gas fees";
-        } else if (evmError.message) {
-          errorMessage = evmError.message;
-        }
-
-        toast({
-          title: "EVM Transaction Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        setIsSubmitting(false); // Stop submission if EVM part fails
-        return;
-      }
-
-
-      // Now submit the consolidated data to the API
+      // Store in backend database
+      const evidenceUrls = evidenceFiles.map(file => file.name).join(', ');
+      
       const response = await fetch('/api/incident-reports', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(submissionData),
+        body: JSON.stringify({
+          title: incidentData.title,
+          description: incidentData.description,
+          severity: incidentData.priority,
+          client_name: evmAddress,
+          contact_info: `EVM Wallet: ${evmAddress}`,
+          client_wallet: evmAddress,
+          affected_systems: incidentData.affectedSystems || 'Not specified',
+          attack_vectors: incidentData.attackVectors,
+          evidence_urls: evidenceUrls,
+          contract_address: CONTRACT_ADDRESSES.SOC_SERVICE,
+          block_number: createResult.blockNumber || 0,
+          transaction_hash: createResult.txHash || '',
+          staking_pool_address: createResult.stakingPoolAddress || '',
+          ticket_id: createResult.ticketId || null,
+          clt_staked: incidentData.cltAmount
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Failed to submit incident report');
+        throw new Error('Failed to store incident report');
       }
 
-      const result = await response.json();
-      console.log('EVM incident report submitted:', result);
-
       toast({
-        title: "Success",
-        description: `Incident report submitted successfully. Case ID: ${result.ticket_id || result.id}`,
+        title: "Security Incident Reported Successfully! 🎯",
+        description: `Ticket #${createResult.ticketId} created with ${incidentData.cltAmount} CLT staked. Transaction: ${createResult.txHash?.slice(0, 10)}...`,
       });
 
-      // Reset form after successful submission
+      // Reset form
       setIncidentData({
         title: "",
         description: "",
         category: "malware",
         location: "",
         priority: "medium",
-        ethAmount: "0.01",
-        analystAddress: ""
+        cltAmount: "100",
+        affectedSystems: "",
+        attackVectors: ""
       });
       setEvidenceFiles([]);
-
+      
+      if (props.onClose) {
+        props.onClose();
+      }
     } catch (error: any) {
-      console.error('EVM ticket creation failed:', error);
+      console.error('Error creating ticket:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to submit incident report",
+        title: "Error Creating Ticket",
+        description: error.message || "Failed to create security ticket",
         variant: "destructive",
       });
     } finally {
@@ -329,43 +227,55 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
             </div>
           </div>
 
-          {/* Analyst Address */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Analyst Address (Optional)
-            </label>
-            <Input
-              value={incidentData.analystAddress}
-              onChange={(e) => setIncidentData({ ...incidentData, analystAddress: e.target.value })}
-              placeholder="0x... (optional - analyst can be assigned later)"
-              className="bg-gray-800/50 border-orange-500/30 text-white font-mono"
-            />
-            <p className="text-gray-400 text-xs mt-1">
-              Optional: Analyst wallet address. If not provided, can be assigned later by the client.
-            </p>
-          </div>
+          {/* CLT Stake Amount and Affected Systems */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                CLT Stake Amount *
+              </label>
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-orange-400" />
+                <Input
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={incidentData.cltAmount}
+                  onChange={(e) => setIncidentData({ ...incidentData, cltAmount: e.target.value })}
+                  placeholder="100"
+                  className="bg-gray-800/50 border-orange-500/30 text-white"
+                  required
+                />
+                <span className="text-orange-400 font-medium">CLT</span>
+              </div>
+              <p className="text-gray-400 text-xs mt-1">
+                CLT tokens to stake for security analysis pool
+              </p>
+            </div>
 
-          {/* ETH Amount */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              ETH Payment Amount
-            </label>
-            <div className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5 text-orange-400" />
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Affected Systems
+              </label>
               <Input
-                type="number"
-                step="0.001"
-                min="0.001"
-                value={incidentData.ethAmount}
-                onChange={(e) => setIncidentData({ ...incidentData, ethAmount: e.target.value })}
-                placeholder="0.01"
+                value={incidentData.affectedSystems}
+                onChange={(e) => setIncidentData({ ...incidentData, affectedSystems: e.target.value })}
+                placeholder="Database servers, user accounts, etc."
                 className="bg-gray-800/50 border-orange-500/30 text-white"
               />
-              <span className="text-orange-400 font-medium">ETH</span>
             </div>
-            <p className="text-gray-400 text-xs mt-1">
-              ETH payment for transaction fees and premium features
-            </p>
+          </div>
+
+          {/* Attack Vectors */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Attack Vectors
+            </label>
+            <Input
+              value={incidentData.attackVectors}
+              onChange={(e) => setIncidentData({ ...incidentData, attackVectors: e.target.value })}
+              placeholder="SQL injection, phishing, malware, etc."
+              className="bg-gray-800/50 border-orange-500/30 text-white"
+            />
           </div>
 
           {/* Location */}
@@ -447,7 +357,7 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
               <Shield className="h-5 w-5 text-orange-400" />
               <span className="font-medium text-orange-400">Payment</span>
             </div>
-            <p className="text-gray-300 text-sm">Pay with ETH</p>
+            <p className="text-gray-300 text-sm">Stake CLT tokens</p>
           </div>
 
           <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">

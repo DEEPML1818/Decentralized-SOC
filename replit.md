@@ -55,6 +55,15 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - **2025-08-08**: Enhanced contract structure: createTicket(title, cltAmount) → automatic staking pool creation
 - **2025-08-08**: Updated validateTicket to require certifier role and automatic reward distribution
 - **2025-08-08**: Fixed contract ABI to match deployed SOCService with proper role-based access
+- **2025-08-08**: Completed comprehensive system relayout with role-based dashboards
+- **2025-08-08**: Updated SOCService contract to new address: 0x8165d0626f76088B24DD00A0d8C27912EE22b29D
+- **2025-08-08**: Created dedicated AnalystDashboard.tsx for analyst case management workflow
+- **2025-08-08**: Created CertifierDashboardNew.tsx for certifier validation workflow
+- **2025-08-08**: Updated EVMIncidentReport to create tickets with CLT token amounts (new contract signature)
+- **2025-08-08**: Enhanced routing with /analyst and /certifier routes for role-based dashboards
+- **2025-08-08**: Integrated AI-powered analysis in AnalystDashboard with vulnerability assessment
+- **2025-08-08**: Implemented blockchain transactions for joinAsAnalyst, joinAsCertifier, and validateTicket
+- **2025-08-08**: Added automatic reward distribution: analyst (100 CLT), certifier (50 CLT)
 - **2025-08-06**: Fixed MetaMask wallet connection by adding missing connectWallet method to EVMContractService
 - **2025-08-06**: Added proper TypeScript support for window.ethereum interface
 - **2025-08-06**: Enhanced EVM wallet connection with automatic network switching to Scroll Sepolia
