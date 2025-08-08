@@ -1,0 +1,114 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./CLTStakingPool.sol";
+import "./CLTReward.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+contract SOCService {
+    using SafeERC20 for IERC20;
+
+    address public immutable rewardToken;
+    address public immutable owner;
+
+    uint256 public ticketCounter;
+    uint256 public constant DEV_FEE_PERCENT = 10; // 10%
+
+    struct Ticket {
+        uint256 id;
+        string title;
+        address client;
+        address analyst;
+        address certifier;
+        uint256 rewardAmount;
+        address stakingPool;
+        bool isValidated;
+    }
+
+    mapping(uint256 => Ticket) public tickets;
+
+    event TicketCreated(uint256 indexed id, address indexed client, uint256 rewardAmount, address stakingPool);
+    event AnalystJoined(uint256 indexed id, address indexed analyst);
+    event CertifierJoined(uint256 indexed id, address indexed certifier);
+    event TicketValidated(uint256 indexed id, address indexed certifier);
+    event EmergencyWithdraw(address indexed token, uint256 amount);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not authorized");
+        _;
+    }
+
+    constructor(address _rewardToken, address _owner) {
+        require(_rewardToken != address(0), "Invalid reward token");
+        require(_owner != address(0), "Invalid owner");
+        rewardToken = _rewardToken;
+        owner = _owner;
+    }
+
+    function createTicket(string calldata _title, uint256 cltAmount) external {
+        require(cltAmount > 0, "CLT amount must be > 0");
+
+        CLTStakingPool pool = new CLTStakingPool(rewardToken, address(this));
+        IERC20(rewardToken).safeTransferFrom(msg.sender, address(pool), cltAmount);
+
+        tickets[ticketCounter] = Ticket({
+            id: ticketCounter,
+            title: _title,
+            client: msg.sender,
+            analyst: address(0),
+            certifier: address(0),
+            rewardAmount: cltAmount,
+            stakingPool: address(pool),
+            isValidated: false
+        });
+
+        emit TicketCreated(ticketCounter, msg.sender, cltAmount, address(pool));
+        ticketCounter++;
+    }
+
+    function joinAsAnalyst(uint256 ticketId) external {
+        Ticket storage ticket = tickets[ticketId];
+        require(ticket.analyst == address(0), "Analyst already assigned");
+        require(msg.sender != ticket.client, "Client can't be analyst");
+
+        ticket.analyst = msg.sender;
+        emit AnalystJoined(ticketId, msg.sender);
+    }
+
+    function joinAsCertifier(uint256 ticketId) external {
+        Ticket storage ticket = tickets[ticketId];
+        require(ticket.certifier == address(0), "Certifier already assigned");
+        require(msg.sender != ticket.client, "Client can't be certifier");
+        require(msg.sender != ticket.analyst, "Analyst can't be certifier");
+
+        ticket.certifier = msg.sender;
+        emit CertifierJoined(ticketId, msg.sender);
+    }
+
+    function validateTicket(uint256 ticketId) external {
+        Ticket storage ticket = tickets[ticketId];
+        require(msg.sender == ticket.certifier, "Only certifier can validate");
+        require(!ticket.isValidated, "Ticket already validated");
+        require(ticket.analyst != address(0), "No analyst assigned");
+
+        ticket.isValidated = true;
+
+        uint256 devCut = (ticket.rewardAmount * DEV_FEE_PERCENT) / 100;
+        uint256 poolAmount = ticket.rewardAmount - devCut;
+
+        // Mint rewards to analyst and certifier
+        CLTReward(rewardToken).mint(ticket.analyst, 100 ether);
+        CLTReward(rewardToken).mint(ticket.certifier, 50 ether);
+
+        // Transfer dev fee
+        IERC20(rewardToken).safeTransferFrom(address(ticket.stakingPool), owner, devCut);
+
+        emit TicketValidated(ticketId, msg.sender);
+    }
+
+    function emergencyWithdraw(address token, uint256 amount) external onlyOwner {
+        IERC20(token).safeTransfer(owner, amount);
+        emit EmergencyWithdraw(token, amount);
+    }
+}

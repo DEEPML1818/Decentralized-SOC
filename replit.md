@@ -50,6 +50,11 @@ A decentralized Security Operations Center (SOC) platform built on IOTA blockcha
 - **2025-08-08**: Fixed runtime error in AnalystValidation page with undefined network property
 - **2025-08-08**: Enhanced null safety for ticket network fields with fallback to 'Scroll'
 - **2025-08-08**: Confirmed all systems fully operational: Express server, IPFS storage, blockchain integration
+- **2025-08-08**: Updated SOCService contract architecture with new simplified workflow
+- **2025-08-08**: Replaced setAnalyst with joinAsAnalyst and added joinAsCertifier functions
+- **2025-08-08**: Enhanced contract structure: createTicket(title, cltAmount) → automatic staking pool creation
+- **2025-08-08**: Updated validateTicket to require certifier role and automatic reward distribution
+- **2025-08-08**: Fixed contract ABI to match deployed SOCService with proper role-based access
 - **2025-08-06**: Fixed MetaMask wallet connection by adding missing connectWallet method to EVMContractService
 - **2025-08-06**: Added proper TypeScript support for window.ethereum interface
 - **2025-08-06**: Enhanced EVM wallet connection with automatic network switching to Scroll Sepolia

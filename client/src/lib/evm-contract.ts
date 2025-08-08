@@ -218,278 +218,323 @@ export const CLT_REWARD_ABI = [
   }
 ];
 
-// SOCService ABI - Updated to match your new contract
+// SOCService ABI - Updated to match your new contract exactly
 export const SOC_SERVICE_ABI = [
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_title",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "cltAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "createTicket",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_rewardToken",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_owner",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "SafeERC20FailedOperation",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "analyst",
-        "type": "address"
-      }
-    ],
-    "name": "AnalystAssigned",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "emergencyWithdraw",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "EmergencyWithdraw",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "analyst",
-        "type": "address"
-      }
-    ],
-    "name": "setAnalyst",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "client",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "rewardAmount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "stakingPool",
-        "type": "address"
-      }
-    ],
-    "name": "TicketCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "analyst",
-        "type": "address"
-      }
-    ],
-    "name": "TicketValidated",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "ticketId",
-        "type": "uint256"
-      }
-    ],
-    "name": "validateTicket",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "rewardToken",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "ticketCounter",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "tickets",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "title",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "client",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "analyst",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "rewardAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "stakingPool",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "isValidated",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
+        {
+                "inputs": [
+                        {
+                                "internalType": "address",
+                                "name": "_rewardToken",
+                                "type": "address"
+                        },
+                        {
+                                "internalType": "address",
+                                "name": "_owner",
+                                "type": "address"
+                        }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "address",
+                                "name": "token",
+                                "type": "address"
+                        }
+                ],
+                "name": "SafeERC20FailedOperation",
+                "type": "error"
+        },
+        {
+                "anonymous": false,
+                "inputs": [
+                        {
+                                "indexed": true,
+                                "internalType": "uint256",
+                                "name": "id",
+                                "type": "uint256"
+                        },
+                        {
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "analyst",
+                                "type": "address"
+                        }
+                ],
+                "name": "AnalystJoined",
+                "type": "event"
+        },
+        {
+                "anonymous": false,
+                "inputs": [
+                        {
+                                "indexed": true,
+                                "internalType": "uint256",
+                                "name": "id",
+                                "type": "uint256"
+                        },
+                        {
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "certifier",
+                                "type": "address"
+                        }
+                ],
+                "name": "CertifierJoined",
+                "type": "event"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "string",
+                                "name": "_title",
+                                "type": "string"
+                        },
+                        {
+                                "internalType": "uint256",
+                                "name": "cltAmount",
+                                "type": "uint256"
+                        }
+                ],
+                "name": "createTicket",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "address",
+                                "name": "token",
+                                "type": "address"
+                        },
+                        {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                        }
+                ],
+                "name": "emergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+        },
+        {
+                "anonymous": false,
+                "inputs": [
+                        {
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "token",
+                                "type": "address"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                        }
+                ],
+                "name": "EmergencyWithdraw",
+                "type": "event"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "uint256",
+                                "name": "ticketId",
+                                "type": "uint256"
+                        }
+                ],
+                "name": "joinAsAnalyst",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "uint256",
+                                "name": "ticketId",
+                                "type": "uint256"
+                        }
+                ],
+                "name": "joinAsCertifier",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+        },
+        {
+                "anonymous": false,
+                "inputs": [
+                        {
+                                "indexed": true,
+                                "internalType": "uint256",
+                                "name": "id",
+                                "type": "uint256"
+                        },
+                        {
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "client",
+                                "type": "address"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "uint256",
+                                "name": "rewardAmount",
+                                "type": "uint256"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "address",
+                                "name": "stakingPool",
+                                "type": "address"
+                        }
+                ],
+                "name": "TicketCreated",
+                "type": "event"
+        },
+        {
+                "anonymous": false,
+                "inputs": [
+                        {
+                                "indexed": true,
+                                "internalType": "uint256",
+                                "name": "id",
+                                "type": "uint256"
+                        },
+                        {
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "certifier",
+                                "type": "address"
+                        }
+                ],
+                "name": "TicketValidated",
+                "type": "event"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "uint256",
+                                "name": "ticketId",
+                                "type": "uint256"
+                        }
+                ],
+                "name": "validateTicket",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+        },
+        {
+                "inputs": [],
+                "name": "DEV_FEE_PERCENT",
+                "outputs": [
+                        {
+                                "internalType": "uint256",
+                                "name": "",
+                                "type": "uint256"
+                        }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+        },
+        {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                        {
+                                "internalType": "address",
+                                "name": "",
+                                "type": "address"
+                        }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+        },
+        {
+                "inputs": [],
+                "name": "rewardToken",
+                "outputs": [
+                        {
+                                "internalType": "address",
+                                "name": "",
+                                "type": "address"
+                        }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+        },
+        {
+                "inputs": [],
+                "name": "ticketCounter",
+                "outputs": [
+                        {
+                                "internalType": "uint256",
+                                "name": "",
+                                "type": "uint256"
+                        }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "uint256",
+                                "name": "",
+                                "type": "uint256"
+                        }
+                ],
+                "name": "tickets",
+                "outputs": [
+                        {
+                                "internalType": "uint256",
+                                "name": "id",
+                                "type": "uint256"
+                        },
+                        {
+                                "internalType": "string",
+                                "name": "title",
+                                "type": "string"
+                        },
+                        {
+                                "internalType": "address",
+                                "name": "client",
+                                "type": "address"
+                        },
+                        {
+                                "internalType": "address",
+                                "name": "analyst",
+                                "type": "address"
+                        },
+                        {
+                                "internalType": "address",
+                                "name": "certifier",
+                                "type": "address"
+                        },
+                        {
+                                "internalType": "uint256",
+                                "name": "rewardAmount",
+                                "type": "uint256"
+                        },
+                        {
+                                "internalType": "address",
+                                "name": "stakingPool",
+                                "type": "address"
+                        },
+                        {
+                                "internalType": "bool",
+                                "name": "isValidated",
+                                "type": "bool"
+                        }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+        }
 ];
 
 // CLT Staking Pool ABI for individual pools created by SOCService
@@ -788,18 +833,18 @@ class EVMContractService {
     }
   }
 
-  async setAnalyst(ticketId: string, analystAddress: string) {
+  async joinAsAnalyst(ticketId: string) {
     try {
-      console.log(`Setting analyst for ticket ${ticketId}:`, analystAddress);
+      console.log(`Joining as analyst for ticket ${ticketId}`);
 
       const contract = await this.getSOCServiceContract();
       
-      // Call the contract's setAnalyst function
-      const tx = await contract.setAnalyst(ticketId, analystAddress);
+      // Call the contract's joinAsAnalyst function
+      const tx = await contract.joinAsAnalyst(ticketId);
       console.log('Transaction sent:', tx.hash);
 
       const receipt = await tx.wait();
-      console.log('Analyst assigned:', receipt);
+      console.log('Analyst joined:', receipt);
 
       return {
         txHash: receipt.transactionHash,
@@ -807,7 +852,31 @@ class EVMContractService {
         gasUsed: receipt.gasUsed?.toString()
       };
     } catch (error: any) {
-      console.error('Error setting analyst:', error);
+      console.error('Error joining as analyst:', error);
+      throw error;
+    }
+  }
+
+  async joinAsCertifier(ticketId: string) {
+    try {
+      console.log(`Joining as certifier for ticket ${ticketId}`);
+
+      const contract = await this.getSOCServiceContract();
+      
+      // Call the contract's joinAsCertifier function
+      const tx = await contract.joinAsCertifier(ticketId);
+      console.log('Transaction sent:', tx.hash);
+
+      const receipt = await tx.wait();
+      console.log('Certifier joined:', receipt);
+
+      return {
+        txHash: receipt.transactionHash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed?.toString()
+      };
+    } catch (error: any) {
+      console.error('Error joining as certifier:', error);
       throw error;
     }
   }
@@ -845,6 +914,7 @@ class EVMContractService {
         title: ticket.title,
         client: ticket.client,
         analyst: ticket.analyst,
+        certifier: ticket.certifier,
         rewardAmount: formatUnits(ticket.rewardAmount, 18),
         stakingPool: ticket.stakingPool,
         isValidated: ticket.isValidated
