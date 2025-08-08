@@ -1,0 +1,122 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./CLTStakingPool.sol";
+import "./CLTReward.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+contract SOCService {
+    using SafeERC20 for IERC20;
+
+    address public immutable rewardToken; // CLT token (mintable)
+    address public immutable owner; // Dev wallet
+    uint256 public constant DEV_FEE_PERCENT = 5; // 5% dev fee
+
+    uint256 public ticketCounter;
+
+    struct Ticket {
+        uint256 id;
+        string title;
+        address client;
+        address analyst;
+        address certifier;
+        uint256 rewardAmount;
+        address stakingPool;
+        bool isValidated;
+    }
+
+    mapping(uint256 => Ticket) public tickets;
+
+    event TicketCreated(uint256 indexed id, address indexed client, uint256 rewardAmount, address stakingPool);
+    event AnalystAssigned(uint256 indexed id, address indexed analyst);
+    event CertifierAssigned(uint256 indexed id, address indexed certifier);
+    event TicketValidated(uint256 indexed id, address indexed validator);
+    event EmergencyWithdraw(address indexed token, uint256 amount);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not authorized");
+        _;
+    }
+
+    modifier onlyClient(uint256 ticketId) {
+        require(msg.sender == tickets[ticketId].client, "Only ticket client");
+        _;
+    }
+
+    constructor(address _rewardToken, address _owner) {
+        require(_rewardToken != address(0), "Invalid reward token");
+        require(_owner != address(0), "Invalid owner");
+        rewardToken = _rewardToken;
+        owner = _owner;
+    }
+
+    function createTicket(string calldata _title, uint256 cltAmount) external {
+        require(cltAmount > 0, "CLT amount must be > 0");
+
+        // Calculate dev fee and net reward
+        uint256 devFee = (cltAmount * DEV_FEE_PERCENT) / 100;
+        uint256 netReward = cltAmount - devFee;
+
+        // Transfer full amount from client
+        IERC20(rewardToken).safeTransferFrom(msg.sender, address(this), cltAmount);
+
+        // Transfer dev fee to owner
+        IERC20(rewardToken).safeTransfer(owner, devFee);
+
+        // Deploy staking pool
+        CLTStakingPool pool = new CLTStakingPool(rewardToken, address(this));
+
+        // Transfer net reward to the staking pool
+        IERC20(rewardToken).safeTransfer(address(pool), netReward);
+
+        tickets[ticketCounter] = Ticket({
+            id: ticketCounter,
+            title: _title,
+            client: msg.sender,
+            analyst: address(0),
+            certifier: address(0),
+            rewardAmount: netReward,
+            stakingPool: address(pool),
+            isValidated: false
+        });
+
+        emit TicketCreated(ticketCounter, msg.sender, netReward, address(pool));
+        ticketCounter++;
+    }
+
+    function assignAsAnalyst(uint256 ticketId) external {
+        Ticket storage ticket = tickets[ticketId];
+        require(ticket.analyst == address(0), "Analyst already assigned");
+        ticket.analyst = msg.sender;
+        emit AnalystAssigned(ticketId, msg.sender);
+    }
+
+    function assignAsCertifier(uint256 ticketId) external {
+        Ticket storage ticket = tickets[ticketId];
+        require(ticket.certifier == address(0), "Certifier already assigned");
+        ticket.certifier = msg.sender;
+        emit CertifierAssigned(ticketId, msg.sender);
+    }
+
+    function validateTicket(uint256 ticketId) external {
+        Ticket storage ticket = tickets[ticketId];
+        require(!ticket.isValidated, "Already validated");
+        require(
+            msg.sender == ticket.analyst || msg.sender == ticket.certifier,
+            "Not authorized to validate"
+        );
+
+        ticket.isValidated = true;
+
+        // Mint 100 CLT bonus to validator
+        CLTReward(rewardToken).mint(msg.sender, 100 ether);
+
+        emit TicketValidated(ticketId, msg.sender);
+    }
+
+    function emergencyWithdraw(address token, uint256 amount) external onlyOwner {
+        IERC20(token).safeTransfer(owner, amount);
+        emit EmergencyWithdraw(token, amount);
+    }
+}
