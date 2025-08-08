@@ -35,6 +35,7 @@ export default function AnalystDashboard() {
   const queryClient = useQueryClient();
   const [selectedTicket, setSelectedTicket] = useState<IncidentReport | null>(null);
   const [analysisText, setAnalysisText] = useState('');
+  const [analystFindings, setAnalystFindings] = useState('');
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -145,12 +146,23 @@ export default function AnalystDashboard() {
 
   // Submit analysis mutation
   const submitAnalysisMutation = useMutation({
-    mutationFn: async ({ incidentId, analysis }: { incidentId: number; analysis: string }) => {
+    mutationFn: async ({ incidentId, analysis, findings }: { incidentId: number; analysis: string; findings: string }) => {
       console.log('📝 Submitting analysis for incident:', incidentId);
+      console.log('📋 Including analyst findings:', findings.length, 'characters');
+      
+      // Combine analysis and findings for IPFS storage
+      const combinedReport = {
+        analysis: analysis,
+        findings: findings,
+        analyst_address: account,
+        submitted_at: new Date().toISOString(),
+        case_id: incidentId
+      };
+      
       return apiRequest(`/api/incident-reports/${incidentId}`, {
         method: 'PATCH',
         body: JSON.stringify({ 
-          ai_analysis: analysis,
+          ai_analysis: JSON.stringify(combinedReport),
           status: 'analyzed',
           analyst_address: account 
         }),
@@ -159,10 +171,11 @@ export default function AnalystDashboard() {
     onSuccess: () => {
       toast({
         title: "Analysis Submitted",
-        description: "Your security analysis has been submitted successfully!",
+        description: "Your security analysis and findings have been stored on IPFS!",
       });
       setSelectedTicket(null);
       setAnalysisText('');
+      setAnalystFindings('');
       setAiAnalysis('');
       queryClient.invalidateQueries({ queryKey: ['/api/incident-reports'] });
     },
@@ -180,12 +193,20 @@ export default function AnalystDashboard() {
   };
 
   const handleSubmitAnalysis = () => {
-    if (!selectedTicket || (!analysisText && !aiAnalysis)) return;
+    if (!selectedTicket || (!analysisText && !aiAnalysis) || !analystFindings.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both analysis and your detailed findings",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const finalAnalysis = analysisText || aiAnalysis;
     submitAnalysisMutation.mutate({
       incidentId: selectedTicket.id,
       analysis: finalAnalysis,
+      findings: analystFindings,
     });
   };
 
@@ -462,15 +483,33 @@ export default function AnalystDashboard() {
                         placeholder="Provide your detailed security analysis..."
                         value={analysisText}
                         onChange={(e) => setAnalysisText(e.target.value)}
-                        rows={12}
+                        rows={8}
                         className="bg-gray-700 border-gray-600 text-white"
+                      />
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-white mb-2">🔍 Your Findings & Evidence</h4>
+                      <p className="text-sm text-gray-400 mb-2">Document your specific findings, evidence, and recommendations</p>
+                      <Textarea
+                        placeholder="Detail your investigation findings:
+• Root cause analysis
+• Evidence discovered
+• Impact assessment 
+• Mitigation recommendations
+• Technical details and IOCs
+• Next steps for remediation"
+                        value={analystFindings}
+                        onChange={(e) => setAnalystFindings(e.target.value)}
+                        rows={8}
+                        className="bg-gray-700 border-gray-600 text-white font-mono text-sm"
                       />
                     </div>
                     
                     <div className="flex gap-2">
                       <Button
                         onClick={handleSubmitAnalysis}
-                        disabled={submitAnalysisMutation.isPending || (!analysisText && !aiAnalysis)}
+                        disabled={submitAnalysisMutation.isPending || (!analysisText && !aiAnalysis) || !analystFindings.trim()}
                         className="flex-1 bg-blue-500 hover:bg-blue-600"
                       >
                         {submitAnalysisMutation.isPending ? (
