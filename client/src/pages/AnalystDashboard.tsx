@@ -40,7 +40,7 @@ export default function AnalystDashboard() {
   const [loading, setLoading] = useState(false);
   const [account, setAccount] = useState<string | null>(null);
 
-  // Get connected wallet address
+  // Get connected wallet address and initialize contract service
   useEffect(() => {
     const checkWallet = async () => {
       try {
@@ -48,6 +48,13 @@ export default function AnalystDashboard() {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts.length > 0) {
             setAccount(accounts[0]);
+            // Initialize the contract service with wallet connection
+            try {
+              await evmContractService.connectWallet();
+              console.log('✅ EVM contract service initialized');
+            } catch (error) {
+              console.error('❌ Failed to initialize EVM contract service:', error);
+            }
           }
         }
       } catch (error) {
@@ -69,35 +76,68 @@ export default function AnalystDashboard() {
     mutationFn: async (incidentReport: IncidentReport) => {
       if (!account) throw new Error('Wallet not connected');
       
-      // Convert case ID to ticket ID (arrays start from 0, so case 1 = ticket 0)
-      const ticketId = incidentReport.id - 1;
-      console.log(`🔗 Assigning as analyst for case: ${incidentReport.id} ticket_id: ${ticketId}`);
-      
-      // Call blockchain assignAsAnalyst function
-      const txResult = await evmContractService.assignAsAnalyst(ticketId);
-      console.log('✅ Blockchain assignment successful:', txResult);
-      
-      // Update IPFS record with wallet address
-      return apiRequest(`/api/incident-reports/${incidentReport.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ 
-          assigned_analyst: account,
-          status: 'assigned'
-        }),
-      });
+      try {
+        // Ensure contract service is connected
+        if (!evmContractService) {
+          console.log('🔄 Connecting to MetaMask...');
+          await evmContractService.connectWallet();
+        }
+
+        // Convert case ID to ticket ID (arrays start from 0, so case 1 = ticket 0)
+        const ticketId = incidentReport.id - 1;
+        console.log(`🔗 Starting MetaMask transaction for case: ${incidentReport.id} ticket_id: ${ticketId}`);
+        
+        // Show transaction is starting
+        toast({
+          title: "🔄 MetaMask Transaction",
+          description: "Please confirm the transaction in MetaMask",
+          variant: "default"
+        });
+        
+        // Call blockchain assignAsAnalyst function - THIS TRIGGERS METAMASK
+        const txResult = await evmContractService.assignAsAnalyst(ticketId);
+        console.log('✅ MetaMask transaction completed:', txResult);
+        
+        // Show success with transaction hash
+        toast({
+          title: "✅ Transaction Confirmed",
+          description: `TX Hash: ${txResult.txHash?.slice(0, 10)}...`,
+          variant: "default"
+        });
+        
+        // Update IPFS record with wallet address
+        return apiRequest(`/api/incident-reports/${incidentReport.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ 
+            assigned_analyst: account,
+            status: 'assigned',
+            transaction_hash: txResult.txHash
+          }),
+        });
+      } catch (error: any) {
+        console.error('❌ MetaMask transaction failed:', error);
+        if (error.message.includes('User rejected')) {
+          throw new Error('Transaction rejected by user');
+        } else if (error.message.includes('insufficient funds')) {
+          throw new Error('Insufficient funds for transaction');
+        } else {
+          throw new Error(`Transaction failed: ${error.message}`);
+        }
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({
-        title: "🔗 Assigned as Analyst",
-        description: "Successfully assigned to case via blockchain transaction",
+        title: "🔗 MetaMask Transaction Success!",
+        description: "You are now assigned as analyst on the blockchain",
         variant: "default"
       });
       queryClient.invalidateQueries({ queryKey: ['/api/incident-reports'] });
     },
     onError: (error: any) => {
+      console.error('Assignment mutation error:', error);
       toast({
-        title: "Assignment Failed",
-        description: error.message || "Blockchain transaction failed",
+        title: "❌ MetaMask Transaction Failed",
+        description: error.message || "Transaction was rejected or failed",
         variant: "destructive",
       });
     },
