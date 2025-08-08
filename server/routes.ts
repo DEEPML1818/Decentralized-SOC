@@ -565,6 +565,11 @@ Format as structured markdown for a security analyst.`;
 
       const updatedReport = await storage.updateIncidentReport(id, updates);
 
+      // Log certifier report submission if present
+      if (updates.certifier_report) {
+        console.log(`Certifier report submitted for case ${id} by ${updates.validated_by || 'unknown certifier'}`);
+      }
+
       console.log(`Incident report updated: ${updatedReport.title} (ID: ${id})`);
       res.json(updatedReport);
     } catch (error) {

@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { evmContractService } from '@/lib/evm-contract';
 import { 
@@ -13,7 +15,9 @@ import {
   Award,
   Clock,
   ExternalLink,
-  Coins
+  Coins,
+  User,
+  Calendar
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -33,6 +37,7 @@ interface IncidentReport {
   ticket_id: number;
   status: string;
   created_at: string;
+  updated_at: string;
 }
 
 export default function CertifierPortal() {
@@ -42,6 +47,7 @@ export default function CertifierPortal() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string>('');
+  const [certifierReport, setCertifierReport] = useState<string>('');
 
   const { toast } = useToast();
 
@@ -58,8 +64,14 @@ export default function CertifierPortal() {
     try {
       const address = await evmContractService.connectWallet();
       setWalletAddress(address);
+      console.log('🔗 Wallet connected for certifier:', address);
     } catch (error) {
       console.error('Wallet connection failed:', error);
+      toast({
+        title: "Wallet Connection Failed",
+        description: "Please connect your MetaMask wallet",
+        variant: "destructive"
+      });
     }
   };
 
@@ -71,17 +83,20 @@ export default function CertifierPortal() {
       // Filter for cases that have analyst reports and are ready for validation
       const analyzedCases = response.data.filter((item: IncidentReport) => 
         item.assigned_analyst && 
-        (item.ai_analysis || item.status === 'analyzed') && 
+        item.ai_analysis && 
+        item.status === 'analyzed' &&
         !['validated', 'completed'].includes(item.status)
       );
       
       console.log('📊 IPFS analyzed cases ready for certification:', analyzedCases.length);
       setCases(analyzedCases);
       
-      toast({
-        title: "IPFS Data Loaded",
-        description: `Loaded ${analyzedCases.length} analyzed cases from decentralized storage`,
-      });
+      if (analyzedCases.length > 0) {
+        toast({
+          title: "IPFS Data Loaded",
+          description: `Loaded ${analyzedCases.length} analyzed cases from decentralized storage`,
+        });
+      }
     } catch (error) {
       console.error('Failed to load analyzed cases from IPFS:', error);
       toast({
@@ -98,7 +113,7 @@ export default function CertifierPortal() {
     if (!walletAddress) {
       toast({
         title: "Wallet Not Connected",
-        description: "Please connect your wallet first",
+        description: "Please connect your MetaMask wallet first",
         variant: "destructive"
       });
       return;
@@ -146,7 +161,7 @@ export default function CertifierPortal() {
 
       // Refresh cases and select this one
       await loadCases();
-      setSelectedCase(caseItem);
+      setSelectedCase({ ...caseItem, assigned_certifier: walletAddress, status: 'certifier_assigned' });
 
     } catch (error: any) {
       console.error('❌ Certifier assignment failed:', error);
@@ -171,7 +186,14 @@ export default function CertifierPortal() {
   };
 
   const validateTicket = async () => {
-    if (!selectedCase) return;
+    if (!selectedCase || !certifierReport.trim()) {
+      toast({
+        title: "Validation Report Required",
+        description: "Please write your certification report before validating",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsValidating(true);
 
@@ -200,10 +222,13 @@ export default function CertifierPortal() {
         variant: "default"
       });
 
-      // Step 2: Update IPFS record as completed
+      // Step 2: Update IPFS record with certifier report and completion
       await axios.patch(`/api/incident-reports/${selectedCase.id}`, {
         status: 'validated',
-        validation_transaction_hash: txResult.txHash
+        validation_transaction_hash: txResult.txHash,
+        certifier_report: certifierReport,
+        validated_at: new Date().toISOString(),
+        validated_by: walletAddress
       });
 
       toast({
@@ -212,7 +237,8 @@ export default function CertifierPortal() {
         variant: "default"
       });
 
-      // Refresh cases
+      // Reset form and refresh cases
+      setCertifierReport('');
       await loadCases();
       setSelectedCase(null);
 
@@ -273,8 +299,16 @@ export default function CertifierPortal() {
           <h1 className="text-3xl font-bold">Security Certifier Portal</h1>
         </div>
         <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-          Review analyst reports from IPFS, validate security analysis, and complete case resolution with blockchain verification.
+          Review analyst reports from IPFS, write certification reports, and validate security analysis with blockchain verification.
         </p>
+        {walletAddress && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Badge variant="outline" className="bg-purple-50 dark:bg-purple-900/20">
+              <User className="h-3 w-3 mr-1" />
+              Certifier: {walletAddress.slice(0, 10)}...
+            </Badge>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -291,7 +325,11 @@ export default function CertifierPortal() {
           </CardHeader>
           <CardContent className="space-y-3 max-h-96 overflow-y-auto">
             {cases.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No cases ready for validation</p>
+              <div className="text-center text-gray-500 py-8">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p className="font-medium">No cases ready for validation</p>
+                <p className="text-sm mt-2">Cases will appear here after analyst analysis is complete</p>
+              </div>
             ) : (
               cases.map((caseItem) => (
                 <div
@@ -331,6 +369,11 @@ export default function CertifierPortal() {
                       </span>
                     )}
                   </div>
+
+                  <div className="mt-2 flex items-center text-xs text-gray-500">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {new Date(caseItem.updated_at).toLocaleDateString()}
+                  </div>
                 </div>
               ))
             )}
@@ -342,15 +385,19 @@ export default function CertifierPortal() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <AlertTriangle className="h-5 w-5 mr-2" />
-              Case Validation
+              Case Validation & Certification
             </CardTitle>
             <CardDescription>
-              Review analyst report and validate case resolution
+              Review analyst report and provide your certification validation
             </CardDescription>
           </CardHeader>
           <CardContent>
             {!selectedCase ? (
-              <p className="text-center text-gray-500 py-8">Select a case to review analyst report</p>
+              <div className="text-center text-gray-500 py-8">
+                <ShieldCheck className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p className="font-medium">Select a case to review analyst report</p>
+                <p className="text-sm mt-2">Choose a case from the list to begin certification</p>
+              </div>
             ) : (
               <div className="space-y-4">
                 <div>
@@ -397,7 +444,7 @@ export default function CertifierPortal() {
                   <Label className="font-medium text-blue-700 dark:text-blue-400">
                     Analyst Security Report
                   </Label>
-                  <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-40 overflow-y-auto">
                     {selectedCase.ai_analysis}
                   </div>
                   <p className="text-xs text-blue-600 mt-2">
@@ -432,6 +479,22 @@ export default function CertifierPortal() {
                       </p>
                     </div>
 
+                    {/* Certifier Report Section */}
+                    <div className="space-y-2">
+                      <Label className="font-medium text-green-700 dark:text-green-400">
+                        Your Certification Report
+                      </Label>
+                      <Textarea
+                        placeholder="Write your detailed certification report here. Include your validation of the analyst's findings, any additional insights, and your final assessment of the security incident..."
+                        value={certifierReport}
+                        onChange={(e) => setCertifierReport(e.target.value)}
+                        className="min-h-[120px] border-green-200 focus:border-green-500"
+                      />
+                      <p className="text-xs text-gray-500">
+                        This report will be stored on IPFS and included in the final case documentation
+                      </p>
+                    </div>
+
                     <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                       <div className="flex items-center mb-2">
                         <Coins className="h-4 w-4 text-yellow-500 mr-2" />
@@ -440,13 +503,13 @@ export default function CertifierPortal() {
                         </span>
                       </div>
                       <p className="text-sm text-green-600 dark:text-green-400">
-                        Validate this case to mark it as solved and earn your reward
+                        Complete your certification report and validate this case to earn your reward
                       </p>
                     </div>
 
                     <Button 
                       onClick={validateTicket}
-                      disabled={isValidating}
+                      disabled={isValidating || !certifierReport.trim()}
                       className="w-full bg-green-600 hover:bg-green-700"
                     >
                       {isValidating ? (
@@ -454,7 +517,7 @@ export default function CertifierPortal() {
                       ) : (
                         <>
                           <Award className="h-4 w-4 mr-2" />
-                          Validate Case & Mark as Solved
+                          Validate Case & Submit Report
                         </>
                       )}
                     </Button>
@@ -462,7 +525,7 @@ export default function CertifierPortal() {
                 ) : (
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
                     <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                      Already assigned to another certifier
+                      Already assigned to another certifier: {selectedCase.assigned_certifier?.substring(0, 10)}...
                     </p>
                   </div>
                 )}

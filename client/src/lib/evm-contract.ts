@@ -933,27 +933,7 @@ class EVMContractService {
     }
   }
 
-  // Validate ticket (for analysts and certifiers)
-  async validateTicket(ticketId: number): Promise<any> {
-    if (!this.signer) throw new Error('Signer not initialized');
-    
-    try {
-      const contract = new ethers.Contract(CONTRACT_ADDRESSES.SOC_SERVICE, SOC_SERVICE_ABI, this.signer);
-      
-      console.log('Validating ticket:', ticketId);
-      
-      const tx = await contract.validateTicket(ticketId);
-      console.log('Validate ticket transaction sent:', tx.hash);
-      
-      const receipt = await tx.wait();
-      console.log('Validate ticket transaction confirmed:', receipt);
-      
-      return { txHash: tx.hash, receipt };
-    } catch (error: any) {
-      console.error('Validate ticket failed:', error);
-      throw new Error(`Failed to validate ticket: ${error.message}`);
-    }
-  }
+  
 
   // Get ticket details
   async getTicket(ticketId: number): Promise<any> {
