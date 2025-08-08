@@ -64,7 +64,7 @@ export default function AnalystDashboard() {
     mutationFn: async (ticketId: number) => {
       if (!account) throw new Error('Wallet not connected');
       
-      const txResult = await evmContractService.joinAsAnalyst(ticketId.toString());
+      const txResult = await evmContractService.assignAsAnalyst(ticketId);
       console.log('Joined as analyst:', txResult);
       
       // Update backend

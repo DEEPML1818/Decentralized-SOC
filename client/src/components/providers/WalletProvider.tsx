@@ -12,7 +12,7 @@ export interface WalletContext {
   evmAddress: string | null
   iotaAddress: string | null
   roles: string[]
-  
+
   // Connection methods (supporting both naming conventions)
   connectEvm: () => Promise<void>
   connectIota: () => Promise<void>
