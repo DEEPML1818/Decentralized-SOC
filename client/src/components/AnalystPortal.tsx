@@ -99,17 +99,23 @@ export default function AnalystPortal() {
     setIsAssigning(true);
 
     try {
-      // Step 1: Assign as analyst on blockchain
-      toast({
-        title: "Assigning as Analyst",
-        description: "Submitting blockchain transaction...",
-      });
+      // Convert case ID to ticket ID (arrays start from 0, so case 1 = ticket 0)
+      const ticketId = caseItem.id - 1;
+      console.log(`📋 Assigning as analyst for case: ${caseItem.id}, converting to ticket ID: ${ticketId}`);
 
-      // Use case ID if ticket_id is not available (for IPFS cases)
-      const ticketId = caseItem.ticket_id || caseItem.id;
-      console.log('🎫 Using ticket/case ID for assignment:', ticketId);
+      // Step 1: Submit blockchain transaction
+      toast({
+        title: "Blockchain Transaction",
+        description: `Calling assignAsAnalyst(${ticketId}) on contract...`,
+      });
       
-      await evmContractService.assignAsAnalyst(ticketId);
+      const txResult = await evmContractService.assignAsAnalyst(ticketId);
+      console.log('✅ Blockchain assignment successful:', txResult);
+
+      toast({
+        title: "Transaction Confirmed",
+        description: `Successfully assigned as analyst for ticket ${ticketId}. Tx: ${txResult.txHash.substring(0, 10)}...`,
+      });
 
       // Step 2: Update IPFS record
       await axios.patch(`/api/incident-reports/${caseItem.id}`, {
@@ -118,8 +124,8 @@ export default function AnalystPortal() {
       });
 
       toast({
-        title: "Assignment Successful!",
-        description: `You are now assigned to case #${caseItem.id}`,
+        title: "Assignment Complete!",
+        description: `Successfully assigned as analyst for case #${caseItem.id} (ticket ${ticketId})`,
         variant: "default"
       });
 
@@ -131,7 +137,7 @@ export default function AnalystPortal() {
       console.error('Assignment failed:', error);
       toast({
         title: "Assignment Failed",
-        description: error.message || "Failed to assign as analyst",
+        description: error.message || "Blockchain transaction failed",
         variant: "destructive"
       });
     } finally {
