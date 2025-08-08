@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import { WalletGate } from '../components/wallet/WalletGate';
+import { AppLayout } from '../components/layout/AppLayout';
 import { useWallet } from '../components/WalletProvider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -213,32 +215,13 @@ export default function AnalystValidation() {
   const myTickets = filteredTickets.filter(ticket => ticket.assigned_analyst === address);
   const availableTickets = filteredTickets.filter(ticket => !ticket.assigned_analyst);
 
-  if (!isConnected) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <Shield className="h-12 w-12 mx-auto text-blue-500 mb-4" />
-            <CardTitle className="text-2xl text-blue-500">Analyst Portal</CardTitle>
-            <CardDescription>
-              Connect your wallet to access the dSOC Analyst Dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                Please connect your wallet with analyst role to access incident tickets.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-4">
+    <AppLayout>
+      <WalletGate
+        requiredRole="Analyst"
+        roleCopy="Connect your wallet to access the dSOC Analyst Dashboard. Please connect your wallet with analyst role to access incident tickets."
+      >
+        <div className="text-white p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -769,7 +752,8 @@ export default function AnalystValidation() {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+        </div>
+      </WalletGate>
+    </AppLayout>
   );
 }

@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import { WalletGate } from '../components/wallet/WalletGate';
+import { AppLayout } from '../components/layout/AppLayout';
 import { useWallet } from '../components/WalletProvider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -281,32 +283,13 @@ Large-scale phishing campaign targeting YieldGuard DeFi users through DNS hijack
     return Math.round((sectionScore * 0.7 + lengthScore * 0.3) * 100);
   };
 
-  if (!isConnected) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <Shield className="h-12 w-12 mx-auto text-purple-500 mb-4" />
-            <CardTitle className="text-2xl text-purple-500">Certifier Portal</CardTitle>
-            <CardDescription>
-              Connect your wallet to access the dSOC Certifier Dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                Please connect your wallet with certifier role to validate analyst reports.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-4">
+    <AppLayout>
+      <WalletGate
+        requiredRole="Certifier"
+        roleCopy="Connect your wallet to access the dSOC Certifier Dashboard. Please connect your wallet with certifier role to review and approve reports."
+      >
+        <div className="text-white p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -878,7 +861,8 @@ Large-scale phishing campaign targeting YieldGuard DeFi users through DNS hijack
             </div>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+        </div>
+      </WalletGate>
+    </AppLayout>
   );
 }
