@@ -223,9 +223,8 @@ export default function AnalystValidation() {
       >
         <div className="text-white p-4">
           <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}</div>
-        </div>
-        <div className="flex items-center justify-between">
+            {/* Header */}
+            <div className="flex items-center justify-between"></div>
           <div>
             <h1 className="text-3xl font-bold text-blue-500 flex items-center gap-3">
               <Shield className="h-8 w-8" />
