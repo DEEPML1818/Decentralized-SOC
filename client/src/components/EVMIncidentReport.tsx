@@ -109,7 +109,7 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
           block_number: createResult.blockNumber || 0,
           transaction_hash: createResult.txHash || '',
           staking_pool_address: createResult.stakingPoolAddress || '',
-          ticket_id: createResult.ticketId || null,
+          ticket_id: createResult.ticketId ? parseInt(createResult.ticketId.toString()) : null,
           clt_staked: incidentData.cltAmount
         }),
       });

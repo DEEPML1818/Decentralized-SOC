@@ -451,7 +451,13 @@ Format as structured markdown for a security analyst.`;
   // Incident Report endpoints for real-time dashboard updates
   app.post("/api/incident-reports", async (req, res) => {
     try {
-      const validatedData = insertIncidentReportSchema.parse(req.body);
+      // Convert ticket_id to number if it's a string
+      const requestData = { ...req.body };
+      if (requestData.ticket_id && typeof requestData.ticket_id === 'string') {
+        requestData.ticket_id = parseInt(requestData.ticket_id);
+      }
+      
+      const validatedData = insertIncidentReportSchema.parse(requestData);
       const storage = getStorage();
       const report = await storage.createIncidentReport(validatedData);
 
