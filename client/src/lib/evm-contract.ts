@@ -770,6 +770,40 @@ class EVMContractService {
     }
   }
 
+  // Check if user needs CLT tokens
+  async checkCLTBalance(address: string, requiredAmount: string): Promise<{ hasBalance: boolean, balance: string, needsMint: boolean }> {
+    try {
+      const balance = await this.getCLTBalance(address);
+      const hasBalance = parseFloat(balance) >= parseFloat(requiredAmount);
+      const needsMint = parseFloat(balance) < 10; // User needs at least 10 CLT
+      
+      return {
+        hasBalance,
+        balance,
+        needsMint
+      };
+    } catch (error) {
+      console.error('Error checking CLT balance:', error);
+      return { hasBalance: false, balance: "0", needsMint: true };
+    }
+  }
+
+  // Mint CLT tokens for testing
+  async mintCLTForUser(address: string, amount: string = "1000"): Promise<string> {
+    try {
+      console.log(`Minting ${amount} CLT tokens for ${address}`);
+      const contract = await this.getCLTRewardContract();
+      const amountWei = parseUnits(amount, 18);
+      const tx = await contract.mint(address, amountWei);
+      const receipt = await tx.wait();
+      console.log('CLT tokens minted successfully');
+      return receipt.transactionHash;
+    } catch (error) {
+      console.error('Error minting CLT tokens:', error);
+      throw error;
+    }
+  }
+
   // SOCService functions
   async createTicket(title: string, cltAmount: string) {
     try {
@@ -781,6 +815,25 @@ class EVMContractService {
       // First, get the current user's address
       const signer = await this.getSigner();
       const userAddress = await signer.getAddress();
+
+      // Check CLT balance first
+      const balanceCheck = await this.checkCLTBalance(userAddress, cltAmount);
+      console.log('CLT balance check:', balanceCheck);
+
+      if (balanceCheck.needsMint) {
+        console.log('User needs CLT tokens, minting some...');
+        await this.mintCLTForUser(userAddress, "1000");
+        console.log('CLT tokens minted, waiting a moment for balance to update...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
+      if (!balanceCheck.hasBalance) {
+        // Check balance again after minting
+        const newBalanceCheck = await this.checkCLTBalance(userAddress, cltAmount);
+        if (!newBalanceCheck.hasBalance) {
+          throw new Error(`Insufficient CLT balance. Required: ${cltAmount}, Available: ${newBalanceCheck.balance}`);
+        }
+      }
 
       // Approve the SOC contract to spend CLT tokens
       const cltContract = await this.getCLTRewardContract();

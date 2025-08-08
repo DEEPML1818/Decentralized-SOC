@@ -78,6 +78,11 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
       // Create ticket using new SOCService contract
       console.log('Creating ticket with CLT amount:', incidentData.cltAmount);
       
+      toast({
+        title: "Creating Security Ticket",
+        description: "Processing CLT token requirements and blockchain transaction...",
+      });
+      
       const createResult = await evmContractService.createTicket(
         incidentData.title,
         incidentData.cltAmount
@@ -339,7 +344,7 @@ export default function EVMIncidentReport(props: EVMIncidentReportProps) {
             {isSubmitting ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                Creating Ticket on Scroll...
+                Processing CLT Transaction...
               </>
             ) : (
               <>

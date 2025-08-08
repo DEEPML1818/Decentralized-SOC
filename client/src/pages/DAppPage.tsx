@@ -4,6 +4,7 @@ import Dashboard from "@/components/Dashboard";
 import Header from "@/components/Header";
 import EnhancedStakingPools from "@/components/EnhancedStakingPools";
 import CasesList from "@/components/CasesList";
+import { TestTicketCreation } from "@/components/TestTicketCreation";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -201,7 +202,10 @@ export default function DAppPage() {
           </TabsContent>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <Dashboard currentRole={selectedRole} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <Dashboard currentRole={selectedRole} />
+              <TestTicketCreation />
+            </div>
           </TabsContent>
         </Tabs>
       </main>
