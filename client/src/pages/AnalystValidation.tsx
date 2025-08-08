@@ -403,7 +403,7 @@ export default function AnalystValidation() {
                               {ticket.severity.toUpperCase()}
                             </Badge>
                             <Badge variant="outline" className="text-gray-300">
-                              {ticket.network.toUpperCase()}
+                              {(ticket.network || 'SCROLL').toUpperCase()}
                             </Badge>
                           </div>
                           
@@ -416,7 +416,7 @@ export default function AnalystValidation() {
                             </div>
                             <div>
                               <p className="text-gray-400">Network</p>
-                              <p className="text-white capitalize">{ticket.network}</p>
+                              <p className="text-white capitalize">{ticket.network || 'Scroll'}</p>
                             </div>
                             <div>
                               <p className="text-gray-400">Estimated Reward</p>
